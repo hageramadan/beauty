@@ -52,10 +52,9 @@ export function ProductCard({
     <div
       role="article"
       aria-labelledby={`product-name-${id}`}
-      className="group relative bg-white transition-all duration-300 hover:shadow-lg"
+      className="group w-[155px] h-[240px] sm:w-[170px] sm:h-[240px] md:w-[308px] md:h-[386px] relative bg-white transition-all duration-300 hover:shadow-lg"
       style={{
-        width: '308px',
-        height: '386px',
+       
         borderRadius: '12px',
         border: '1px solid #e2e8f0',
         padding: '16px 0'
@@ -66,10 +65,9 @@ export function ProductCard({
       <Link href={href} className="block h-full" aria-label={`عرض تفاصيل ${name}`}>
         {/* Image Container */}
         <div 
-          className="relative mx-auto transition-colors duration-300"
+          className="relative w-[130px] h-[130px] sm:w-[140px] sm:h-[140px] md:w-[276px] md:h-[276px] mx-auto transition-colors duration-300"
           style={{
-            width: 'calc(100% - 32px)',
-            height: 'calc(100% - 80px)',
+           
             borderRadius: '8px',
             margin: '0 16px'
           }}

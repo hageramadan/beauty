@@ -227,7 +227,7 @@ export function CategoriesDragDrop() {
                   >
                     <Link href={category.href}>
                       <div 
-                        className="py-[16px] px-[12px] md:py-[24px] md:px-[12px] bg-white border border-gray-200 transition-all duration-300 hover:shadow-xl overflow-hidden cursor-pointer"
+                        className="py-[16px] px-[12px] md:py-[24px] md:px-[12px] bg-white  transition-all duration-300 hover:shadow-xl overflow-hidden cursor-pointer"
                         style={{ 
                         
                           width: '100%',
