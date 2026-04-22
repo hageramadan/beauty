@@ -78,7 +78,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full h-[93vh] md:h-[600px] lg:h-[93.3vh] overflow-hidden bg-gray-900">
+    <section className="relative w-full h-[70vh] overflow-hidden bg-gray-900">
       {/* Slides */}
       <div className="relative w-full h-full">
         {slides.map((slide, index) => (

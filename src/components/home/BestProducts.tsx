@@ -100,7 +100,7 @@ export function BestProducts() {
   const hasMore = displayCount < latestProducts.length;
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-6 md:py-12  bg-white">
       <div className="container-custom">
         {/* Header */}
         <div className=" mb-10 flex  justify-between">

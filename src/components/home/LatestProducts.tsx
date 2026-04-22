@@ -100,10 +100,10 @@ export function LatestProducts() {
   const hasMore = displayCount < latestProducts.length;
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-6 md:py-12  bg-white">
       <div className="container-custom">
         {/* Header */}
-        <div className=" mb-10 flex justify-between">
+        <div className=" mb-5 md:mb-10 flex justify-between">
           <h2 className="text-2xl md:text-3xl  font-bold mb-3" style={{ color: '#112B40' }}>
             أحدث المنتجات
           </h2>

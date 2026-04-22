@@ -6,7 +6,7 @@ import Image from 'next/image'
 
 export  function AdsHome() {
   return (
-     <section className="py-12 bg-white">
+     <section className="py-6 md:py-12  bg-white">
         <div className="container  bg-[#F2F8FD] rounded-2xl flex  items-center justify-between md:justify-evenly px-2 md:px-10 py-8">
           <div className='flex flex-col gap-1 md:gap-[22px]'>
               <p className='text-[10px] md:text-[14px] text-semibold py-1 px-2 bg-[#FF995D] text-white w-fit '>وفر اكثر منEGP 5000.00</p>
