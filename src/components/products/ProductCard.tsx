@@ -78,7 +78,7 @@ export function ProductCard({
           {/* Heart Icon - Top Left Corner */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-2 left-2 z-20  rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110"
+            className="absolute top-1 left-2 z-20  rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110"
             style={{ color: isFavorite ? '#ef4444' : '#112B40' }}
             aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
             aria-pressed={isFavorite}
@@ -125,7 +125,7 @@ export function ProductCard({
               alt={name}
               width={340}
               height={340}
-              className="object-cover w-[166px] h-[166px] md:w-[308px] md:h-1/5 lg:h-1/2 transition-transform duration-500 ease-out group-hover:scale-105"
+              className="object-cover w-full  h-[166px] md:w-[308px] md:h-1/5 lg:h-1/2 transition-transform duration-500 ease-out group-hover:scale-105"
               style={{
                 transform: isHovered ? 'scale(1.05)' : 'scale(1)',
               }}

@@ -118,7 +118,7 @@ export function CategoriesDragDrop() {
   };
 
   return (
-    <section className="py-2 md:py-10">
+    <section className="py-2 md:py-10 mt-7">
       <div className="container-custom px-4 sm:px-6 relative">
         
         {/* زر السهم الأيمن */}
@@ -188,7 +188,7 @@ export function CategoriesDragDrop() {
                     {/* اسم الفئة في الأسفل */}
                     <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-white bg-[#E6007699] py-2 w-full text-[10px] md:text-base lg:text-lg font-bold text-center line-clamp-2 whitespace-normal"
+                        className="text-white text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full  md:text-base lg:text-lg text-center line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

@@ -39,7 +39,7 @@ export function SubNavbar() {
 
           {/* Center Section - Free Shipping Message */}
           <div className="flex items-center gap-2 md:gap-3">
-            <Image src='/images/sub.png' alt="Sub Navbar" className="h-6 w-6" width={110} height={110} />
+            <Image src='/images/sub.png' alt="Sub Navbar" quality={90} className="h-6 w-6" width={210} height={210} />
             <p className="text-[#E60076] text-xs md:text-sm font-semibold text-center">
              اطلب بقيمة 2000$ واحصل علي توصيل مجاني
             </p>
