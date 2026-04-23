@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { FaArrowRightLong } from "react-icons/fa6";
+
 interface Category {
   id: string;
   name: string;
@@ -15,50 +16,50 @@ interface Category {
 const initialCategories: Category[] = [
   {
     id: "1",
-    name: "هواتف ذكية",
-    image: "/images/categories/cate1.png",
+    name: "ميكاب",
+    image: "/images/categories/cate1.jpg",
     href: "/",
   },
   {
     id: "2",
-    name: "لابتوب & كمبيوتر",
-    image: "/images/categories/cat2.png",
+    name: "ميكاب",
+    image: "/images/categories/cate2.jpg",
     href: "/",
   },
   {
     id: "3",
-    name: " اكسسوارات",
-    image: "/images/categories/cate3.png",
+   name: "ميكاب",
+    image: "/images/categories/cate3.jpg",
     href: "/",
   },
   {
     id: "4",
-    name: " سماعات",
-    image: "/images/categories/cate4.png",
+    name: "ميكاب",
+    image: "/images/categories/cate4.jpg",
     href: "/",
   },
   {
     id: "5",
-    name: "هواتف ذكية",
-    image: "/images/categories/cate1.png",
+    name: "ميكاب",
+    image: "/images/categories/cate1.jpg",
     href: "/",
   },
   {
     id: "6",
-    name: "لابتوب & كمبيوتر",
-    image: "/images/categories/cat2.png",
+    name: "ميكاب",
+    image: "/images/categories/cate2.jpg",
     href: "/",
   },
   {
     id: "7",
-    name: " اكسسوارات",
-    image: "/images/categories/cate3.png",
+    name: "ميكاب",
+    image: "/images/categories/cate3.jpg",
     href: "/",
   },
   {
     id: "8",
-    name: " سماعات",
-    image: "/images/categories/cate4.png",
+    name: "ميكاب",
+    image: "/images/categories/cate4.jpg",
     href: "/",
   },
 ];
@@ -117,13 +118,13 @@ export function CategoriesDragDrop() {
   };
 
   return (
-    <section className="py-2 md:py-12">
+    <section className="py-2 md:py-10">
       <div className="container-custom px-4 sm:px-6 relative">
         
         {/* زر السهم الأيمن */}
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#C092BD] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden md:block"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
           style={{ 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transform: 'translateX(50%) translateY(-50%)'
@@ -136,20 +137,20 @@ export function CategoriesDragDrop() {
         {/* زر السهم الأيسر */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#C092BD] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden md:block"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
           style={{ 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transform: 'translateX(-50%) translateY(-50%)'
           }}
           aria-label="التمرير لليمين"
         >
-        <FaArrowLeftLong className="text-white" />
+          <FaArrowLeftLong className="text-white" />
         </button>
 
         {/* حاوية السحب الأفقية */}
         <div 
           ref={sliderRef}
-          className="overflow-x-auto md:h-[236px] h-[100px] pt-12 hide-scrollbar"
+          className="overflow-x-auto md:h-[280px] h-[120px] hide-scrollbar"
           style={{ 
             width: '100%',
             overflowY: 'hidden',
@@ -164,30 +165,30 @@ export function CategoriesDragDrop() {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="flex gap-2 md:gap-[26px] justify-start items-center h-full">
+          <div className="flex gap-2 md:gap-[26px] justify-start items-stretch h-full">
             {initialCategories.map((category) => (
               <div
                 key={category.id}
-                className="flex-shrink-0 flex items-center group transition-all duration-300 hover:-translate-y-2"
+                className="flex-shrink-0 flex items-stretch group transition-all duration-300 hover:-translate-y-2"
               >
-                <Link href="#">
-                  <div className="flex items-center flex-col transition-all w-[85px] md:w-[220px] duration-300 cursor-pointer pb-7">
-                    <div 
-                      className="relative bg-gray-100 flex items-center justify-center overflow-hidden rounded-full h-[64px] md:h-[196px] w-[64px] md:w-[196px] transition-transform duration-300"
-                    >
-                      <Image
-                        src={category.image}
-                        alt={category.name}
-                        width={148}
-                        height={148}
-                        className="object-contain transition-transform duration-500 w-[32px] h-[32px] md:w-[148px] md:h-[148px]"
-                        sizes="148px"
-                      />
-                    </div>
-                    <div className="text-center mt-2 pb-2 w-full">
+                <Link href="#" className="block w-full">
+                  <div className="relative w-[85px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+                    {/* الصورة تملأ الكارت بالكامل */}
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(max-width: 768px) 85px, 220px"
+                    />
+                    
+                    {/* Overlay داكن من الأسفل لظهور النص */}
+                    {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" /> */}
+                    
+                    {/* اسم الفئة في الأسفل */}
+                    <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-[10px] sm:text-[16px] whitespace-nowrap"
-                        style={{ color: '#112B40' }}
+                        className="text-white bg-[#E6007699] py-2 w-full text-[10px] md:text-base lg:text-lg font-bold text-center line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

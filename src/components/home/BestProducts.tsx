@@ -101,14 +101,14 @@ export function BestProducts() {
   const hasMore = displayCount < latestProducts.length;
 
   return (
-    <section className="py-6 md:py-12  bg-white">
+    <section className="py-3 md:py-10  bg-white">
       <div className="container-custom">
         {/* Header */}
-        <div className="mb-2 md:mb-5  flex  justify-between">
+        <div className="mb-2 md:mb-5  flex  justify-between  mx-2 md:mx-4 ">
           <h2 className="text-2xl md:text-3xl  font-bold mb-3" style={{ color: '#112B40' }}>
            الأكثر طلبا
           </h2>
-        <p className="text-[#08B2A7] text-[16px] font-bold">
+        <p className="text-[#E60076] text-[16px] font-bold">
           عرض المزيد
         </p>
           

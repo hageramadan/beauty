@@ -54,7 +54,7 @@ export function ProductCard({
     <div
       role="article"
       aria-labelledby={`product-name-${id}`}
-      className="group w-[150px] sm:w-[160px] md:w-[308px] h-[310px] md:h-[494px] relative bg-white transition-all duration-500 ease-out hover:shadow-2xl"
+      className="group w-full max-w-[340px] sm:max-w-[350px] md:max-w-[308px] lg:max-w-[308px] mx-auto h-auto relative bg-white transition-all duration-500 ease-out hover:shadow-2xl"
       style={{
         borderRadius: '16px',
         border: '1px solid #E4E7E9',
@@ -78,7 +78,7 @@ export function ProductCard({
           {/* Heart Icon - Top Left Corner */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-1 bg-white shadow left-2 z-10 rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110"
+            className="absolute top-2 left-2 z-20  rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110"
             style={{ color: isFavorite ? '#ef4444' : '#112B40' }}
             aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
             aria-pressed={isFavorite}
@@ -87,14 +87,39 @@ export function ProductCard({
           </button>
           
           {/* Best Seller Badge */}
-          <div className="absolute top-2 right-2 z-10">
-            <p className="text-[9px] md:text-xs font-bold text-white bg-[#08B2A7] p-1 md:p-1.5 rounded">
+          <div className="absolute top-2 right-2 z-20">
+            <p className="text-[9px] md:text-xs font-bold text-white bg-[#E60076] p-1 md:p-1.5 rounded">
               الاكثر مبيعا
             </p>
           </div>
 
+          {/* Add to Cart Button - Overlay on Image (appears on hover) */}
+          <div 
+            className="absolute inset-0 z-20 flex items-end
+            pb-3 justify-center transition-all duration-300"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              opacity: isHovered ? 1 : 0,
+              visibility: isHovered ? 'visible' : 'hidden',
+              
+            }}
+          >
+            <Button
+              onClick={handleAddToCart}
+              className="text-[12px] md:text-[16px] font-semibold rounded-[8px] bg-[#E60076] hover:bg-[#E60076]
+               transition-all duration-300 text-white py-2 md:py-3 px-4 md:px-6 flex items-center justify-center gap-2 hover:scale-105"
+              style={{
+                transform: isHovered ? 'scale(1)' : 'scale(0.9)',
+                transition: 'transform 0.3s ease',
+              }}
+            >
+              <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
+              إضافة إلى السلة
+            </Button>
+          </div>
+
           {/* Image with scale effect on hover */}
-          <div className="overflow-hidden rounded-t-lg">
+          <div className="overflow-hidden rounded-t-lg relative z-10">
             <Image
               src={image}
               alt={name}
@@ -133,40 +158,9 @@ export function ProductCard({
 
           {/* Price */}
           <div className="flex items-center gap-2">
-            <span className="text-sm md:text-[17px] font-semibold relative" style={{ color: '#08B2A7' }}>
+            <span className="text-sm md:text-[17px] font-semibold relative" style={{ color: '#E60076' }}>
               {price.toLocaleString()} <span className="text-[12px] font-semibold">EGP</span>
             </span>
-            {/* {originalPrice && (
-              <span className="text-xs md:text-sm text-gray-400 line-through">
-                {originalPrice.toLocaleString()} EGP
-              </span>
-            )} */}
-          </div>
-          
-          {/* Discount badge if exists */}
-          {/* {discount && (
-            <div className="absolute top-20 left-2 md:top-24 md:left-3 z-10">
-              <span className="bg-red-500 text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">
-                -{discount}%
-              </span>
-            </div>
-          )}
-           */}
-          {/* Add to cart button with slide/fade effect */}
-          <div
-            style={{
-              opacity: isHovered ? 1 : 0.9,
-              transition: 'opacity 0.3s ease 0.1s',
-            }}
-          >
-            <Button
-              onClick={handleAddToCart}
-              className="w-full text-[12px] md:text-[16px] font-semibold rounded-[24px] bg-[#C092BD] hover:bg-[#8C6D8A]
-               transition-all duration-300 text-white py-0 md:py-5 px-[32px] border-2 border-[#C092BD] hover:border-[#8C6D8A] flex items-center justify-center gap-2 hover:scale-[1.02]"  
-            >
-              <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
-              إضافة إلى السلة
-            </Button>
           </div>
         </div>
       </Link>
@@ -212,7 +206,7 @@ export function ProductsGrid() {
   ];
 
   return (
-    <section className="py-2 md:py-12 bg-gray-50">
+    <section className="py-2 md:py-10 bg-gray-50">
       <div className="container-custom">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-8" style={{ color: '#112B40' }}>
           منتجات مميزة
