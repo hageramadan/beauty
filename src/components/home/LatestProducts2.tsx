@@ -78,7 +78,7 @@ const latestProducts: Product[] = [
     id: "8",
      name: "Lorem ipsum dolor sit amet consectetur. Accumsan massa mauris nunc lacus.",
     price: 10000,
-    image: "/images/products/pro5.png",
+    image: "/images/products/p5.jpg",
     href: "/products/8",
   },
 ];

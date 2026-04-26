@@ -23,14 +23,14 @@ const latestProducts: Product[] = [
     price: 10000,
     originalPrice: 35000,
     discount: 28,
-    image: "/images/products/pro1.png",
+    image: "/images/products/p1.jpg",
     href: "/products/1",
   },
   {
     id: "2",
      name: "Lorem ipsum dolor sit amet consectetur. Accumsan massa mauris nunc lacus.",
     price: 10000,
-    image: "/images/products/pro2.png",
+    image: "/images/products/p2.jpg",
     href: "/products/2",
   },
   {
@@ -39,14 +39,14 @@ const latestProducts: Product[] = [
     price: 10000,
     originalPrice: 60000,
     discount: 25,
-    image: "/images/products/pro3.png",
+    image: "/images/products/p3.jpg",
     href: "/products/3",
   },
   {
     id: "4",
        name: "Lorem ipsum dolor sit amet consectetur. Accumsan massa mauris nunc lacus.",
     price: 10000,
-    image: "/images/products/pro9.png",
+    image: "/images/products/p4.jpg",
     href: "/products/4",
   },
   {
@@ -55,14 +55,14 @@ const latestProducts: Product[] = [
     price: 10000,
     originalPrice: 15000,
     discount: 29,
-    image: "/images/products/pro5.png",
+    image: "/images/products/p5.jpg",
     href: "/products/5",
   },
   {
     id: "6",
     name: "Lorem ipsum dolor sit amet consectetur. Accumsan massa mauris nunc lacus.",
     price: 10000,
-    image: "/images/products/pro6.png",
+    image: "/images/products/p6.jpg",
     href: "/products/6",
   },
   {
@@ -71,17 +71,16 @@ const latestProducts: Product[] = [
     price: 10000,
     originalPrice: 20000,
     discount: 37,
-    image: "/images/products/pro7.png",
+    image: "/images/products/p7.jpg",
     href: "/products/7",
   },
   {
     id: "8",
      name: "Lorem ipsum dolor sit amet consectetur. Accumsan massa mauris nunc lacus.",
     price: 10000,
-    image: "/images/products/pro10.png",
+    image: "/images/products/pro8.png",
     href: "/products/8",
   },
-
 ];
 
 export function BestProducts() {

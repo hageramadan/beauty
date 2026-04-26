@@ -14,10 +14,10 @@ export default function Home() {
     <Hero />
     <CategoriesDragDrop/>
    <LatestProducts />
-   <BestProducts/>
+   {/* <BestProducts/> */}
    <AdsHome/>
    
-   <LatestProducts2/>
+   <LatestProducts/>
    <Footer />
    </div>
   );
