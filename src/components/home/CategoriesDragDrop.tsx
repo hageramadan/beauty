@@ -118,7 +118,7 @@ export function CategoriesDragDrop() {
   };
 
   return (
-    <section className="py-2 md:py-10 mt-7">
+    <section className="py-2 md:py-10 pt-7">
       <div className="container-custom px-4 sm:px-6 relative">
         
         {/* زر السهم الأيمن */}
@@ -150,7 +150,7 @@ export function CategoriesDragDrop() {
         {/* حاوية السحب الأفقية */}
         <div 
           ref={sliderRef}
-          className="overflow-x-auto md:h-[280px] h-[120px] hide-scrollbar"
+          className="overflow-x-auto md:h-[300px] h-[140px] hide-scrollbar"
           style={{ 
             width: '100%',
             overflowY: 'hidden',
@@ -169,7 +169,7 @@ export function CategoriesDragDrop() {
             {initialCategories.map((category) => (
               <div
                 key={category.id}
-                className="flex-shrink-0 flex items-stretch group transition-all duration-300 hover:-translate-y-2"
+                className="flex-shrink-0 flex items-stretch group transition-all duration-300 "
               >
                 <Link href="#" className="block w-full">
                   <div className="relative w-[85px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
