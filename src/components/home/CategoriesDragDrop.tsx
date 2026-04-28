@@ -118,8 +118,8 @@ export function CategoriesDragDrop() {
   };
 
   return (
-    <section className="py-2 md:py-10 pt-7">
-      <div className="container-custom px-4 sm:px-6 relative">
+    <section className="py-2 md:py-5 ">
+      <div className="container-custom px-4 sm:px-6 relative ">
         
         {/* زر السهم الأيمن */}
         <button
@@ -150,7 +150,7 @@ export function CategoriesDragDrop() {
         {/* حاوية السحب الأفقية */}
         <div 
           ref={sliderRef}
-          className="overflow-x-auto md:h-[300px] h-[140px] hide-scrollbar"
+          className="overflow-x-auto pt-7 md:h-[300px] h-[140px] hide-scrollbar"
           style={{ 
             width: '100%',
             overflowY: 'hidden',
@@ -165,30 +165,28 @@ export function CategoriesDragDrop() {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="flex gap-2 md:gap-[26px] justify-start items-stretch h-full">
+          <div className="flex gap-6 md:gap-[26px] justify-start items-stretch h-full">
             {initialCategories.map((category) => (
+              // ✅ التعديل هنا: أضفنا classNames للحركة لأعلى وللتحويل السلس
               <div
                 key={category.id}
-                className="flex-shrink-0 flex items-stretch group transition-all duration-300 "
+                className="flex-shrink-0 flex items-stretch transition-all duration-300 hover:-translate-y-2" 
               >
                 <Link href="#" className="block w-full">
                   <div className="relative w-[85px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
-                    {/* الصورة تملأ الكارت بالكامل */}
+                    {/* الصورة - أزلنا group-hover:scale-110 حتى لا تكبر الصورة وحدها */}
                     <Image
                       src={category.image}
                       alt={category.name}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="object-cover transition-transform duration-500" 
                       sizes="(max-width: 768px) 85px, 220px"
                     />
-                    
-                    {/* Overlay داكن من الأسفل لظهور النص */}
-                    {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" /> */}
                     
                     {/* اسم الفئة في الأسفل */}
                     <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-white text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full  md:text-base lg:text-lg text-center line-clamp-2 whitespace-normal"
+                        className="text-white text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

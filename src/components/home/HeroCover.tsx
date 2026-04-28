@@ -241,9 +241,9 @@ export function Hero() {
       
       {/* Two Sliders Side by Side */}
       <div className="w-full h-full">
-        <div className="flex flex-col sm:flex-row h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]">
+        <div className="flex  h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]">
           {/* Left Slider - يتحرك أولاً (بدون تأخير) */}
-          <div className="w-full sm:w-1/2 h-1/2 sm:h-full relative">
+          <div className="w-full sm:w-1/2 h-full relative">
             <IndividualSlider 
               slides={leftSlides} 
               position="left" 
@@ -254,7 +254,7 @@ export function Hero() {
           </div>
           
           {/* Right Slider - يتحرك بعد 2 ثانية من بدء الأيسر */}
-          <div className="w-full sm:w-1/2 h-1/2 sm:h-full relative">
+          <div className="w-full sm:w-1/2 h-full relative">
             <IndividualSlider 
               slides={rightSlides} 
               position="right" 
