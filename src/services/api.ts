@@ -1,6 +1,6 @@
 // services/api.ts
-const API_BASE_URL = "http://beauty.admin.t-carts.com/api";
-const API_BASE_URL_Img = "http://beauty.admin.t-carts.com";
+const API_BASE_URL = "https://beauty.admin.t-carts.com/api";
+const API_BASE_URL_Img = "https://beauty.admin.t-carts.com";
 
 export interface Category {
   id: number;
