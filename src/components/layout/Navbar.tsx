@@ -1,3 +1,4 @@
+// components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -7,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Heart, ShoppingCart, User, Search, Menu, X, ChevronDown } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { PiUserBold  } from "react-icons/pi";
-// import { useFavorites } from "@/contexts/FavoritesContext";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { fetchCategories, Category } from "@/services/api";
 
 const navLinks = [
   { name: "الرئيسية", href: "/" },
@@ -17,28 +18,35 @@ const navLinks = [
   { name: "تواصل معنا", href: "/contact" },
 ];
 
-// Categories dropdown items
-const categories = [
-  { name: "إلكترونيات", href: "/categories/electronics" },
-  { name: "ملابس", href: "/categories/clothing" },
-  { name: "أحذية", href: "/categories/shoes" },
-  { name: "مستحضرات تجميل", href: "/categories/beauty" },
-  { name: "منزل ومطبخ", href: "/categories/home" },
-  { name: "رياضة", href: "/categories/sports" },
-];
-
 export function Navbar() {
   const pathname = usePathname();
   const { cartCount } = useCart();
-  // const { favoritesCount } = useFavorites();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [showDesktopCategoriesDropdown, setShowDesktopCategoriesDropdown] = useState(false);
   const [showMobileCategoriesDropdown, setShowMobileCategoriesDropdown] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
+
+  // جلب الفئات من API
+  useEffect(() => {
+    const loadCategories = async () => {
+      const data = await fetchCategories();
+      setCategories(data);
+    };
+
+    loadCategories();
+  }, []);
+
+  // تحويل بيانات API إلى صيغة القائمة المنسدلة
+  const dropdownCategories = categories.map(category => ({
+    name: category.name,
+    href: `/categories/${category.id}`,
+    id: category.id
+  }));
 
   // Focus on search input when shown
   useEffect(() => {
@@ -133,17 +141,17 @@ export function Navbar() {
                     <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showDesktopCategoriesDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {/* Desktop Categories Dropdown */}
-                  {showDesktopCategoriesDropdown && (
+                  {/* Desktop Categories Dropdown - من API */}
+                  {showDesktopCategoriesDropdown && dropdownCategories.length > 0 && (
                     <div 
                       className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200"
                       style={{ borderColor: '#e2e8f0' }}
                       onMouseLeave={() => setShowDesktopCategoriesDropdown(false)}
                     >
                       <div className="py-2">
-                        {categories.map((category) => (
+                        {dropdownCategories.map((category) => (
                           <Link
-                            key={category.href}
+                            key={category.id}
                             href={category.href}
                             className="block px-4 py-2 text-[14px] transition-colors hover:bg-gray-50"
                             style={{ color: '#112B40' }}
@@ -337,7 +345,7 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* Navigation Links in mobile menu */}
+            {/* Navigation Links in mobile menu - Categories from API */}
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 link.hasDropdown ? (
@@ -351,11 +359,11 @@ export function Navbar() {
                       {link.name}
                       <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showMobileCategoriesDropdown ? 'rotate-180' : ''}`} />
                     </button>
-                    {showMobileCategoriesDropdown && (
+                    {showMobileCategoriesDropdown && dropdownCategories.length > 0 && (
                       <div className="mr-4 space-y-1">
-                        {categories.map((category) => (
+                        {dropdownCategories.map((category) => (
                           <Link
-                            key={category.href}
+                            key={category.id}
                             href={category.href}
                             className="block px-3 py-2 text-[14px] rounded-md transition-colors hover:bg-gray-50"
                             style={{ color: '#112B40' }}

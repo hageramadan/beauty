@@ -24,7 +24,7 @@ export function ProductCard({
   price, 
   image, 
   href,
-  originalPrice,
+  originalPrice, 
   discount 
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -35,6 +35,7 @@ export function ProductCard({
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite(!isFavorite);
+    console.log("Favorite toggled for product:", id, "new state:", !isFavorite);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -61,14 +62,11 @@ export function ProductCard({
           overflow: hidden;
           background: white;
           position: relative;
-            isolation: isolate;
-  
+          isolation: isolate;
         }
         
         .product-card:hover {
-      
           box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          
         }
         
         .product-image {
@@ -104,7 +102,18 @@ export function ProductCard({
         }
       `}</style>
 
-      <div className="product-card">
+      <div className="product-card relative">
+        {/* Heart Icon - خارج Link تماماً */}
+        <button
+          onClick={handleFavoriteClick}
+          className="absolute top-2 left-2 z-30 rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110 bg-white/80 backdrop-blur-sm"
+          style={{ color: isFavorite ? '#ef4444' : '#112B40' }}
+          aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+          aria-pressed={isFavorite}
+        >
+          <Heart className="h-4 w-4 sm:h-5 sm:w-5" fill={isFavorite ? '#ef4444' : 'none'} />
+        </button>
+
         <Link href={href} className="h-full flex flex-col" aria-label={`عرض تفاصيل ${name}`}>
           {/* Image Container */}
           <div className="product-image bg-gray-100">
@@ -114,17 +123,6 @@ export function ProductCard({
                 <div className="spinner w-8 h-8 border-4 border-[#E60076] border-t-transparent rounded-full"></div>
               </div>
             )}
-            
-            {/* Heart Icon - Top Left Corner */}
-            <button
-              onClick={handleFavoriteClick}
-              className="absolute top-2 left-2 z-20 rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110 bg-white/80 backdrop-blur-sm"
-              style={{ color: isFavorite ? '#ef4444' : '#112B40' }}
-              aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-              aria-pressed={isFavorite}
-            >
-              <Heart className="h-4 w-4 sm:h-5 sm:w-5" fill={isFavorite ? '#ef4444' : 'none'} />
-            </button>
             
             {/* Best Seller Badge */}
             <div className="absolute top-2 right-2 z-20">
@@ -162,11 +160,9 @@ export function ProductCard({
                 alt={name}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 100vw, (max-width: 1200px) 50vw, 308px"
-                className="object-cover transition-all duration-700 ease-out "
+                className="object-cover transition-all duration-700 ease-out"
                 style={{
                   transform: isHovered ? 'scale(1.08)' : 'scale(1)',
-                 
-                 
                 }}
                 onLoad={() => setImageLoaded(true)}
               />
@@ -207,104 +203,5 @@ export function ProductCard({
         </Link>
       </div>
     </div>
-  );
-}
-
-// ProductsGrid with loading state
-export function ProductsGrid() {
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState([
-    {
-      id: "1",
-      name: "كريم ترطيب عميق للبشرة الجافة",
-      price: 360,
-      originalPrice: 500,
-      discount: 28,
-      image: "/images/products/p1.jpg",
-      href: "/",
-    },
-    {
-      id: "2",
-      name: "سيروم فيتامين سي المشرق للوجه",
-      price: 280,
-      originalPrice: 400,
-      discount: 30,
-      image: "/images/products/p2.jpg",
-      href: "/",
-    },
-    {
-      id: "3",
-      name: "غسول يومي لتنظيف البشرة بالفحم",
-      price: 150,
-      originalPrice: 250,
-      discount: 40,
-      image: "/images/products/p3.jpg",
-      href: "/",
-    },
-    {
-      id: "4",
-      name: "ماسك الطين البركاني لتنقية المسام",
-      price: 200,
-      originalPrice: 350,
-      discount: 43,
-      image: "/images/products/p4.jpg",
-      href: "/",
-    },
-  ]);
-
-  // Simulate loading products
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <section className="py-4 sm:py-6 md:py-10 bg-gray-50">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-4 sm:mb-6 md:mb-8" style={{ color: '#112B40' }}>
-          منتجات مميزة
-        </h2>
-        
-        {/* Loading Spinner for Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-500 text-sm">جاري تحميل المنتجات...</p>
-            </div>
-          </div>
-        ) : (
-          /* Grid Responsive */
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 justify-items-center">
-            {products.map((product, index) => (
-              <div
-                key={product.id}
-                style={{
-                  animation: `fadeInUp 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) ${index * 0.1}s backwards`
-                }}
-              >
-                <ProductCard {...product} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </section>
   );
 }

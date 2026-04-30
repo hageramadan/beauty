@@ -1,74 +1,32 @@
+// components/CategoriesDragDrop.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { FaArrowRightLong } from "react-icons/fa6";
-
-interface Category {
-  id: string;
-  name: string;
-  image: string;
-  href: string;
-}
-
-const initialCategories: Category[] = [
-  {
-    id: "1",
-    name: "ميكاب",
-    image: "/images/categories/cate1.jpg",
-    href: "/",
-  },
-  {
-    id: "2",
-    name: "ميكاب",
-    image: "/images/categories/cate2.jpg",
-    href: "/",
-  },
-  {
-    id: "3",
-   name: "ميكاب",
-    image: "/images/categories/cate3.jpg",
-    href: "/",
-  },
-  {
-    id: "4",
-    name: "ميكاب",
-    image: "/images/categories/cate4.jpg",
-    href: "/",
-  },
-  {
-    id: "5",
-    name: "ميكاب",
-    image: "/images/categories/cate1.jpg",
-    href: "/",
-  },
-  {
-    id: "6",
-    name: "ميكاب",
-    image: "/images/categories/cate2.jpg",
-    href: "/",
-  },
-  {
-    id: "7",
-    name: "ميكاب",
-    image: "/images/categories/cate3.jpg",
-    href: "/",
-  },
-  {
-    id: "8",
-    name: "ميكاب",
-    image: "/images/categories/cate4.jpg",
-    href: "/",
-  },
-];
+import { fetchCategories, Category } from "@/services/api";
 
 export function CategoriesDragDrop() {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollStart, setScrollStart] = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // جلب البيانات من API
+  useEffect(() => {
+    const loadCategories = async () => {
+      setLoading(true);
+      const data = await fetchCategories();
+      setCategories(data);
+      setLoading(false);
+    };
+
+    loadCategories();
+  }, []);
 
   // دوال السحب
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -117,35 +75,62 @@ export function CategoriesDragDrop() {
     sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
+  // بناء رابط الصورة الكامل
+  const getFullImageUrl = (imagePath: string) => {
+    if (!imagePath) return '/images/placeholder.jpg';
+    if (imagePath.startsWith('http')) return imagePath;
+    return `http://beauty.admin.t-carts.com${imagePath}`;
+  };
+
+  if (loading) {
+    return (
+      <section className="py-2 md:py-5">
+        <div className="container-custom px-4 sm:px-6">
+          <div className="flex justify-center items-center h-[140px] md:h-[300px]">
+            <div className="animate-pulse text-[#E60076]">جاري التحميل...</div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-2 md:py-5 ">
       <div className="container-custom px-4 sm:px-6 relative ">
         
         {/* زر السهم الأيمن */}
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
-          style={{ 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            transform: 'translateX(50%) translateY(-50%)'
-          }}
-          aria-label="التمرير لليسار"
-        >
-          <FaArrowRightLong className="text-white"/>
-        </button>
+        {categories.length > 4 && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
+            style={{ 
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              transform: 'translateX(50%) translateY(-50%)'
+            }}
+            aria-label="التمرير لليسار"
+          >
+            <FaArrowRightLong className="text-white"/>
+          </button>
+        )}
 
         {/* زر السهم الأيسر */}
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
-          style={{ 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            transform: 'translateX(-50%) translateY(-50%)'
-          }}
-          aria-label="التمرير لليمين"
-        >
-          <FaArrowLeftLong className="text-white" />
-        </button>
+        {categories.length > 4 && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#be0063] transition-all duration-300 hidden xl:block"
+            style={{ 
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              transform: 'translateX(-50%) translateY(-50%)'
+            }}
+            aria-label="التمرير لليمين"
+          >
+            <FaArrowLeftLong className="text-white" />
+          </button>
+        )}
 
         {/* حاوية السحب الأفقية */}
         <div 
@@ -166,21 +151,23 @@ export function CategoriesDragDrop() {
           onTouchEnd={handleDragEnd}
         >
           <div className="flex gap-6 md:gap-[26px] justify-start items-stretch h-full">
-            {initialCategories.map((category) => (
-              // ✅ التعديل هنا: أضفنا classNames للحركة لأعلى وللتحويل السلس
+            {categories.map((category) => (
               <div
                 key={category.id}
                 className="flex-shrink-0 flex items-stretch transition-all duration-300 hover:-translate-y-2" 
               >
-                <Link href="#" className="block w-full">
+                <Link href={`/categories/${category.id}`} className="block w-full">
                   <div className="relative w-[85px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
-                    {/* الصورة - أزلنا group-hover:scale-110 حتى لا تكبر الصورة وحدها */}
                     <Image
-                      src={category.image}
+                      src={getFullImageUrl(category.image)}
                       alt={category.name}
                       fill
                       className="object-cover transition-transform duration-500" 
                       sizes="(max-width: 768px) 85px, 220px"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/placeholder.jpg';
+                      }}
                     />
                     
                     {/* اسم الفئة في الأسفل */}

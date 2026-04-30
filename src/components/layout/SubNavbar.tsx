@@ -7,8 +7,9 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { RxLinkedinLogo } from "react-icons/rx";
 import { IoLogoWhatsapp } from "react-icons/io";
 import { FaFacebook } from "react-icons/fa";
-import Image from "next/image";
+import { PiGiftBold } from "react-icons/pi";
 import { LiaPhoneSolid } from "react-icons/lia";
+
 export function SubNavbar() {
   return (
     <div className="w-full bg-[#FDF2F8] border-b border-[#E4E7E9] py-2 md:py-3 ">
@@ -39,7 +40,8 @@ export function SubNavbar() {
 
           {/* Center Section - Free Shipping Message */}
           <div className="flex items-center gap-2 md:gap-3">
-            <Image src='/images/sub.png' alt="Sub Navbar" quality={90} className="h-6 w-6" width={210} height={210} />
+            {/* <Image src='/images/sub.png' alt="Sub Navbar" quality={90} className="h-6 w-6" width={210} height={210} /> */}
+           <PiGiftBold className="text-[#E60076] w-4 h-4 md:w-5 md:h-5" />
             <p className="text-[#E60076] text-xs md:text-sm font-semibold text-center">
              اطلب بقيمة 2000$ واحصل علي توصيل مجاني
             </p>

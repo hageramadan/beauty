@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, X } from "lucide-react";
-import { ProductsGrid } from "@/components/products/ProductCard";
 
 // بيانات مؤقتة (استبدليها بـ API لاحقاً)
 const allProducts = [
@@ -71,7 +70,7 @@ export default function ProductsPage() {
 
       {/* شبكة المنتجات */}
       {filteredProducts.length > 0 ? (
-        <ProductsGrid />
+        <p>لا توجد منتجات تطابق البحث</p>
       ) : (
         <div className="text-center py-12">
           <p className="text-muted-foreground">لا توجد منتجات تطابق البحث</p>
