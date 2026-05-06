@@ -18,18 +18,28 @@ interface Slide {
   buttonLink: string;
 }
 
-// Individual Slider Component
+// Individual Slider Component with Touch Support
 function IndividualSlider({ 
   slides, 
   position,
-  startDelay = 0 
+  startDelay = 0,
+  onSlideChange
 }: { 
   slides: Slide[]; 
   position: 'left' | 'right';
   startDelay?: number;
+  onSlideChange?: (index: number) => void;
 }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
+  // متغيرات السحب باللمس
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const [dragProgress, setDragProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isSwipingHorizontal = useRef<boolean>(false);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,7 +57,11 @@ function IndividualSlider({
 
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % slides.length);
+        setCurrentSlide((prev) => {
+          const next = (prev + 1) % slides.length;
+          onSlideChange?.(next);
+          return next;
+        });
       }, 4000);
     }, startDelay);
 
@@ -59,12 +73,16 @@ function IndividualSlider({
         clearInterval(intervalRef.current);
       }
     };
-  }, [isAutoPlaying, slides.length, startDelay]);
+  }, [isAutoPlaying, slides.length, startDelay, onSlideChange]);
 
   const goToNextSlide = () => {
     if (slides.length === 0) return;
     setIsAutoPlaying(false);
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => {
+      const next = (prev + 1) % slides.length;
+      onSlideChange?.(next);
+      return next;
+    });
     
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -81,7 +99,11 @@ function IndividualSlider({
   const goToPrevSlide = () => {
     if (slides.length === 0) return;
     setIsAutoPlaying(false);
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => {
+      const prevSlide = (prev - 1 + slides.length) % slides.length;
+      onSlideChange?.(prevSlide);
+      return prevSlide;
+    });
     
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -95,6 +117,75 @@ function IndividualSlider({
     }, 10000);
   };
 
+  // دوال السحب للموبايل
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+    setIsAutoPlaying(false);
+    isSwipingHorizontal.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartX.current;
+    const diffY = currentY - touchStartY.current;
+    
+    // تحديد الاتجاه - أفقي أم عمودي
+    if (!isSwipingHorizontal.current && Math.abs(diffX) > 5) {
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        isSwipingHorizontal.current = true;
+        e.preventDefault();
+      }
+    }
+    
+    if (isSwipingHorizontal.current) {
+      e.preventDefault();
+      const containerWidth = containerRef.current.clientWidth;
+      let progress = diffX / containerWidth;
+      // تحديد حدود السحب
+      progress = Math.min(Math.max(progress, -0.8), 0.8);
+      setDragProgress(progress);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    const minSwipeDistance = 0.15; // 15% عتبة السحب
+    
+    if (Math.abs(dragProgress) > minSwipeDistance && isSwipingHorizontal.current) {
+      // سحب ناجح - تغيير الصورة فوراً
+      if (dragProgress < 0) {
+        goToNextSlide(); // سحب لليسار -> التالي
+      } else if (dragProgress > 0) {
+        goToPrevSlide(); // سحب لليمين -> السابق
+      }
+    }
+    
+    // إعادة التعيين
+    setIsDragging(false);
+    setDragProgress(0);
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+    isSwipingHorizontal.current = false;
+    
+    // استئناف التشغيل التلقائي بعد 10 ثواني
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  // حساب مؤشرات السلايدات المجاورة
+  const getPrevIndex = () => {
+    return currentSlide === 0 ? slides.length - 1 : currentSlide - 1;
+  };
+
+  const getNextIndex = () => {
+    return (currentSlide + 1) % slides.length;
+  };
+
   if (slides.length === 0) {
     return (
       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -104,39 +195,96 @@ function IndividualSlider({
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Slides */}
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ 
+        touchAction: isDragging && isSwipingHorizontal.current ? 'none' : 'pan-y',
+      }}
+    >
       <div className="relative w-full h-full">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-              index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-          >
-            {/* Background Image */}
-            <div className="relative w-full h-full">
-              <Image
-                src={slide.image}
-                alt={slide.title || `Slide ${index + 1}`}
-                fill
-                loading="eager"
-                className="object-cover"
-                priority={index === 0}
-                quality={90}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/placeholder-slide.jpg';
-                }}
-              />
-            </div>
+        {/* السلايد الحالي + السحب المباشر */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress * 100}%)`,
+            zIndex: 10,
+          }}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src={slides[currentSlide].image}
+              alt={slides[currentSlide].title || `Slide ${currentSlide + 1}`}
+              fill
+              loading="eager"
+              className="object-cover"
+              priority
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
+            />
           </div>
-        ))}
+        </div>
+
+        {/* السلايد التالي - يظهر من اليمين عند السحب لليسار */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress < 0 ? (100 + dragProgress * 100) : 100}%)`,
+            zIndex: dragProgress < 0 ? 15 : 5,
+          }}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src={slides[getNextIndex()].image}
+              alt={slides[getNextIndex()].title || `Slide ${getNextIndex() + 1}`}
+              fill
+              className="object-cover"
+              priority={false}
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
+            />
+          </div>
+        </div>
+
+        {/* السلايد السابق - يظهر من اليسار عند السحب لليمين */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress > 0 ? (-100 + dragProgress * 100) : -100}%)`,
+            zIndex: dragProgress > 0 ? 15 : 5,
+          }}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src={slides[getPrevIndex()].image}
+              alt={slides[getPrevIndex()].title || `Slide ${getPrevIndex() + 1}`}
+              fill
+              className="object-cover"
+              priority={false}
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Navigation Arrows - Optional */}
-   
+      {/* Dots Navigation للسلايدر الفردي - يظهر عند التمرير يدوياً */}
+    
     </div>
   );
 }
