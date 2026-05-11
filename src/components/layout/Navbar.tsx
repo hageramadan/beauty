@@ -53,6 +53,9 @@ export function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
 
+  // التحقق من أن الصفحة الحالية هي الهوم
+  const isHomePage = pathname === "/";
+
   // جلب الفئات من API
   useEffect(() => {
     const fetchCategories = async () => {
@@ -86,8 +89,14 @@ export function Navbar() {
     fetchCategories();
   }, []);
 
-  // Handle scroll event
+  // Handle scroll event - اصلاح الخطأ
   useEffect(() => {
+    // إذا لم تكن الصفحة الرئيسية، لا نحتاج للـ scroll effect
+    if (!isHomePage) {
+      setIsScrolled(true);
+      return;
+    }
+
     const handleScroll = () => {
       if (window.scrollY > 50) {
         setIsScrolled(true);
@@ -96,9 +105,12 @@ export function Navbar() {
       }
     };
 
+    // تعيين الحالة الأولية
+    handleScroll();
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isHomePage]); // isHomePage ثابتة ولا تتغير
 
   // Focus on search input when shown
   useEffect(() => {
@@ -161,22 +173,45 @@ export function Navbar() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showSearchInput, showCategoriesDropdown, showMobileCategoriesDropdown]);
 
+  // تحديد ألوان الناف بار بناءً على الصفحة
+  const getNavbarStyles = () => {
+    if (isHomePage) {
+      // في الهوم: شفاف في البداية، ثم أبيض مع سكرول
+      return {
+        backgroundColor: isScrolled ? '#FFFFFF' : 'transparent',
+        shadow: isScrolled ? 'shadow-md' : 'shadow-none',
+        textColor: isScrolled ? '#112B40' : '#FFFFFF',
+        logoColor: isScrolled ? '#EC221F' : '#FFFFFF',
+        buttonBg: isScrolled ? 'bg-[#EC221F]' : 'backdrop-blur-sm',
+        buttonTextColor: isScrolled ? '#FFFFFF' : '#FFFFFF',
+      };
+    } else {
+      // في الصفحات الأخرى: أسود مع خلفية بيضاء
+      return {
+        backgroundColor: '#FFFFFF',
+        shadow: 'shadow-md',
+        textColor: '#000000',
+        logoColor: '#EC221F',
+        buttonBg: 'bg-[#EC221F]',
+        buttonTextColor: '#FFFFFF',
+      };
+    }
+  };
+
+  const styles = getNavbarStyles();
+
   return (
     <header 
-      className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white shadow-md' 
-          : 'bg-transparent shadow-none'
-      }`}
+      className={`fixed top-0 z-50 w-full transition-all duration-300 ${styles.shadow}`}
+      style={{ backgroundColor: styles.backgroundColor }}
     >
       <div className="container-custom">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <Link 
             href="/" 
-            className={`text-[32px] font-bold transition-colors shrink-0 ${
-              isScrolled ? 'text-[#EC221F]' : 'text-white'
-            }`}
+            className="text-[32px] font-bold transition-colors shrink-0"
+            style={{ color: styles.logoColor }}
           >
             Logo
           </Link>
@@ -188,11 +223,9 @@ export function Navbar() {
                 <div key={link.href} className="relative" ref={categoriesRef}>
                   <button
                     aria-label="categories"
-                    className={`flex items-center gap-1 text-[16px] transition-colors hover:text-[#EC221F] ${
-                      isScrolled ? 'text-[#112B40]' : 'text-white'
-                    }`}
+                    className="flex items-center gap-1 text-[16px] transition-colors hover:text-[#EC221F]"
                     style={{ 
-                      color: pathname.startsWith('/categories') ? '#EC221F' : (isScrolled ? '#112B40' : 'white'),
+                      color: pathname.startsWith('/categories') ? '#EC221F' : styles.textColor,
                       fontWeight: pathname.startsWith('/categories') ? '700' : '400'
                     }}
                     onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
@@ -235,10 +268,9 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-[16px] transition-colors hover:text-[#EC221F] ${
-                    isScrolled ? 'text-[#112B40]' : 'text-white'
-                  }`}
+                  className="text-[16px] transition-colors hover:text-[#EC221F]"
                   style={{ 
+                    color: pathname === link.href ? '#EC221F' : styles.textColor,
                     fontWeight: pathname === link.href ? '700' : '400'
                   }}
                 >
@@ -258,7 +290,7 @@ export function Navbar() {
                 aria-label="search"
                 onClick={() => setShowSearchInput(!showSearchInput)}
                 className="relative z-10 hover:bg-white/30 rounded-[10px]"
-                style={{ color: isScrolled ? '#195073' : 'white' }}
+                style={{ color: styles.textColor }}
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -309,7 +341,7 @@ export function Navbar() {
               asChild 
               className="relative hover:bg-white/30 rounded-[10px]"
               aria-label="favorites"
-              style={{ color: isScrolled ? '#195073' : 'white' }}
+              style={{ color: styles.textColor }}
             >
               <Link href="/favorites">
                 <span className="text-[12px] me-1 font-bold">1</span>
@@ -323,7 +355,7 @@ export function Navbar() {
               size="icon" 
               asChild 
               className="relative hover:bg-white/30 rounded-[10px]"
-              style={{ color: isScrolled ? '#195073' : 'white' }}
+              style={{ color: styles.textColor }}
             >
               <Link href="/cart">
                 <span className="text-[12px] me-1 font-bold">{cartCount || 0}</span>
@@ -335,11 +367,8 @@ export function Navbar() {
               variant="ghost" 
               asChild 
               aria-label="login"
-              className={`hidden sm:inline-flex gap-2 hover:text-white transition-all duration-300 ${
-                isScrolled 
-                  ? 'bg-[#EC221F] hover:bg-[#a880a6] text-white' 
-                  : 'backdrop-blur-sm hover:bg-white/30 text-white'
-              } rounded-[16px]`}
+              className={`hidden sm:inline-flex gap-2 hover:bg-[#EC221F] transition-all duration-300 ${styles.buttonBg} rounded-[16px]`}
+              style={{ color: styles.buttonTextColor }}
             >
               <Link href="/auth/login">
                 <PiUserBold className="h-5 w-5" />
@@ -354,13 +383,13 @@ export function Navbar() {
             size="icon"
             aria-label="show menu"
             className="md:hidden hover:bg-white/30 rounded-[10px]"
-            style={{ color: isScrolled ? '#195073' : 'white' }}
+            style={{ color: styles.textColor }}
             onClick={() => {
               setMobileMenuOpen(!mobileMenuOpen);
               setShowMobileCategoriesDropdown(false);
             }}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Image src="/images/Menu.png" alt="Menu" className="w-[24px] h-[24px]" width={24} height={24} style={{ filter: isScrolled ? 'none' : 'brightness(0) invert(1)' }} />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Image src="/images/Menu.png" alt="Menu" className="w-[24px] h-[24px]" width={24} height={24} style={{ filter: isHomePage && !isScrolled ? 'brightness(0) invert(1)' : 'none' }} />}
           </Button>
         </div>
 

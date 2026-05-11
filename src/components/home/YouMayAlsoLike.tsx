@@ -1,3 +1,4 @@
+// components/home/YouMayAlsoLike.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -5,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
-import { getNewProducts, ProductData } from "@/services/api";
+import { getMostSellingProducts, getNewProducts, ProductData, getAllProducts } from "@/services/api";
 
 interface Product {
   id: string;
@@ -81,7 +82,17 @@ const transformProduct = (product: ProductData): Product => {
   };
 };
 
-export function LatestProducts() {
+// دالة لخلط المنتجات عشوائياً
+const shuffleProducts = (products: Product[]): Product[] => {
+  const shuffled = [...products];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+export function YouMayAlsoLike() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(8);
@@ -95,9 +106,8 @@ export function LatestProducts() {
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
-  // جلب المنتجات من API
+  // جلب المنتجات من API (منتجات عشوائية من الأكثر مبيعاً)
   const fetchProducts = useCallback(async (page: number, append: boolean = false) => {
-    // منع جلب البيانات إذا كان هناك جلب جاري
     if (fetchingRef.current) return;
     
     try {
@@ -109,16 +119,40 @@ export function LatestProducts() {
         setIsLoadingMore(true);
       }
       
-      const productsData = await getNewProducts(page, 12);
+      // جلب المنتجات من API (الأكثر مبيعاً أو الأحدث)
+      let productsData: ProductData[] = [];
       
-      // التحقق من أن المكون لا يزال موجوداً قبل تحديث الحالة
+      try {
+        // محاولة جلب المنتجات الأكثر مبيعاً أولاً
+        productsData = await getMostSellingProducts(page, 12);
+        
+        // إذا لم تكن هناك منتجات، جلب المنتجات الجديدة
+        if (productsData.length === 0) {
+          productsData = await getNewProducts(page, 12);
+        }
+        
+        // إذا كان لا يزال لا توجد منتجات، جلب جميع المنتجات
+        if (productsData.length === 0) {
+          const { products: allProducts } = await getAllProducts(page, 12);
+          productsData = allProducts;
+        }
+      } catch (err) {
+        console.error('Error fetching from most selling, trying new products:', err);
+        productsData = await getNewProducts(page, 12);
+      }
+      
       if (!isMounted.current) return;
       
       if (productsData.length === 0) {
         setHasMore(false);
       }
       
-      const transformedProducts = productsData.map(transformProduct);
+      let transformedProducts = productsData.map(transformProduct);
+      
+      // خلط المنتجات عشوائياً لظهور منتجات مختلفة في كل مرة
+      if (page === 1 && !append) {
+        transformedProducts = shuffleProducts(transformedProducts);
+      }
       
       if (append) {
         setProducts(prev => [...prev, ...transformedProducts]);
@@ -133,7 +167,7 @@ export function LatestProducts() {
       console.error('Error fetching products:', err);
       if (!isMounted.current) return;
       setError('فشل في تحميل المنتجات');
-      setProducts([]); // عدم استخدام بيانات افتراضية
+      setProducts([]);
     } finally {
       if (!isMounted.current) return;
       setIsInitialLoading(false);
@@ -146,10 +180,9 @@ export function LatestProducts() {
   useEffect(() => {
     isMounted.current = true;
     
-    // استخدام setTimeout لتأخير التحميل ومنع التحديثات المتزامنة
     const timeoutId = setTimeout(() => {
       fetchProducts(1, false);
-    }, 0);
+    }, 100); // تأخير بسيط لتجنب التحميل المتزامن مع أحدث المنتجات
     
     return () => {
       isMounted.current = false;
@@ -171,7 +204,7 @@ export function LatestProducts() {
   // عرض السبينر الرئيسي أثناء التحميل الأولي
   if (isInitialLoading) {
     return (
-      <section className="py-6 md:py-12 bg-white">
+      <section className="py-6 md:py-12 bg-gray-50">
         <div className="container-custom">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="flex flex-col items-center gap-4">
@@ -180,7 +213,7 @@ export function LatestProducts() {
                 <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
-                جاري تحميل أحدث المنتجات...
+                جاري تحميل المنتجات...
               </p>
             </div>
           </div>
@@ -192,7 +225,7 @@ export function LatestProducts() {
   // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-6 md:py-12 bg-white">
+      <section className="py-6 md:py-12 bg-gray-50">
         <div className="container-custom">
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
@@ -209,22 +242,23 @@ export function LatestProducts() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-white">
+    <section className="py-6 md:py-12 bg-gray-50">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
           <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
-            أحدث المنتجات
+            قد يعجبك أيضاً
           </h2>
           <Link 
             href="/products" 
-            className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
+            className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
           >
             عرض المزيد
+            <ChevronLeft className="w-4 h-4" />
           </Link>
         </div>
 
-        {/* Products Grid - تعديل لضمان أحجام متساوية */}
+        {/* Products Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
           {visibleProducts.map((product, index) => (
             <div

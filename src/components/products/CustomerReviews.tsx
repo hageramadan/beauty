@@ -1,0 +1,290 @@
+// components/home/CustomerReviews.tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Star,
+  StarHalf,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { AiFillLike } from "react-icons/ai";
+import { AiOutlineDislike } from "react-icons/ai";
+import { FaCircleCheck } from "react-icons/fa6";
+import { BsThreeDots } from "react-icons/bs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getProductReviews, ReviewData } from "@/services/api";
+
+interface CustomerReviewsProps {
+  productId: number;
+}
+
+// مكون عرض التقييم بالنجوم
+const StarRating = ({ rating }: { rating: number }) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 !== 0;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[...Array(fullStars)].map((_, i) => (
+        <Star
+          key={`full-${i}`}
+          className="w-5 h-5 fill-[#FFCC00] text-[#FFCC00]"
+        />
+      ))}
+      {hasHalfStar && (
+        <StarHalf className="w-5 h-5 fill-[#FFCC00] text-[#FFCC00]" />
+      )}
+      {[...Array(emptyStars)].map((_, i) => (
+        <Star key={`empty-${i}`} className="w-5 h-5 text-gray-300" />
+      ))}
+    </div>
+  );
+};
+
+// مكون البطاقة الواحدة
+const ReviewCard = ({ review }: { review: ReviewData }) => {
+  // تنسيق التاريخ
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+      {/* معلومات المستخدم والتقييم */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="gap-3">
+          <div>
+            <StarRating rating={review.rating} />
+          </div>
+          <div className="flex items-center gap-1 mt-2">
+            <h4 className="text-[#000000ce] text-[20px]">{review.user.name}</h4>
+            {review.user.verified && (
+              <FaCircleCheck className="text-[#01AB31] w-4.5 h-4.5" />
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          <BsThreeDots className="w-6 h-6" />
+        </div>
+      </div>
+
+      {/* التعليق */}
+      <p className="text-[#00000099] text-base leading-relaxed mb-4">
+        {review.comment}
+      </p>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 text-base text-gray-500">
+          <span>{formatDate(review.created_at)}</span>
+        </div>
+
+        {/* عدد الإعجابات */}
+        <div className="flex items-center gap-4">
+          <div className="border rounded-[8px] border-[#E4E9EE] p-2">
+            <AiOutlineDislike className="h-5 w-5" />
+          </div>
+          <div className="flex items-center gap-1 border rounded-[8px] border-[#E4E9EE] p-2">
+            <span>0</span>
+            <AiFillLike className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export function CustomerReviews({ productId }: CustomerReviewsProps) {
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [averageRating, setAverageRating] = useState(0);
+  const [sortBy, setSortBy] = useState<"الأحدث" | "الأقدم" | "أعلى تقييم" | "أقل تقييم">("الأحدث");
+  const reviewsPerPage = 5;
+
+  // جلب التقييمات من الـ API
+  const fetchReviews = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getProductReviews(productId, currentPage, reviewsPerPage, sortBy);
+      setReviews(result.reviews);
+      setTotalReviews(result.totalReviews);
+      setAverageRating(result.averageRating);
+      if (result.pagination) {
+        setTotalPages(result.pagination.last_page);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // جلب البيانات عند تغيير الصفحة أو الترتيب أو المنتج
+  useEffect(() => {
+    fetchReviews();
+  }, [productId, currentPage, sortBy]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSortChange = (value: string|null) => {
+    setSortBy(value as typeof sortBy);
+    setCurrentPage(1);
+  };
+
+  // حساب إحصائيات التقييمات من البيانات المستلمة
+  const getRatingPercentage = (ratingValue: number) => {
+    if (totalReviews === 0) return 0;
+    const count = reviews.filter(r => Math.floor(r.rating) === ratingValue).length;
+    return (count / totalReviews) * 100;
+  };
+
+  const fiveStarPercentage = getRatingPercentage(5);
+  const fourStarPercentage = getRatingPercentage(4);
+  const threeStarPercentage = getRatingPercentage(3);
+  const twoStarPercentage = getRatingPercentage(2);
+  const oneStarPercentage = getRatingPercentage(1);
+
+  // خيارات الترتيب
+  const sortOptions = [
+    { value: "الأحدث", label: "الأحدث" },
+    { value: "الأقدم", label: "الأقدم" },
+    { value: "أعلى تقييم", label: "أعلى تقييم" },
+    { value: "أقل تقييم", label: "أقل تقييم" },
+  ];
+
+  if (isLoading && reviews.length === 0) {
+    return (
+      <section className="py-6 md:py-12 bg-white">
+        <div className="container-custom">
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">جاري تحميل التقييمات...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-6 md:py-12 bg-white">
+      <div className="container-custom">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="flex gap-1 items-center">
+            <h1 className="text-xl font-bold text-[#9C150C]">
+              تقييمات المنتج
+            </h1>
+            <div className="text-sm font-bold text-[#3A4980]">
+              ({totalReviews} تقييم)
+            </div>
+          </div>
+          
+          <div className="flex gap-3 items-center">
+            {/* خيارات الترتيب */}
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#EC221F] focus:ring-offset-0">
+                <SelectValue placeholder="ترتيب حسب" />
+              </SelectTrigger>
+              <SelectContent className="bg-white rounded-xl shadow-lg border-gray-100">
+                {sortOptions.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="cursor-pointer hover:bg-red-50 hover:text-[#EC221F] focus:bg-red-50 focus:text-[#EC221F]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{option.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <button className="bg-black text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-gray-800 transition-all duration-300">
+              أضف تقييمًا
+            </button>
+          </div>
+        </div>
+
+     
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* قائمة التقييمات */}
+          <div className="lg:col-span-2">
+            {reviews.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl">
+                <p className="text-gray-500">لا توجد تقييمات لهذا المنتج بعد</p>
+                <button className="mt-4 bg-[#EC221F] text-white px-6 py-2 rounded-full text-sm">
+                  كن أول من يقيم المنتج
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    {[...Array(totalPages)].map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handlePageChange(i + 1)}
+                        className={`w-8 h-8 rounded-lg transition ${
+                          currentPage === i + 1
+                            ? "bg-[#EC221F] text-white"
+                            : "border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

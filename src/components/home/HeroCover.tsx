@@ -188,7 +188,7 @@ export function Hero() {
       <section className="relative w-full h-[70vh] md:h-[80vh] overflow-hidden bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] text-[#EC221F]"></div>
-          <p className="mt-4 text-gray-600">جاري تحميل اسليدر...</p>
+     
         </div>
       </section>
     );
@@ -199,7 +199,7 @@ export function Hero() {
     return (
       <section className="relative w-full h-[70vh] md:h-[80vh] overflow-hidden bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">عذراً، حدث خطأ في تحميل اسليدر</p>
+          <p className="text-red-600">عذراً، حدث خطأ   </p>
           <button 
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-[#EC221F] text-white rounded-lg hover:bg-[#d11d1a] transition"

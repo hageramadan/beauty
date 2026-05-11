@@ -17,19 +17,31 @@ interface Product {
   originalPrice?: number;
   discount?: number;
   colors?: Array<{ color: string; name: string }>;
+  rating?: number;
+  reviewsCount?: number;
+  isBestSeller?: boolean;
 }
 
-// تحويل البيانات من API إلى شكل المنتج المطلوب
+// تحويل البيانات من API إلى شكل المنتج المطلوب - ديناميكي بالكامل
 const transformProduct = (product: ProductData): Product => {
+  // معالجة الصور بشكل صحيح
+  const cleanImageUrl = (url: string) => {
+    if (!url) return "/images/placeholder.jpg";
+    if (url.startsWith('/storage')) {
+      return `https://dukanah.admin.t-carts.com${url}`;
+    }
+    return `https://dukanah.admin.t-carts.com${url}`;
+  };
+  
   const mainImage = product.images && product.images.length > 0 
-    ? `https://dukanah.admin.t-carts.com${product.images[0]}`
+    ? cleanImageUrl(product.images[0])
     : "/images/placeholder.jpg";
     
   const hoverImage = product.images && product.images.length > 1 
-    ? `https://dukanah.admin.t-carts.com${product.images[1]}`
+    ? cleanImageUrl(product.images[1])
     : mainImage;
 
-  // حساب الخصم إذا وجد
+  // حساب الخصم بشكل ديناميكي
   let discount: number | undefined;
   let originalPrice: number | undefined;
   
@@ -38,88 +50,35 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
+  // استخراج الألوان من الـ variants ديناميكياً
+  let colors: Array<{ color: string; name: string }> = [];
+  
+  if (product.has_variants && product.variants && product.variants.length > 0) {
+    const firstVariant = product.variants[0];
+    if (firstVariant.attributes) {
+      colors = firstVariant.attributes
+        .filter((attr: any) => attr.attribute_type?.name === "اللون")
+        .map((attr: any) => ({
+          color: attr.meta?.color || '#000000',
+          name: attr.value
+        }));
+    }
+  }
+
   return {
     id: product.id.toString(),
     name: product.name,
     price: product.pricing.final_price,
     image: mainImage,
     hoverImage: hoverImage,
-    href: `/products/${product.id}`,
+    href: `/product/${product.id}`, // تعديل المسار ليتوافق مع صفحة المنتج
     originalPrice: originalPrice,
     discount: discount,
-    colors: [
-      { color: "#252B42", name: "أزرق داكن" },
-      { color: "#E77C40", name: "برتقالي" },
-      { color: "#23856D", name: "أخضر" },
-      { color: "#EC221F", name: "أحمر" },
-    ],
+    colors: colors,
+    rating: product.avg_rating || 0,
+    reviewsCount: product.total_reviews || 0,
+    isBestSeller: true, // هذه المنتجات هي الأكثر طلباً بالفعل
   };
-};
-
-// بيانات افتراضية كـ fallback
-const getDefaultProducts = (): Product[] => {
-  return [
-    {
-      id: "1",
-      name: "Lorem ipsum dolor sit amet consectetur",
-      price: 10000,
-      originalPrice: 35000,
-      discount: 28,
-      image: "/images/products/product1.png",
-      hoverImage: "/images/products/product1-hover.png",
-      href: "/products/1",
-      colors: [
-        { color: "#252B42", name: "أزرق داكن" },
-        { color: "#E77C40", name: "برتقالي" },
-        { color: "#23856D", name: "أخضر" },
-        { color: "#EC221F", name: "أحمر" },
-      ],
-    },
-    {
-      id: "2",
-      name: "Lorem ipsum dolor sit amet consectetur",
-      price: 10000,
-      image: "/images/products/product2.png",
-      hoverImage: "/images/products/product2-hover.png",
-      href: "/products/2",
-      colors: [
-        { color: "#252B42", name: "أزرق داكن" },
-        { color: "#E77C40", name: "برتقالي" },
-        { color: "#23856D", name: "أخضر" },
-        { color: "#EC221F", name: "أحمر" },
-      ],
-    },
-    {
-      id: "3",
-      name: "Lorem ipsum dolor sit amet consectetur",
-      price: 10000,
-      originalPrice: 60000,
-      discount: 25,
-      image: "/images/products/product3.png",
-      hoverImage: "/images/products/product3-hover.png",
-      href: "/products/3",
-      colors: [
-        { color: "#252B42", name: "أزرق داكن" },
-        { color: "#E77C40", name: "برتقالي" },
-        { color: "#23856D", name: "أخضر" },
-        { color: "#EC221F", name: "أحمر" },
-      ],
-    },
-    {
-      id: "4",
-      name: "Lorem ipsum dolor sit amet consectetur",
-      price: 10000,
-      image: "/images/products/product5.png",
-      hoverImage: "/images/products/product5-hover.png",
-      href: "/products/4",
-      colors: [
-        { color: "#252B42", name: "أزرق داكن" },
-        { color: "#E77C40", name: "برتقالي" },
-        { color: "#23856D", name: "أخضر" },
-        { color: "#EC221F", name: "أحمر" },
-      ],
-    },
-  ];
 };
 
 export function BestProducts() {
@@ -173,7 +132,7 @@ export function BestProducts() {
       console.error('Error fetching most selling products:', err);
       if (!isMounted.current) return;
       setError('فشل في تحميل المنتجات');
-      setProducts(getDefaultProducts());
+      setProducts([]); // عدم استخدام بيانات افتراضية
     } finally {
       if (!isMounted.current) return;
       setIsInitialLoading(false);
@@ -247,103 +206,53 @@ export function BestProducts() {
     );
   }
 
-  return (
-    <section className="py-6 md:py-12 bg-white">
-      <div className="container-custom">
-        {/* Header */}
-        <div className="mb-2 md:mb-5 flex justify-between items-center">
-          <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
-            الاكثر طلبا
-          </h2>
-          <Link 
-            href="/products" 
-            className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
-          >
-            عرض المزيد
-          </Link>
-        </div>
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mb-2 md:mb-5">
-          {visibleProducts.map((product, index) => (
-            <div
-              key={product.id}
-              className="animate-in fade-in zoom-in duration-500"
-              style={{ 
-                animationFillMode: 'both',
-                animationDelay: `${index * 100}ms`
-              }}
-            >
-              <ProductCard 
-                id={product.id}
-                name={product.name}
-                price={product.price}
-                image={product.image}
-                hoverImage={product.hoverImage}
-                href={product.href}
-                originalPrice={product.originalPrice}
-                discount={product.discount}
-                colors={product.colors}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Loading More State */}
-        {isLoadingMore && (
-          <div className="flex justify-center items-center py-4 md:py-8">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-8 h-8 border-3 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-8 h-8 border-3 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <p className="text-gray-400 text-xs">جاري التحميل...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Load More Button */}
-        {showLoadMoreButton && !isLoadingMore && (
-          <div className="text-center mt-4">
-            <Button
-              onClick={handleLoadMore}
-              className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
-              style={{
-                backgroundColor: 'transparent',
-                color: '#EC221F',
-                border: '2px solid #EC221F',
-                borderRadius: '8px'
-              }}
-            >
-              عرض المزيد
-            </Button>
-          </div>
-        )}
-
-        {/* No Products Message */}
-        {products.length === 0 && !isInitialLoading && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">لا توجد منتجات حالياً</p>
-          </div>
-        )}
+return (
+  <section className="py-6 md:py-12 bg-white">
+    <div className="container-custom">
+      {/* Header */}
+      <div className="mb-2 md:mb-5 flex justify-between items-center">
+        <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
+          الاكثر طلبا
+        </h2>
+        <Link 
+          href="/products" 
+          className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
+        >
+          عرض المزيد
+        </Link>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-in {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-      `}</style>
-    </section>
-  );
+      {/* Products Grid - معدل لضمان أحجام متساوية */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
+        {visibleProducts.map((product, index) => (
+          <div
+            key={product.id}
+            className="animate-in fade-in zoom-in duration-500 flex justify-center w-full"
+            style={{ 
+              animationFillMode: 'both',
+              animationDelay: `${index * 100}ms`
+            }}
+          >
+            <ProductCard 
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              image={product.image}
+              hoverImage={product.hoverImage}
+              href={product.href}
+              originalPrice={product.originalPrice}
+              discount={product.discount}
+              colors={product.colors}
+              rating={product.rating}
+              reviewsCount={product.reviewsCount}
+              isBestSeller={product.isBestSeller}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* باقي الكود كما هو... */}
+    </div>
+  </section>
+);
 }

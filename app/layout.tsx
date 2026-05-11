@@ -5,7 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
-import { SubNavbar } from "@/components/layout/SubNavbar";
+import { Toaster } from "react-hot-toast";
 
 const almarai = Almarai({
   subsets: ["arabic"],
@@ -30,8 +30,15 @@ export default function RootLayout({
           <FavoritesProvider>
           
             <Navbar />
-            <main className="min-h-screen">{children}</main>
-            {/* <Footer /> */}
+            <main 
+            >{children}</main>
+             <Toaster
+            
+          position="top-center" // مكان ظهور الإشعار
+          reverseOrder={false}
+          
+        />
+            <Footer />
           </FavoritesProvider>
         </CartProvider>
       </body>

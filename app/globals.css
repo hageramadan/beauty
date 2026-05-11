@@ -9,6 +9,58 @@
 }
 
 
+/* app/globals.css */
+/* main {
+  padding-top: 5rem; 
+  
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding-top: 6rem; 
+  }
+} */
+
+.page-with-padding {
+  padding-top: 5rem; /* 80px */
+}
+
+@media (min-width: 1024px) {
+  .page-with-padding {
+    padding-top: 6rem; /* 96px */
+  }
+}
+
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.animate-slide-out {
+  animation: slideOut 0.3s ease-out forwards;
+}
+
+
+
+/* app/globals.css */
 
  @media (maxWidth: 640px){
 .custom-width-192{
