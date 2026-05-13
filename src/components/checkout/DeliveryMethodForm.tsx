@@ -8,7 +8,7 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
+      
         طريقة الاستلام
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

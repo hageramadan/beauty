@@ -1,46 +1,111 @@
 // components/checkout/PaymentMethodForm.tsx
 "use client";
 
-import { CreditCard, Banknote, Wallet } from "lucide-react";
-import { PaymentMethodFormProps } from "./types";
+import { CreditCard, DollarSign, Wallet, Landmark } from "lucide-react";
 
-const paymentMethods = [
-  { value: "card", label: "مدى", icon: CreditCard },
-  { value: "credit", label: "بطاقة ائتمان", icon: CreditCard },
-  { value: "cod", label: "الدفع عند التسليم", icon: Banknote },
-  { value: "wallet", label: "محفظة", icon: Wallet },
-];
+interface PaymentMethodFormProps {
+  paymentMethod: string;
+  onPaymentMethodChange: (method: string) => void;
+}
 
-export default function PaymentMethodForm({ paymentMethod, onPaymentMethodChange }: PaymentMethodFormProps) {
+export default function PaymentMethodForm({
+  paymentMethod,
+  onPaymentMethodChange,
+}: PaymentMethodFormProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
+      
         طريقة الدفع
       </h2>
-      <div className="grid grid-cols-2 gap-3">
-        {paymentMethods.map((method) => {
-          const Icon = method.icon;
-          return (
-            <label
-              key={method.value}
-              className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition ${
-                paymentMethod === method.value
-                  ? "border-[#EC221F] bg-red-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <input
-                type="radio"
-                checked={paymentMethod === method.value}
-                onChange={() => onPaymentMethodChange(method.value)}
-                className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
-              />
-              <Icon className="w-4 h-4 text-gray-600" />
-              <span className="text-sm text-gray-800">{method.label}</span>
-            </label>
-          );
-        })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* الدفع عند الاستلام */}
+        <label
+          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+            paymentMethod === "cash"
+              ? "border-[#EC221F] bg-red-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+        >
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="cash"
+            checked={paymentMethod === "cash"}
+            onChange={() => onPaymentMethodChange("cash")}
+            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+          />
+          <DollarSign className="w-5 h-5 text-green-600" />
+          <div>
+            <p className="font-medium text-gray-800">الدفع عند الاستلام</p>
+          </div>
+        </label>
+
+        {/* بطاقة ائتمان */}
+        <label
+          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+            paymentMethod === "card"
+              ? "border-[#EC221F] bg-red-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+        >
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="card"
+            checked={paymentMethod === "card"}
+            onChange={() => onPaymentMethodChange("card")}
+            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+          />
+          <CreditCard className="w-5 h-5 text-blue-600" />
+          <div>
+            <p className="font-medium text-gray-800">بطاقة ائتمان</p>
+          </div>
+        </label>
+
+        {/* مدى (Mada) */}
+        <label
+          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+            paymentMethod === "mada"
+              ? "border-[#EC221F] bg-red-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+        >
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="mada"
+            checked={paymentMethod === "mada"}
+            onChange={() => onPaymentMethodChange("mada")}
+            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+          />
+          <Landmark className="w-5 h-5 text-purple-600" />
+          <div>
+            <p className="font-medium text-gray-800">مدى</p>
+          </div>
+        </label>
+
+        {/* محفظة */}
+        <label
+          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+            paymentMethod === "wallet"
+              ? "border-[#EC221F] bg-red-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+        >
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="wallet"
+            checked={paymentMethod === "wallet"}
+            onChange={() => onPaymentMethodChange("wallet")}
+            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+          />
+          <Wallet className="w-5 h-5 text-orange-600" />
+          <div>
+            <p className="font-medium text-gray-800">محفظة</p>
+          </div>
+        </label>
       </div>
     </div>
   );

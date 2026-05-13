@@ -16,10 +16,17 @@ export interface CartItem {
 export interface CheckoutFormData {
   fullName: string;
   phone: string;
-  address: string;
+   deliveryAddress: {
+    street: string;
+    city: string;
+    governorate: string;
+    buildingNo: string;
+    floorNo: string;
+    apartmentNo: string;
+  };
   notes: string;
   deliveryMethod: "pickup" | "delivery";
-  paymentMethod: "card" | "credit" | "cod" | "wallet";
+  paymentMethod: "cash" | "card" | "mada" | "wallet";
 }
 
 // ✅ واجهة جديدة لملخص سلة التسوق

@@ -1,6 +1,7 @@
+// components/products/ProductCard.tsx (معدل)
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
@@ -25,6 +26,8 @@ interface ProductCardProps {
   rating?: number;
   reviewsCount?: number;
   isBestSeller?: boolean;
+  isFavorite?: boolean; // جديد - للتحكم من الخارج
+  onFavoriteToggle?: (id: string, isFavorite: boolean) => void; // جديد - عند الضغط على القلب
 }
 
 // ألوان افتراضية في حالة عدم وجود ألوان من API
@@ -47,11 +50,15 @@ export function ProductCard({
   colors,
   rating = 0,
   reviewsCount = 0,
-  isBestSeller = false
+  isBestSeller = false,
+  isFavorite: externalIsFavorite = false, // قيمة افتراضية من الخارج
+  onFavoriteToggle
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(externalIsFavorite);
   const [currentImage, setCurrentImage] = useState(image);
+
+ 
 
   // استخدام الألوان من API أو الألوان الافتراضية إذا كانت فارغة
   const displayColors = colors && colors.length > 0 ? colors : DEFAULT_COLORS;
@@ -59,7 +66,9 @@ export function ProductCard({
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    const newFavoriteState = !isFavorite;
+    setIsFavorite(newFavoriteState);
+    onFavoriteToggle?.(id, newFavoriteState);
   };
 
   const handleMouseEnter = () => {

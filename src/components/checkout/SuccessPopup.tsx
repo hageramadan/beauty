@@ -1,0 +1,105 @@
+// components/checkout/SuccessPopup.tsx
+"use client";
+
+import { CheckCircle, X, Package, Calendar, MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+interface SuccessPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+  orderNumber: string;
+  orderDetails?: {
+    itemsCount: number;
+    total: number;
+    deliveryDate?: string;
+    address?: string;
+  };
+}
+
+export default function SuccessPopup({ 
+  isOpen, 
+  onClose, 
+  orderNumber,
+  orderDetails 
+}: SuccessPopupProps) {
+  const router = useRouter();
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* الخلفية المعتمة */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        {/* البوب اب */}
+        <div className="bg-white rounded-2xl max-w-md w-full shadow-xl animate-in fade-in zoom-in duration-300">
+          {/* رأس البوب اب */}
+          <div className="relative p-6 text-center border-b border-gray-100">
+            <button
+              onClick={onClose}
+              className="absolute left-4 top-4 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex justify-center mb-3">
+              <div className="bg-green-100 rounded-full p-3">
+                <CheckCircle className="w-12 h-12 text-green-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">تم إتمام طلبك بنجاح</h3>
+            <p className="text-gray-500 text-sm mt-2">
+              شكراً لتسوقك مع <span className="font-semibold text-[#EC221F]">متجرك</span>، 
+              طلبك قيد التحضير الآن.
+            </p>
+          </div>
+
+          {/* محتوى البوب اب */}
+          <div className="p-6 space-y-4">
+            {/* رقم الطلب */}
+            <div className="bg-gray-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
+              <p className="text-2xl font-bold text-gray-800">{orderNumber}</p>
+            </div>
+
+         
+          </div>
+
+          {/* أزرار */}
+          <div className="p-6 pt-0 flex gap-3">
+            <button
+              onClick={() => {
+                onClose();
+                router.push("/");
+              }}
+              className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-[#2c2c2c] transition shadow-sm"
+            >
+              العودة للرئيسية
+            </button>
+            <button
+              onClick={() => {
+                onClose();
+                router.push("/account/orders");
+              }}
+              className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition"
+            >
+              طلباتي
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes zoom-in {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-in {
+          animation: fade-in 0.2s ease-out, zoom-in 0.2s ease-out;
+        }
+      `}</style>
+    </>
+  );
+}

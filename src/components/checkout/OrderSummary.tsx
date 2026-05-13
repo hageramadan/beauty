@@ -20,9 +20,9 @@ export default function OrderSummary({
     : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm sticky top-20">
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm sticky top-20 mb-4 md:mb-0">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
+    
         ملخص الطلب
       </h2>
 

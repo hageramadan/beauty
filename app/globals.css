@@ -21,6 +21,43 @@
   }
 } */
 
+/* في globals.css */
+:root {
+  --ring: 0 0% 0%; /* تغيير لون الـ ring للأسود */
+}
+
+/* أو إضافة هذا الكود */
+[data-radix-select-content] [data-state="checked"] {
+  background-color: #e5e7eb !important;
+  color: black !important;
+}
+
+/* status colors */
+.status-pending {
+  background-color: #A0AEC03D;
+  color: #A0AEC0;
+}
+.status-processing {
+  background-color: #ED89363D;
+  color: #ED8936;
+}
+.status-ready {
+  background-color: #9F7AEA3D;
+  color: #9F7AEA;
+}
+.status-delivering {
+  background-color: #F6AD553D;
+  color: #F6AD55;
+}
+.status-delivered {
+  background-color: #48BB783D;
+  color: #48BB78;
+}
+.status-cancelled {
+  background-color: #F565653D;
+  color: #F56565;
+}
+
 .page-with-padding {
   padding-top: 5rem; /* 80px */
 }

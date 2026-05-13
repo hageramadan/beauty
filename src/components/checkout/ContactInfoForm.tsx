@@ -7,7 +7,7 @@ export default function ContactInfoForm({ formData, onFormChange }: ContactInfoF
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
+       
         معلومات الاتصال
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
