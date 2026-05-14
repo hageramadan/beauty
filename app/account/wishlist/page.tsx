@@ -3,9 +3,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Trash2, ArrowRight } from "lucide-react";
+import { Heart, Trash2, ArrowRight, X } from "lucide-react";
 import Pagination from "@/components/products/Pagination";
 import { ProductCard } from "@/components/products/ProductCard";
+import toast, { Toaster } from "react-hot-toast";
 
 // تعريف نوع المنتج في المفضلة
 interface WishlistItem {
@@ -220,6 +221,14 @@ export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State للـ popup المخصص
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState<{ show: boolean; id: string | null; name: string }>({
+    show: false,
+    id: null,
+    name: "",
+  });
 
   // محاكاة تحميل البيانات
   useEffect(() => {
@@ -229,19 +238,55 @@ export default function WishlistPage() {
     }, 500);
   }, []);
 
-  // معالج الضغط على القلب - حذف المنتج من المفضلة
+  // معالج الضغط على القلب - عرض popup تأكيد الحذف
   const handleFavoriteToggle = (id: string, isFavorite: boolean) => {
-    // إذا تم إلغاء التفضيل (القلب أصبح غير مفضل)
     if (!isFavorite) {
-      setWishlistItems(prev => prev.filter(item => item.id !== id));
+      const item = wishlistItems.find(i => i.id === id);
+      if (item) {
+        setShowRemoveConfirm({
+          show: true,
+          id: id,
+          name: item.name,
+        });
+      }
     }
   };
 
-  // حذف جميع المنتجات من المفضلة
-  const handleClearAll = () => {
-    if (confirm('هل أنت متأكد من حذف جميع المنتجات من قائمة المفضلة؟')) {
-      setWishlistItems([]);
+  // تأكيد حذف منتج واحد
+  const confirmRemoveItem = () => {
+    if (showRemoveConfirm.id) {
+      setWishlistItems(prev => prev.filter(item => item.id !== showRemoveConfirm.id));
+      toast.success("تم إزالة المنتج من المفضلة", {
+        duration: 2000,
+        position: "top-center",
+      });
     }
+    setShowRemoveConfirm({ show: false, id: null, name: "" });
+  };
+
+  // إلغاء حذف منتج واحد
+  const cancelRemoveItem = () => {
+    setShowRemoveConfirm({ show: false, id: null, name: "" });
+  };
+
+  // حذف جميع المنتجات من المفضلة - عرض popup
+  const handleClearAll = () => {
+    setShowClearConfirm(true);
+  };
+
+  // تأكيد حذف الكل
+  const confirmClearAll = () => {
+    setWishlistItems([]);
+    setShowClearConfirm(false);
+    toast.success("تم حذف جميع المنتجات من المفضلة", {
+      duration: 2000,
+      position: "top-center",
+    });
+  };
+
+  // إلغاء حذف الكل
+  const cancelClearAll = () => {
+    setShowClearConfirm(false);
   };
 
   // حساب عدد الصفحات
@@ -278,95 +323,191 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
-        {/* رأس الصفحة */}
-        <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <Heart className="w-7 h-7 text-[#EC221F] fill-current" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">قائمة المفضلة</h1>
+    <>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            fontSize: '14px',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            direction: 'rtl',
+          },
+        }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
+          {/* رأس الصفحة */}
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <Heart className="w-7 h-7 text-[#EC221F] fill-current" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">قائمة المفضلة</h1>
+              {wishlistItems.length > 0 && (
+                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm">
+                  {wishlistItems.length} منتج
+                </span>
+              )}
+            </div>
+            
             {wishlistItems.length > 0 && (
-              <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm">
-                {wishlistItems.length} منتج
-              </span>
+              <button
+                onClick={handleClearAll}
+                className="text-gray-500 hover:text-[#EC221F] transition flex items-center gap-2 text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                حذف الكل
+              </button>
             )}
           </div>
-          
-          {wishlistItems.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              className="text-gray-500 hover:text-[#EC221F] transition flex items-center gap-2 text-sm"
-            >
-              <Trash2 className="w-4 h-4" />
-              حذف الكل
-            </button>
+
+          {/* قائمة المنتجات */}
+          {wishlistItems.length === 0 ? (
+            <div className=" rounded-2xl  p-12 text-center">
+              
+              <h2 className="text-xl font-bold text-gray-800 mb-2">قائمة المفضلة فارغة</h2>
+              <p className="text-gray-500 mb-6">لم تقم بإضافة أي منتجات إلى قائمة المفضلة بعد</p>
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-2 bg-[#EC221F] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#d11d1a] transition"
+              >
+                استكشاف المنتجات
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* شبكة المنتجات */}
+              <div 
+                className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
+                style={{ justifyItems: 'center' }}
+              >
+                {paginatedItems.map((item) => (
+                  <div key={item.id} className="flex justify-center w-full">
+                    <ProductCard
+                      id={item.id}
+                      name={item.name}
+                      price={item.price}
+                      image={item.image}
+                      hoverImage={item.hoverImage}
+                      href={item.href}
+                      originalPrice={item.originalPrice}
+                      discount={item.discount}
+                      colors={item.colors}
+                      rating={item.rating}
+                      reviewsCount={item.reviewsCount}
+                      isBestSeller={item.isBestSeller}
+                      isFavorite={true}
+                      onFavoriteToggle={handleFavoriteToggle}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  lastPage={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </>
           )}
         </div>
 
-        {/* قائمة المنتجات */}
-        {wishlistItems.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-10 h-10 text-gray-300" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">قائمة المفضلة فارغة</h2>
-            <p className="text-gray-500 mb-6">لم تقم بإضافة أي منتجات إلى قائمة المفضلة بعد</p>
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 bg-[#EC221F] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#d11d1a] transition"
-            >
-              استكشاف المنتجات
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* شبكة المنتجات */}
-            <div 
-              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
-              style={{ justifyItems: 'center' }}
-            >
-              {paginatedItems.map((item) => (
-                <div key={item.id} className="flex justify-center w-full">
-                  <ProductCard
-                    id={item.id}
-                    name={item.name}
-                    price={item.price}
-                    image={item.image}
-                    hoverImage={item.hoverImage}
-                    href={item.href}
-                    originalPrice={item.originalPrice}
-                    discount={item.discount}
-                    colors={item.colors}
-                    rating={item.rating}
-                    reviewsCount={item.reviewsCount}
-                    isBestSeller={item.isBestSeller}
-                    isFavorite={true} // ✅ القلب أحمر في صفحة المفضلة
-                    onFavoriteToggle={handleFavoriteToggle} // ✅ عند الضغط يتم الحذف
-                  />
+        {/* Popup تأكيد حذف الكل */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h3 className="text-lg font-bold text-gray-800">تأكيد الحذف</h3>
+                <button
+                  onClick={cancelClearAll}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                    <Trash2 className="w-8 h-8 text-red-600" />
+                  </div>
+                  <p className="text-gray-700 text-lg font-medium mb-2">
+                    هل أنت متأكد من حذف جميع المنتجات؟
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    سيتم حذف {wishlistItems.length} منتج من قائمة المفضلة بشكل نهائي.
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                lastPage={totalPages}
-                onPageChange={handlePageChange}
-              />
-            )}
-          </>
+              <div className="flex gap-3 p-6 pt-0">
+                <button
+                  onClick={cancelClearAll}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={confirmClearAll}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[8px] hover:bg-red-700 transition"
+                >
+                  حذف الكل
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Popup تأكيد حذف منتج واحد */}
+        {showRemoveConfirm.show && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h3 className="text-lg font-bold text-gray-800">تأكيد الإزالة</h3>
+                <button
+                  onClick={cancelRemoveItem}
+                  className="text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                    <Heart className="w-8 h-8 text-red-600" />
+                  </div>
+                  <p className="text-gray-700 text-lg font-medium mb-2">
+                    هل أنت متأكد من إزالة هذا المنتج؟
+                  </p>
+                  <p className="text-gray-500 text-sm line-clamp-2">
+                    {showRemoveConfirm.name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 p-6 pt-0">
+                <button
+                  onClick={cancelRemoveItem}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={confirmRemoveItem}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[8px] hover:bg-red-700 transition"
+                >
+                  إزالة
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      <style jsx>{`
-        @media (max-width: 640px) {
-          .grid {
-            gap: 12px;
-          }
-        }
-      `}</style>
-    </div>
+    </>
   );
 }
