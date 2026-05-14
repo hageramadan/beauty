@@ -23,7 +23,10 @@ import {
   ChevronLeft,
   Download,
   Printer,
+  ChevronRight,
 } from "lucide-react";
+import { IoCopyOutline } from "react-icons/io5";
+import { FaLocationDot } from "react-icons/fa6";
 
 // تعريف نوع المنتج في المرتجع
 interface ReturnItem {
@@ -47,7 +50,14 @@ interface ReturnDetails {
   orderNumber: string;
   orderDate: string;
   requestDate: string;
-  status: "pending" | "approved" | "picked_up" | "inspected" | "refunded" | "rejected" | "cancelled";
+  status:
+    | "pending"
+    | "approved"
+    | "picked_up"
+    | "inspected"
+    | "refunded"
+    | "rejected"
+    | "cancelled";
   items: ReturnItem[];
   totalRefund: number;
   refundMethod: string;
@@ -107,18 +117,6 @@ const mockReturnDetails: Record<string, ReturnDetails> = {
         date: "1 مايو 2025 - 11:00",
         status: "تم استلام المنتج",
         description: "تم استلام المنتج من مندوب الشحن",
-        completed: true,
-      },
-      {
-        date: "2 مايو 2025 - 09:30",
-        status: "تم فحص المنتج",
-        description: "تم فحص المنتج والتأكد من مطابقته لشروط الاسترجاع",
-        completed: true,
-      },
-      {
-        date: "3 مايو 2025 - 15:45",
-        status: "تم استرداد المبلغ",
-        description: "تم استرداد المبلغ إلى محفظة التطبيق",
         completed: true,
       },
     ],
@@ -302,7 +300,8 @@ const mockReturnDetails: Record<string, ReturnDetails> = {
         completed: true,
       },
     ],
-    rejectionReason: "المنتج تم استخدامه ولا يوجد به أي عيب مصنعي، ولا ينطبق عليه سياسة الاسترجاع",
+    rejectionReason:
+      "المنتج تم استخدامه ولا يوجد به أي عيب مصنعي، ولا ينطبق عليه سياسة الاسترجاع",
     items: [
       {
         id: 7,
@@ -321,13 +320,37 @@ const mockReturnDetails: Record<string, ReturnDetails> = {
 
 // حالة المرتجع مع التنسيق
 const returnStatusConfig = {
-  pending: { label: "قيد المراجعة", color: "bg-yellow-100 text-yellow-800", icon: Clock },
-  approved: { label: "تم الموافقة", color: "bg-blue-100 text-blue-800", icon: CheckCircle },
-  picked_up: { label: "تم الاستلام", color: "bg-purple-100 text-purple-800", icon: Truck },
-  inspected: { label: "قيد الفحص", color: "bg-indigo-100 text-indigo-800", icon: PackageCheck },
-  refunded: { label: "تم الاسترداد", color: "bg-green-100 text-green-800", icon: DollarSign },
+  pending: {
+    label: "قيد المراجعة",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: Clock,
+  },
+  approved: {
+    label: "تم الموافقة",
+    color: "bg-blue-100 text-blue-800",
+    icon: CheckCircle,
+  },
+  picked_up: {
+    label: "تم الاستلام",
+    color: "bg-purple-100 text-purple-800",
+    icon: Truck,
+  },
+  inspected: {
+    label: "قيد الفحص",
+    color: "bg-indigo-100 text-indigo-800",
+    icon: PackageCheck,
+  },
+  refunded: {
+    label: "تم رد المبلغ",
+    color: "bg-green-100 text-green-800",
+    icon: DollarSign,
+  },
   rejected: { label: "مرفوض", color: "bg-red-100 text-red-800", icon: XCircle },
-  cancelled: { label: "ملغي", color: "bg-gray-100 text-gray-600", icon: AlertCircle },
+  cancelled: {
+    label: "ملغي",
+    color: "bg-gray-100 text-gray-600",
+    icon: AlertCircle,
+  },
 };
 
 export default function ReturnDetailsPage() {
@@ -343,7 +366,9 @@ export default function ReturnDetailsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <RefreshCw className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">لم يتم العثور على المرتجع</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            لم يتم العثور على المرتجع
+          </h2>
           <p className="text-gray-500 mb-6">رقم المرتجع غير موجود أو تم حذفه</p>
           <Link
             href="/account/returns"
@@ -363,9 +388,12 @@ export default function ReturnDetailsPage() {
   const getRefundStatusBadge = () => {
     switch (returnDetails.refundStatus) {
       case "completed":
-        return { label: "تم الاسترداد", color: "bg-green-100 text-green-800" };
+        return { label: "تم رد المبلغ", color: "bg-green-100 text-green-800" };
       case "processing":
-        return { label: "جاري الاسترداد", color: "bg-yellow-100 text-yellow-800" };
+        return {
+          label: "جاري رد المبلغ",
+          color: "bg-yellow-100 text-yellow-800",
+        };
       default:
         return { label: "في الانتظار", color: "bg-gray-100 text-gray-600" };
     }
@@ -382,20 +410,9 @@ export default function ReturnDetailsPage() {
             href="/account/returns"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-[#EC221F] transition text-sm sm:text-base"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5" />
             العودة إلى المرتجعات
           </Link>
-          
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              <Printer className="w-4 h-4" />
-              طباعة
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              <Download className="w-4 h-4" />
-              تحميل PDF
-            </button>
-          </div>
         </div>
 
         {/* العنوان الرئيسي */}
@@ -403,19 +420,10 @@ export default function ReturnDetailsPage() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <RefreshCw className="w-7 h-7 text-[#EC221F]" />
-              <h1 className="text-2xl font-bold text-gray-800">تفاصيل المرتجع</h1>
+              <h1 className="text-2xl font-bold text-gray-800">
+                تفاصيل المرتجع
+              </h1>
             </div>
-            <div className="flex flex-wrap gap-3 text-sm text-gray-500">
-              <span>رقم المرتجع: {returnDetails.returnNumber}</span>
-              <span>•</span>
-              <span>الطلب: {returnDetails.orderNumber}</span>
-              <span>•</span>
-              <span>تاريخ الطلب: {returnDetails.orderDate}</span>
-            </div>
-          </div>
-          <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${status?.color}`}>
-            <StatusIcon className="w-4 h-4" />
-            {status?.label}
           </div>
         </div>
 
@@ -423,67 +431,109 @@ export default function ReturnDetailsPage() {
           {/* العمود الأيمن - تفاصيل المرتجع */}
           <div className="lg:col-span-2 space-y-6">
             {/* المنتجات المرتجعة */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
-                المنتجات المرتجعة
-              </h2>
-              <div className="space-y-4">
-                {returnDetails.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 pb-4 border-b border-gray-200 last:border-0">
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      {item.image ? (
-                        <Image src={item.image} alt={item.name} width={80} height={80} className="object-cover w-full h-full" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <RefreshCw className="w-6 h-6" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-800">{item.name}</h3>
-                      <p className="text-sm text-gray-500">{item.brand}</p>
-                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
-                        <span>اللون: {item.color}</span>
-                        <span>المقاس: {item.size}</span>
-                        <span>الكمية: x{item.quantity}</span>
-                      </div>
-                      <div className="mt-2 text-sm">
-                        <span className="font-semibold text-gray-800">EGP {item.price.toFixed(2)}</span>
-                        {item.originalPrice && (
-                          <span className="text-gray-400 line-through mr-2">EGP {item.originalPrice.toFixed(2)}</span>
-                        )}
-                      </div>
-                      <div className="mt-2 p-2 bg-orange-50 rounded-md">
-                        <p className="text-xs text-orange-700 flex items-start gap-1">
-                          <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                          سبب الاسترجاع: {item.returnReason}
-                        </p>
-                        {item.condition && (
-                          <p className="text-xs text-gray-600 mt-1 mr-4">
-                            حالة المنتج: {item.condition}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+            <div className="bg-white rounded-2xl p-3 ">
+              <div className="flex md:flex-row flex-col md:items-center md:justify-between">
+                <div className="flex items-center gap-1 md:gap-3 text-lg text-[#180100] font-bold mb-3">
+                  <p className="text-base md:text-xl">رقم المرتجع</p>
+                  <div className="flex items-center gap-1">
+                    <p className="">#1234</p>
+                    <IoCopyOutline className="cursor-pointer" />
                   </div>
-                ))}
+                </div>
+                <div
+                  className={`px-4 py-2 w-fit rounded-full text-sm font-medium flex items-center gap-2 ${status?.color}`}
+                >
+                  <StatusIcon className="w-4 h-4" />
+                  {status?.label}
+                </div>
+              </div>
+              <div className="border border-gray-200 p-5 rounded-xl mt-3">
+                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  المنتجات المرتجعة
+                  <span className="text-gray-500">
+                    ({returnDetails.items.reduce(
+                      (sum, item) => sum + item.quantity,
+                      0,
+                    )})
+                  </span>
+                </h2>
+                <div className="space-y-4">
+                  {returnDetails.items.map((item, idx) => (
+                    <div key={idx} className="flex gap-4">
+                      <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {item.image ? (
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            width={80}
+                            height={80}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <RefreshCw className="w-6 h-6" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 flex flex-col md:flex-row gap-3 md:justify-between items-start">
+                        <div>
+                          <p className="font-bold text-gray-800">{item.name}</p>
+                          <p className="text-sm text-gray-500">{item.brand}</p>
+                          <div className="flex gap-1 md:gap-3 mt-2 text-xs  text-black font-bold">
+                            <span className="">
+                              اللون:{" "}
+                              <span className="text-gray-500">
+                                {item.color}
+                              </span>
+                            </span>
+                            <span>
+                              المقاس:{" "}
+                              <span className="text-gray-500">
+                                {" "}
+                                {item.size}
+                              </span>
+                            </span>
+                            <span>
+                              الكمية:{" "}
+                              <span className="text-gray-500">
+                                x{item.quantity}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="">
+                          <p className="font-bold text-gray-800">
+                            EGP {item.price.toFixed(2)}
+                          </p>
+                          {item.originalPrice && (
+                            <p className="text-sm text-gray-400 line-through">
+                              EGP {item.originalPrice.toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* الجدول الزمني */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5  my-3 md:my-5">
               <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
                 حالة المرتجع
               </h2>
               <div className="relative">
                 {returnDetails.timeline.map((event, idx) => (
                   <div key={idx} className="flex gap-3 mb-6 last:mb-0">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                        event.completed ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
-                      }`}>
+                    {/* <div className="flex flex-col items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
+                          event.completed
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-200 text-gray-400"
+                        }`}
+                      >
                         {event.completed ? (
                           <CheckCircle className="w-5 h-5" />
                         ) : (
@@ -491,18 +541,50 @@ export default function ReturnDetailsPage() {
                         )}
                       </div>
                       {idx < returnDetails.timeline.length - 1 && (
-                        <div className={`w-0.5 h-full min-h-[50px] ${
-                          event.completed ? "bg-green-500" : "bg-gray-200"
-                        }`}></div>
+                        <div
+                          className={`w-0.5 h-full min-h-[50px] ${
+                            event.completed ? "bg-green-500" : "bg-gray-200"
+                          }`}
+                        ></div>
                       )}
-                    </div>
+                    </div> */}
                     <div className="flex-1 pb-4">
-                      <p className="font-medium text-gray-800">{event.status}</p>
+                      <p className="font-medium text-gray-800">
+                        {event.status}
+                      </p>
                       <p className="text-sm text-gray-500">{event.date}</p>
-                      <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {event.description}
+                      </p>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 ">
+              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ملخص المرتجع
+              </h2>
+              <div className="space-y-3">
+                <div className="flex justify-between pb-2 ">
+                  <span className="text-gray-600">تاريخ الطلب</span>
+                  <span className="font-medium">{returnDetails.orderDate}</span>
+                </div>
+                <div className="flex justify-between pb-2 ">
+                  <span className="text-gray-600">تاريخ طلب المرتجع</span>
+                  <span className="font-medium">
+                    {returnDetails.requestDate}
+                  </span>
+                </div>
+               
+                <div className="flex justify-between pb-2 ">
+                  <span className="text-gray-600">إجمالي المبلغ</span>
+                  <span className="font-bold text-lg text-[#EC221F]">
+                    EGP {returnDetails.totalRefund.toFixed(2)}
+                  </span>
+                </div>
+                
               </div>
             </div>
 
@@ -512,8 +594,12 @@ export default function ReturnDetailsPage() {
                 <div className="flex gap-3">
                   <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
                   <div>
-                    <h3 className="font-bold text-red-800 mb-1">سبب رفض المرتجع</h3>
-                    <p className="text-red-700 text-sm">{returnDetails.rejectionReason}</p>
+                    <h3 className="font-bold text-red-800 mb-1">
+                      سبب رفض المرتجع
+                    </h3>
+                    <p className="text-red-700 text-sm">
+                      {returnDetails.rejectionReason}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -523,69 +609,80 @@ export default function ReturnDetailsPage() {
           {/* العمود الأيسر - معلومات إضافية */}
           <div className="space-y-6">
             {/* ملخص المرتجع */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#EC221F]" />
-                ملخص المرتجع
-              </h2>
-              <div className="space-y-3">
-                <div className="flex justify-between pb-2 border-b border-gray-100">
-                  <span className="text-gray-600">تاريخ الطلب</span>
-                  <span className="font-medium">{returnDetails.orderDate}</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-100">
-                  <span className="text-gray-600">تاريخ طلب المرتجع</span>
-                  <span className="font-medium">{returnDetails.requestDate}</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-100">
-                  <span className="text-gray-600">عدد المنتجات</span>
-                  <span className="font-medium">
-                    {returnDetails.items.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-100">
-                  <span className="text-gray-600">إجمالي المسترد</span>
-                  <span className="font-bold text-lg text-[#EC221F]">EGP {returnDetails.totalRefund.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">طريقة الاسترداد</span>
-                  <span className="font-medium flex items-center gap-1">
-                    <CreditCard className="w-4 h-4" />
-                    {returnDetails.refundMethod}
-                  </span>
-                </div>
-                {returnDetails.totalRefund > 0 && (
-                  <div className="flex justify-between pt-2">
-                    <span className="text-gray-600">حالة الاسترداد</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${refundStatusBadge.color}`}>
-                      {refundStatusBadge.label}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                          <h2 className="text-base font-bold text-gray-800 mb-4">
+                            معلومات الاتصال
+                          </h2>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className=" font-bold">الاسم الكامل</span>
+                              <span className="font-medium text-gray-600">
+                              مصطفى محمد  مصطفى
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 text-sm">
+                              <span className="font-bold">رقم الجوال</span>
+                              <span className="font-medium text-gray-600">
+                               05xxxxxxxxx
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* طريقة الاستلام */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 my-3 md:my-6">
+                          <div className="flex items-center gap-3 mb-4">
+                           
+                            <h2 className="text-base font-bold ">
+                              طريقة الاستلام
+                            </h2>
+                          </div>
+                          <span className="font-medium text-gray-800">
+                           توصيل
+                          </span>
+                         <div className="flex items-center gap-2  border rounded-xl px-2 py-3 mt-3">
+                           <FaLocationDot className="text-gray-500"/>
+                          <p className="font-medium text-gray-400">
+                            <span className="text-black">المحافظة</span>
+                            . المدينة , الشارع , الدور , رقم الشقة  
+            
+                          </p>
+                         </div>
+                       
+                        </div>
+                        {/* طريقة الدفع */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 my-3 md:my-6">
+                          <div className="flex items-center gap-3 mb-4">
+                           
+                            <h2 className="text-base font-bold">طريقة استرداد المبلغ</h2>
+                          </div>
+                          <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
+                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                              <Image src="/images/payment/mada.png" width={40} height={40} alt="mada"/>
+                            </div>
+                            <div>
+                              <p className=" text-gray-500">
+                              مدي
+                              </p>
+                       
+                            </div>
+                          </div>
+                        </div>
 
             {/* عنوان الاستلام */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 ">
               <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-[#EC221F]" />
-                عنوان الاستلام
+               
+                 ملاحظات
               </h2>
-              <div className="space-y-2 text-sm">
-                <p className="text-gray-800">
-                  {returnDetails.pickupAddress.street && `${returnDetails.pickupAddress.street}، `}
-                  {returnDetails.pickupAddress.buildingNo && `مبنى ${returnDetails.pickupAddress.buildingNo}، `}
-                  {returnDetails.pickupAddress.floorNo && `دور ${returnDetails.pickupAddress.floorNo}، `}
-                  {returnDetails.pickupAddress.apartmentNo && `شقة ${returnDetails.pickupAddress.apartmentNo}`}
-                </p>
-                <p className="text-gray-600">
-                  {returnDetails.pickupAddress.city}، {returnDetails.pickupAddress.governorate}
-                </p>
+              <div className="border border-gray-200 rounded-xl p-2 text-[12px] text-gray-400">
+                <p>Lorem ipsum dolor sit amet consectetur. In neque non tempus amet dolor molestie. Egestas elementum a tortor fusce dictum.</p>
               </div>
+            
             </div>
 
             {/* معلومات إضافية */}
-            {(returnDetails.status === "pending" || returnDetails.status === "approved") && (
+            {(returnDetails.status === "pending" ||
+              returnDetails.status === "approved") && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
                 <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
                   <Clock className="w-5 h-5" />
@@ -598,8 +695,6 @@ export default function ReturnDetailsPage() {
                 </ul>
               </div>
             )}
-
-       
           </div>
         </div>
       </div>

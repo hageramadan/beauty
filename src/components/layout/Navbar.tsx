@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, ShoppingCart, User, Search, Menu, X, ChevronDown } from "lucide-react";
+import { Heart, ShoppingCart, User, Search, X, ChevronDown } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { PiUserBold } from "react-icons/pi";
 import { useState, useRef, useEffect } from "react";
@@ -343,7 +343,7 @@ export function Navbar() {
               aria-label="favorites"
               style={{ color: styles.textColor }}
             >
-              <Link href="/favorites">
+              <Link href="/account/wishlist">
                 <span className="text-[12px] me-1 font-bold">1</span>
                 <Heart className="h-[20px] w-[20px]" />
               </Link>
@@ -413,7 +413,7 @@ export function Navbar() {
 
             <div className="flex items-center justify-around px-3 py-2 border-b border-gray-100">
               <Link 
-                href="/favorites" 
+                href="/account/wishlist" 
                 className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >

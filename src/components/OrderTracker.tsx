@@ -27,7 +27,7 @@ export default function OrderTracker({ currentStatus }: OrderTrackerProps) {
     { label: "التغليف", icon: Box },
     { label: "في الطريق", icon: Bike },
     { label: "تم التسليم", icon: Home },
-    { label: "ملغي", icon: XCircle },
+   
   ];
 
   const currentStep = getCurrentStep();
