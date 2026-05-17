@@ -91,7 +91,6 @@ export async function getCategories(): Promise<CategoryData[]> {
     return [];
   }
 }
-// services/api.ts - أضيفي هذه الدالة
 
 interface ProductResponse {
   result: boolean;
@@ -117,7 +116,7 @@ export interface ProductData {
   type: string;
   is_active: boolean;
   name: string;
-    avg_rating: number;        // أضف هذه
+  avg_rating: number;
   total_reviews: number;  
   description: string;
   category: {
@@ -170,8 +169,6 @@ export async function getNewProducts(page: number = 1, perPage: number = 20): Pr
   }
 }
 
-// services/api.ts - أضيفي هذه الدالة
-
 interface AdResponse {
   result: boolean;
   errNum: number;
@@ -221,7 +218,6 @@ export async function getAds(): Promise<AdData[]> {
   }
 }
 
-
 export async function getMostSellingProducts(page: number = 1, perPage: number = 20): Promise<ProductData[]> {
   try {
     const response = await fetch(`${API_URL}/products/most-selling-products?page=${page}&per_page=${perPage}`, {
@@ -249,7 +245,16 @@ export async function getMostSellingProducts(page: number = 1, perPage: number =
   }
 }
 
-// services/api.ts - أضيفي هذه الدالة الجديدة
+// ========== واجهات الفلاتر والمنتجات ==========
+export interface ProductFilters {
+  price_range?: [number, number];  // [min, max]
+  brands?: number[];               // مصفوفة من ارقام البراندات
+  sizes?: string[];               // مصفوفة من المقاسات ["S", "M", "L"]
+  colors?: string[];              // مصفوفة من أكواد الألوان URL encoded
+  categories?: number[];          // مصفوفة من ارقام الكاتجوريز
+  page?: number;
+  per_page?: number;
+}
 
 interface ProductsListResponse {
   result: boolean;
@@ -270,101 +275,104 @@ interface ProductsListResponse {
   };
 }
 
+// services/api.ts - استبدلي دالة buildFiltersQueryString بهذه النسخة
+
 /**
- * دالة جلب جميع المنتجات مع دعم الفلاتر والترتيب
- * @param page رقم الصفحة (يبدأ من 1)
- * @param perPage عدد المنتجات في الصفحة الواحدة
- * @param filters الفلاتر المطبقة (اختياري)
+ * تحويل الفلاتر إلى query string بتنسيق JSON arrays (بدون ترميز)
+ */
+function buildFiltersQueryString(filters: ProductFilters): string {
+  const queryParts: string[] = [];
+  
+  if (filters.page && filters.page > 0) {
+    queryParts.push(`page=${filters.page}`);
+  }
+  
+  const perPage = filters.per_page || 20;
+  queryParts.push(`per_page=${perPage}`);
+  
+  // price_range: [5000, 10000] - بدون ترميز
+  if (filters.price_range && filters.price_range.length === 2) {
+    queryParts.push(`price_range=[${filters.price_range[0]},${filters.price_range[1]}]`);
+  }
+  
+  // brands: [4]
+  if (filters.brands && filters.brands.length > 0) {
+    queryParts.push(`brands=[${filters.brands.join(',')}]`);
+  }
+  
+  // sizes: ["S"]
+  if (filters.sizes && filters.sizes.length > 0) {
+    const formattedSizes = filters.sizes.map(s => `"${s}"`).join(',');
+    queryParts.push(`sizes=[${formattedSizes}]`);
+  }
+  
+  // colors: ["#252B42"]
+  if (filters.colors && filters.colors.length > 0) {
+    const formattedColors = filters.colors.map(c => `"${c}"`).join(',');
+    queryParts.push(`colors=[${formattedColors}]`);
+  }
+  
+  // categories: [1]
+  if (filters.categories && filters.categories.length > 0) {
+    queryParts.push(`categories=[${filters.categories.join(',')}]`);
+  }
+  
+  return queryParts.join('&');
+}
+/**
+ * الدالة الرئيسية لجلب المنتجات مع الفلاتر
+ * @param filters الفلاتر المطلوب تطبيقها
  * @returns قائمة المنتجات ومعلومات التصفح
+ * 
+ * @example
+ * // فلتر بالسعر فقط
+ * getAllProducts({ price_range: [5000, 10000], page: 1 })
+ * 
+ * // فلتر بالبراند فقط
+ * getAllProducts({ brands: [4], page: 1 })
+ * 
+ * // فلتر بالمقاسات فقط
+ * getAllProducts({ sizes: ["S"], page: 1 })
+ * 
+ * // فلتر باللون فقط
+ * getAllProducts({ colors: ["%23252B42"], page: 1 })
+ * 
+ * // فلتر بالكاتجري فقط
+ * getAllProducts({ categories: [1], page: 1 })
+ * 
+ * // عدة فلاتر معاً
+ * getAllProducts({
+ *   price_range: [5000, 10000],
+ *   brands: [4],
+ *   colors: ["%23252B42"],
+ *   categories: [1],
+ *   sizes: ["S"],
+ *   page: 1,
+ *   per_page: 20
+ * })
  */
 export async function getAllProducts(
-  page: number = 1,
-  perPage: number = 20,
-  filters?: {
-    minPrice?: number;
-    maxPrice?: number;
-    categoryIds?: number[];
-    colors?: string[];
-    sizes?: string[];
-    brands?: string[];
-    sortBy?: string; // 'newest', 'price_asc', 'price_desc', 'most_selling', 'top_rated'
-  }
-): Promise<{ products: ProductData[]; pagination: any }> {
+  filters: ProductFilters = {}
+): Promise<{ products: ProductData[]; pagination: ProductsListResponse['data']['pagination'] | null }> {
   try {
-    // بناء URL الأساسي
-    let url = `${API_URL}/products?page=${page}&per_page=${perPage}`;
-    
-    // إضافة الفلاتر إذا وجدت
-    if (filters) {
-      // فلتر السعر
-      if (filters.minPrice !== undefined && filters.minPrice > 0) {
-        url += `&min_price=${filters.minPrice}`;
-      }
-      if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
-        url += `&max_price=${filters.maxPrice}`;
-      }
-      
-      // فلتر الفئات
-      if (filters.categoryIds && filters.categoryIds.length > 0) {
-        url += `&category_ids=${filters.categoryIds.join(',')}`;
-      }
-      
-      // فلتر الألوان
-      if (filters.colors && filters.colors.length > 0) {
-        url += `&colors=${filters.colors.join(',')}`;
-      }
-      
-      // فلتر المقاسات
-      if (filters.sizes && filters.sizes.length > 0) {
-        url += `&sizes=${filters.sizes.join(',')}`;
-      }
-      
-      // فلتر العلامات التجارية
-      if (filters.brands && filters.brands.length > 0) {
-        url += `&brands=${filters.brands.join(',')}`;
-      }
-      
-      // ترتيب النتائج
-      if (filters.sortBy) {
-        switch (filters.sortBy) {
-          case 'newest':
-            url += `&sort=created_at&order=desc`;
-            break;
-          case 'price_asc':
-            url += `&sort=final_price&order=asc`;
-            break;
-          case 'price_desc':
-            url += `&sort=final_price&order=desc`;
-            break;
-          case 'most_selling':
-            url += `&sort=sold_count&order=desc`;
-            break;
-          case 'top_rated':
-            url += `&sort=rating&order=desc`;
-            break;
-        }
-      }
+    if (!filters.page || filters.page < 1) {
+      filters.page = 1;
     }
     
-    console.log('Fetching products from URL:', url); // للتتبع والتصحيح
+    const queryString = buildFiltersQueryString(filters);
+    const url = `${API_URL}/products?${queryString}`;
+    
+    console.log('Fetching products from URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // إذا كان API يحتاج توثيق، أضيفي الـ token هنا
-        // 'Authorization': `Bearer ${yourToken}`,
       },
       cache: 'no-store',
     });
 
-    // التحقق من استجابة الـ API
     if (!response.ok) {
-      if (response.status === 404) {
-        console.warn('API endpoint not found. Trying alternative endpoint...');
-        // محاولة استخدام endpoint بديل إذا كان متاحاً
-        return await getAlternativeProducts(page, perPage, filters);
-      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -380,47 +388,6 @@ export async function getAllProducts(
     }
   } catch (error) {
     console.error('Error fetching all products:', error);
-    
-    // في حالة فشل الـ API الرئيسي، نحاول استخدام endpoints بديلة
-    return await getAlternativeProducts(page, perPage, filters);
-  }
-}
-
-/**
- * دالة بديلة لجلب المنتجات باستخدام endpoints مختلفة
- * @private
- */
-async function getAlternativeProducts(
-  page: number = 1,
-  perPage: number = 20,
-  filters?: any
-): Promise<{ products: ProductData[]; pagination: any }> {
-  try {
-    // محاولة استخدام new-products endpoint أولاً
-    const newProducts = await getNewProducts(page, perPage);
-    if (newProducts && newProducts.length > 0) {
-      // إنشاء pagination وهمي بناءً على new-products
-      const mockPagination = {
-        current_page: page,
-        last_page: 5, // قيمة افتراضية
-        per_page: perPage,
-        total: 100,
-        from: (page - 1) * perPage + 1,
-        to: Math.min(page * perPage, 100),
-        next_page: page < 5 ? `${API_URL}/products/new-products?page=${page + 1}` : null,
-        previous_page: page > 1 ? `${API_URL}/products/new-products?page=${page - 1}` : null
-      };
-      
-      return {
-        products: newProducts,
-        pagination: mockPagination
-      };
-    }
-    
-    // إذا فشل الجلب، نعيد مصفوفة فارغة
-    return { products: [], pagination: null };
-  } catch (error) {
-    console.error('Error fetching alternative products:', error);
     return { products: [], pagination: null };
   }
 }
@@ -500,9 +467,6 @@ export async function getProductsByIds(productIds: number[]): Promise<ProductDat
   }
 }
 
-
-// services/api.ts - أضف هذه الواجهات والدوال في نهاية الملف
-
 // ========== واجهات (Interfaces) خاصة بـ Attributes ==========
 interface AttributeValue {
   id: number;
@@ -561,14 +525,15 @@ export async function getAttributes(): Promise<Attribute[]> {
 
 /**
  * دالة جلب الألوان فقط من الـ Attributes
- * @returns {Promise<{name: string, code: string}[]>} قائمة الألوان (الاسم والكود)
+ * @returns {Promise<{name: string, code: string, id: number}[]>} قائمة الألوان (الاسم والكود)
  */
-export async function getColors(): Promise<{ name: string; code: string }[]> {
+export async function getColors(): Promise<{ id: number; name: string; code: string }[]> {
   const attributes = await getAttributes();
   const colorAttribute = attributes.find(attr => attr.slug === 'color');
   
   if (colorAttribute && colorAttribute.values) {
     return colorAttribute.values.map(value => ({
+      id: value.id,
       name: value.value,           // مثلاً: "ازرق داكن"
       code: value.meta?.color || '#000000'  // مثلاً: "#252B42"
     }));
@@ -579,21 +544,67 @@ export async function getColors(): Promise<{ name: string; code: string }[]> {
 
 /**
  * دالة جلب المقاسات فقط من الـ Attributes
- * @returns {Promise<string[]>} قائمة المقاسات
+ * @returns {Promise<{id: number, value: string}[]>} قائمة المقاسات
  */
-export async function getSizes(): Promise<string[]> {
+export async function getSizes(): Promise<{ id: number; value: string }[]> {
   const attributes = await getAttributes();
   const sizeAttribute = attributes.find(attr => attr.slug === 'size');
   
   if (sizeAttribute && sizeAttribute.values) {
-    return sizeAttribute.values.map(value => value.value); // مثلاً: ["S", "M", "L", "XL"]
+    return sizeAttribute.values.map(value => ({
+      id: value.id,
+      value: value.value // مثلاً: ["S", "M", "L", "XL"]
+    }));
   }
   
   return [];
 }
 
-// services/api.ts - أضيفي هذه الدالة
+/**
+ * ترميز اللون للـ URL
+ */
+export function encodeColor(colorCode: string): string {
+  return encodeURIComponent(colorCode);
+}
 
+/**
+ * فك ترميز اللون من الـ URL
+ */
+export function decodeColor(encodedColor: string): string {
+  return decodeURIComponent(encodedColor);
+}
+
+/**
+ * جلب جميع البراندات من الـ API
+ */
+export async function getBrands(): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_URL}/brands`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: any = await response.json();
+    
+    if (result.result && result.errNum === 200) {
+      return result.data.brands || [];
+    } else {
+      throw new Error(result.message || 'Failed to fetch brands');
+    }
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    return [];
+  }
+}
+
+// ========== دوال المنتج الفردي ==========
 interface SingleProductResponse {
   result: boolean;
   errNum: number;
@@ -601,37 +612,6 @@ interface SingleProductResponse {
   data: {
     product: ProductData;
   };
-}
-
-export interface ProductData {
-  id: number;
-  type: string;
-  is_active: boolean;
-  name: string;
-  avg_rating: number;
-  total_reviews: number;
-  description: string;
-  category: {
-    id: number;
-    name: string;
-    subcategories: any[];
-    image: string;
-  };
-  subcategory: any;
-  brand: any;
-  has_production_date: boolean;
-  pricing: {
-    price: number;
-    has_discount: boolean;
-    discount_type: string | null;
-    discount_value: number | null;
-    price_after_discount: number | null;
-    final_price: number;
-  };
-  has_variants: boolean;
-  variants: any;
-  quantity: number;
-  images: string[];
 }
 
 /**
@@ -675,7 +655,6 @@ export function extractColorsFromProduct(product: ProductData): { name: string; 
   const colors: { name: string; code: string }[] = [];
   
   if (product.has_variants && product.variants?.length > 0) {
-    // استخراج الألوان من الـ variants
     product.variants.forEach((variant: any) => {
       if (variant.attributes) {
         variant.attributes.forEach((attr: any) => {
@@ -758,7 +737,6 @@ export function getDiscountPercentage(product: ProductData): number | null {
   return null;
 }
 
-
 // ========== واجهات (Interfaces) خاصة بالتقييمات ==========
 interface ReviewsResponse {
   result: boolean;
@@ -819,7 +797,6 @@ export async function getProductReviews(
   try {
     let url = `${API_URL}/reviews/${productId}/show?page=${page}&per_page=${perPage}`;
     
-    // إضافة معامل الترتيب إذا وجد
     if (sort) {
       let sortParam = '';
       switch (sort) {
@@ -874,4 +851,23 @@ export async function getProductReviews(
       pagination: null
     };
   }
+}
+
+/**
+ * دالة مساعدة لجلب جميع بيانات الفلاتر مرة واحدة
+ */
+export async function getAllFiltersData() {
+  const [colors, sizes, brands, categories] = await Promise.all([
+    getColors(),
+    getSizes(),
+    getBrands(),
+    getCategories()
+  ]);
+
+  return {
+    colors,    // [{ id, name, code }]
+    sizes,     // [{ id, value }]
+    brands,    // [{ id, name, ... }]
+    categories // [{ id, name, ... }]
+  };
 }

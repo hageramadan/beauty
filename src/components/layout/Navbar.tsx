@@ -1,7 +1,8 @@
+// components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, ShoppingCart, User, Search, X, ChevronDown } from "lucide-react";
@@ -11,7 +12,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getCategories } from "@/services/api";
 
-// تحويل الاسم العربي إلى slug للإنجليزية
+// تحويل الاسم العربي إلى slug للإنجليزية (للعرض فقط)
 const generateSlug = (name: string): string => {
   const slugMap: { [key: string]: string } = {
     "رجال": "men",
@@ -28,7 +29,7 @@ const generateSlug = (name: string): string => {
 interface Category {
   id: number;
   name: string;
-  href: string;
+  href: string;  // الآن سيكون `/products?categories=[id]`
 }
 
 const navLinks = [
@@ -39,6 +40,7 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { cartCount } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,10 +65,11 @@ export function Navbar() {
         setLoadingCategories(true);
         const categoriesData = await getCategories();
         
+        // ✅ تغيير: الرابط الآن يذهب إلى /products مع فلتر category
         const transformedCategories: Category[] = categoriesData.map(cat => ({
           id: cat.id,
           name: cat.name,
-          href: `/categories/${generateSlug(cat.name)}`
+          href: `/products?categories=[${cat.id}]`  // ✅ الرابط الجديد
         }));
         
         setCategories(transformedCategories);
@@ -74,12 +77,12 @@ export function Navbar() {
         console.error('Error fetching categories for navbar:', error);
         // بيانات افتراضية في حالة الخطأ
         setCategories([
-          { id: 1, name: "رجال", href: "/categories/men" },
-          { id: 2, name: "نساء", href: "/categories/women" },
-          { id: 3, name: "أطفال", href: "/categories/kids" },
-          { id: 4, name: "بنات", href: "/categories/girls" },
-          { id: 5, name: "بيبي", href: "/categories/baby" },
-          { id: 6, name: "فورمال", href: "/categories/formal" },
+          { id: 1, name: "رجال", href: "/products?categories=[1]" },
+          { id: 2, name: "نساء", href: "/products?categories=[2]" },
+          { id: 3, name: "أطفال", href: "/products?categories=[3]" },
+          { id: 4, name: "بنات", href: "/products?categories=[4]" },
+          { id: 5, name: "بيبي", href: "/products?categories=[5]" },
+          { id: 6, name: "فورمال", href: "/products?categories=[6]" },
         ]);
       } finally {
         setLoadingCategories(false);
@@ -89,9 +92,8 @@ export function Navbar() {
     fetchCategories();
   }, []);
 
-  // Handle scroll event - اصلاح الخطأ
+  // Handle scroll event
   useEffect(() => {
-    // إذا لم تكن الصفحة الرئيسية، لا نحتاج للـ scroll effect
     if (!isHomePage) {
       setIsScrolled(true);
       return;
@@ -105,12 +107,10 @@ export function Navbar() {
       }
     };
 
-    // تعيين الحالة الأولية
     handleScroll();
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isHomePage]); // isHomePage ثابتة ولا تتغير
+  }, [isHomePage]);
 
   // Focus on search input when shown
   useEffect(() => {
@@ -122,7 +122,7 @@ export function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
       setShowSearchInput(false);
       setSearchQuery("");
       setMobileMenuOpen(false);
@@ -173,10 +173,9 @@ export function Navbar() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showSearchInput, showCategoriesDropdown, showMobileCategoriesDropdown]);
 
-  // تحديد ألوان الناف بار بناءً على الصفحة
+  // تحديد ألوان الناف بار
   const getNavbarStyles = () => {
     if (isHomePage) {
-      // في الهوم: شفاف في البداية، ثم أبيض مع سكرول
       return {
         backgroundColor: isScrolled ? '#FFFFFF' : 'transparent',
         shadow: isScrolled ? 'shadow-md' : 'shadow-none',
@@ -186,7 +185,6 @@ export function Navbar() {
         buttonTextColor: isScrolled ? '#FFFFFF' : '#FFFFFF',
       };
     } else {
-      // في الصفحات الأخرى: أسود مع خلفية بيضاء
       return {
         backgroundColor: '#FFFFFF',
         shadow: 'shadow-md',
@@ -225,8 +223,8 @@ export function Navbar() {
                     aria-label="categories"
                     className="flex items-center gap-1 text-[16px] transition-colors hover:text-[#EC221F]"
                     style={{ 
-                      color: pathname.startsWith('/categories') ? '#EC221F' : styles.textColor,
-                      fontWeight: pathname.startsWith('/categories') ? '700' : '400'
+                      color: pathname.startsWith('/products') ? '#EC221F' : styles.textColor,
+                      fontWeight: pathname.startsWith('/products') ? '700' : '400'
                     }}
                     onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
                     onMouseEnter={() => setShowCategoriesDropdown(true)}

@@ -2,27 +2,66 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/products/ProductCard';
 import ProductFilters from '@/components/products/FilterSidebar';
 import Pagination from '@/components/products/Pagination';
-import { getAllProducts } from '@/services/api';
+import { getAllProducts, getCategories } from '@/services/api';
 import { ProductData } from '@/services/api';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { FilterIcon } from 'lucide-react';
 import { X } from 'lucide-react';
-import { HiOutlineShoppingBag } from "react-icons/hi2";
+import Link from 'next/link';
 
-
-
+interface FiltersState {
+  categoryIds?: number[];
+  colors?: string[];
+  sizes?: string[];
+  brands?: number[];
+  minPrice?: number;
+  maxPrice?: number;
+}
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [filters, setFilters] = useState<any>({});
+   const [filters, setFilters] = useState<FiltersState>({});
+  
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+ 
+  const [categoryName, setCategoryName] = useState<string | null>(null);
   const perPage = 12;
+
+  // ✅ قراءة الفئة من URL عند تحميل الصفحة
+  useEffect(() => {
+    const categoriesParam = searchParams.get('categories');
+    if (categoriesParam) {
+      try {
+        // استخراج الـ id من الـ JSON array مثل "[10]"
+        const categoryIds = JSON.parse(categoriesParam);
+        if (categoryIds && categoryIds.length > 0) {
+          const categoryId = categoryIds[0];
+          setFilters(prev => ({ ...prev, categoryIds: [categoryId] }));
+          
+          // جلب اسم الفئة من الـ API
+          const fetchCategoryName = async () => {
+            const categories = await getCategories();
+            const category = categories.find(c => c.id === categoryId);
+            if (category) {
+              setCategoryName(category.name);
+            }
+          };
+          fetchCategoryName();
+        }
+      } catch (e) {
+        console.error('Error parsing categories param:', e);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadProducts();
@@ -31,11 +70,33 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const { products: productsData, pagination } = await getAllProducts(
-        currentPage,
-        perPage,
-        filters
-      );
+      const filterParams: any = {
+        page: currentPage,
+        per_page: perPage,
+      };
+      
+      // تحويل الفلاتر من الصيغة القديمة إلى الصيغة الجديدة
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
+        filterParams.categories = filters.categoryIds;
+      }
+      
+      if (filters.colors && filters.colors.length > 0) {
+        filterParams.colors = filters.colors;
+      }
+      
+      if (filters.sizes && filters.sizes.length > 0) {
+        filterParams.sizes = filters.sizes;
+      }
+      
+      if (filters.brands && filters.brands.length > 0) {
+        filterParams.brands = filters.brands;
+      }
+      
+      if (filters.minPrice !== undefined && filters.minPrice > 0) {
+        filterParams.price_range = [filters.minPrice, filters.maxPrice || 1000000];
+      }
+      
+      const { products: productsData, pagination } = await getAllProducts(filterParams);
       setProducts(productsData);
       if (pagination) {
         setLastPage(pagination.last_page || 1);
@@ -126,33 +187,56 @@ export default function ProductsPage() {
   const activeFiltersCount = getActiveFiltersCount();
 
   return (
-    <div className="min-h-screen  page-with-padding">
+    <div className="min-h-screen page-with-padding">
       <div className="container mx-auto px-4 pb-16">
         <div className="flex gap-4">
           <div className="flex-1">
-            <div className=" rounded-lg shadow-sm p-6 mb-6">
+            <div className="rounded-lg  mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-[#180100]">
-                  احدث المنتجات
+                <div className='flex items-end gap-1'>
+                  <Link href="/" className='text-[#726C6C] text-xl'>الرئيسية</Link>
+                  <span>/</span>
+                  {/* ✅ عرض اسم الفئة إذا وجدت */}
+                  <h1 className="text-xl font-bold text-[#180100]">
+                   {categoryName ? ` ${categoryName}` : 'جميع المنتجات'}
                   </h1>
                  
                 </div>
                 
-                {/* ✅ زر الفلتر للموبايل */}
+                {/* زر الفلتر للموبايل */}
                 <button
                   onClick={() => setIsMobileFilterOpen(true)}
                   className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   <FilterIcon className="w-5 h-5" />
                   <span>فلتر</span>
-                 
+                  {activeFiltersCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </button>
               </div>
+              
+              {/* ✅ عرض الفلاتر النشطة (اختياري) */}
+              {activeFiltersCount > 0 && !categoryName && (
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+                  <span className="text-sm text-gray-500">الفلاتر النشطة:</span>
+                  {filters.categoryIds?.map((id: number) => (
+                    <span key={id} className="bg-gray-100 px-2 py-1 rounded-md text-sm">فئة: {id}</span>
+                  ))}
+                  {filters.colors?.map((color: string) => (
+                    <span key={color} className="bg-gray-100 px-2 py-1 rounded-md text-sm">لون</span>
+                  ))}
+                  {filters.sizes?.map((size: string) => (
+                    <span key={size} className="bg-gray-100 px-2 py-1 rounded-md text-sm">مقاس: {size}</span>
+                  ))}
+                </div>
+              )}
             </div>
             
             {loading ? (
-               <LoadingSpinner size="lg" text="جاري تحميل المنتجات..." />
+              <LoadingSpinner size="lg" text="جاري تحميل المنتجات..." />
             ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -191,25 +275,21 @@ export default function ProductsPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center py-16 ">
-                
+              <div className="text-center py-16">
                 <p className="text-xl text-gray-600">لا توجد منتجات متاحة</p>
                 <p className="text-gray-500 mt-2">حاول تغيير خيارات الفلتر</p>
-                
               </div>
             )}
           </div>
           
           {/* الفلتر الجانبي - يظهر فقط في الشاشات الكبيرة */}
           <div className="hidden md:block">
-          
-              <ProductFilters onFilterChange={handleFilterChange} />
-       
+            <ProductFilters onFilterChange={handleFilterChange} />
           </div>
         </div>
       </div>
 
-      {/* ✅ نافذة الفلتر المنزلقة من اليمين بحجم كامل للموبايل */}
+      {/* نافذة الفلتر المنزلقة من اليمين بحجم كامل للموبايل */}
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* خلفية معتمة */}

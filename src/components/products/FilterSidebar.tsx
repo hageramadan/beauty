@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getCategories, getColors, getSizes } from '@/services/api';
+import { getCategories, getColors, getSizes, getBrands } from '@/services/api'; // ✅ أضفنا getBrands
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { FaArrowLeft } from "react-icons/fa6";
@@ -38,30 +38,64 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
 
 export default function ProductFilters({ onFilterChange, isMobile = false, onClose }: ProductFiltersProps) {
   // ========== State variables ==========
-  const [minPrice, setMinPrice] = useState<number>(300);
-  const [maxPrice, setMaxPrice] = useState<number>(700);
-  const [priceRange, setPriceRange] = useState<number[]>([300, 700]);
+  // السعر - قيم مؤقتة للـ UI وقيم مطبقة
   const [tempMinPrice, setTempMinPrice] = useState<number>(300);
   const [tempMaxPrice, setTempMaxPrice] = useState<number>(700);
   const [tempPriceRange, setTempPriceRange] = useState<number[]>([300, 700]);
+  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number] | undefined>(undefined);
   
   // بيانات ديناميكية من الـ API
   const [categories, setCategories] = useState<any[]>([]);
-  const [colors, setColors] = useState<{ name: string; code: string }[]>([]);
-  const [sizes, setSizes] = useState<string[]>([]);
+  const [colors, setColors] = useState<{ id: number; name: string; code: string }[]>([]);
+  const [sizes, setSizes] = useState<{ id: number; value: string }[]>([]);
+  const [brands, setBrands] = useState<{ id: number; name: string }[]>([]); // ✅ واجهة البراندات
   
   // الفلاتر المختارة
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
   
-  // ✅ متغير لمنع التطبيق التلقائي للفلاتر
-  const shouldApplyFilters = useRef(false);
-
-  // الحدود القصوى والدنيا للسعر
   const MIN_PRICE = 0;
   const MAX_PRICE = 1000;
+
+  // ========== تطبيق الفلاتر الفورية (بدون السعر) ==========
+  useEffect(() => {
+    console.log('🔄 Applying instant filters (without price)...');
+    
+    const filtersToApply: any = {
+      categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
+      colors: selectedColors.length > 0 ? selectedColors : undefined,
+      sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
+      brands: selectedBrands.length > 0 ? selectedBrands : undefined,
+    };
+    
+    if (appliedPriceRange) {
+      filtersToApply.minPrice = appliedPriceRange[0];
+      filtersToApply.maxPrice = appliedPriceRange[1];
+    }
+    
+    onFilterChange(filtersToApply);
+    
+  }, [selectedCategories, selectedColors, selectedSizes, selectedBrands]);
+
+  // ========== معالج تطبيق فلتر السعر بشكل منفصل ==========
+  const applyPriceFilter = () => {
+    const newPriceRange: [number, number] = [tempMinPrice, tempMaxPrice];
+    setAppliedPriceRange(newPriceRange);
+    
+    const filtersToApply: any = {
+      categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
+      colors: selectedColors.length > 0 ? selectedColors : undefined,
+      sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
+      brands: selectedBrands.length > 0 ? selectedBrands : undefined,
+      minPrice: newPriceRange[0],
+      maxPrice: newPriceRange[1],
+    };
+    
+    console.log('💰 Price filter applied manually:', newPriceRange);
+    onFilterChange(filtersToApply);
+  };
 
   // ========== جلب البيانات من الـ API ==========
   useEffect(() => {
@@ -70,58 +104,31 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
 
   const loadFiltersData = async () => {
     try {
-      const [categoriesData, colorsData, sizesData] = await Promise.all([
+      const [categoriesData, colorsData, sizesData, brandsData] = await Promise.all([
         getCategories(),
         getColors(),
-        getSizes()
+        getSizes(),
+        getBrands() // ✅ جلب البراندات
       ]);
       
       setCategories(categoriesData);
       setColors(colorsData);
       setSizes(sizesData);
+      setBrands(brandsData);
       
-      console.log('✅ Filters data loaded:', { categories: categoriesData.length, colors: colorsData.length, sizes: sizesData.length });
+      console.log('✅ Filters data loaded:', { 
+        categories: categoriesData.length, 
+        colors: colorsData.length, 
+        sizes: sizesData.length,
+        brands: brandsData.length
+      });
     } catch (error) {
       console.error('Error loading filters data:', error);
     }
   };
 
-  // ========== تطبيق الفلاتر (فقط عندما يكون shouldApplyFilters = true) ==========
-  useEffect(() => {
-    // ✅ فقط نطبق الفلاتر إذا كان المستخدم قد تفاعل مع الفلتر
-    if (!shouldApplyFilters.current) {
-      return;
-    }
-    
-    console.log('🔄 Applying filters...');
-    onFilterChange({
-      minPrice: minPrice > MIN_PRICE ? minPrice : undefined,
-      maxPrice: maxPrice < MAX_PRICE ? maxPrice : undefined,
-      categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
-      colors: selectedColors.length > 0 ? selectedColors : undefined,
-      sizes: selectedSizes.length > 0 ? selectedSizes : undefined,
-      brands: selectedBrands.length > 0 ? selectedBrands : undefined,
-    });
-  }, [selectedCategories, selectedColors, selectedSizes, selectedBrands, minPrice, maxPrice]);
-
-  // ========== معالجات تغيير الفلاتر ==========
-  const handleTempPriceRangeChange = (value: number[]) => {
-    setTempPriceRange(value);
-    setTempMinPrice(value[0]);
-    setTempMaxPrice(value[1]);
-  };
-
-  const applyPriceFilter = () => {
-    // ✅ تفعيل تطبيق الفلاتر عند الضغط على زر السعر
-    shouldApplyFilters.current = true;
-    setMinPrice(tempMinPrice);
-    setMaxPrice(tempMaxPrice);
-    setPriceRange(tempPriceRange);
-  };
-
+  // ========== معالجات تغيير الفلاتر الفورية ==========
   const handleCategoryChange = (categoryId: number) => {
-    // ✅ تفعيل تطبيق الفلاتر عند تغيير الفئة
-    shouldApplyFilters.current = true;
     setSelectedCategories(prev =>
       prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)
@@ -129,50 +136,52 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
     );
   };
 
-  const handleColorChange = (colorName: string) => {
-    // ✅ تفعيل تطبيق الفلاتر عند تغيير اللون
-    shouldApplyFilters.current = true;
+  const handleColorChange = (colorCode: string) => {
     setSelectedColors(prev =>
-      prev.includes(colorName)
-        ? prev.filter(c => c !== colorName)
-        : [...prev, colorName]
+      prev.includes(colorCode)
+        ? prev.filter(c => c !== colorCode)
+        : [...prev, colorCode]
     );
   };
 
-  const handleSizeChange = (size: string) => {
-    // ✅ تفعيل تطبيق الفلاتر عند تغيير المقاس
-    shouldApplyFilters.current = true;
+  const handleSizeChange = (sizeValue: string) => {
     setSelectedSizes(prev =>
-      prev.includes(size)
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
+      prev.includes(sizeValue)
+        ? prev.filter(s => s !== sizeValue)
+        : [...prev, sizeValue]
     );
   };
 
-  const handleBrandChange = (brand: string) => {
-    // ✅ تفعيل تطبيق الفلاتر عند تغيير الماركة
-    shouldApplyFilters.current = true;
+  // ✅ معالج تغيير العلامات التجارية
+  const handleBrandChange = (brandId: number) => {
     setSelectedBrands(prev =>
-      prev.includes(brand)
-        ? prev.filter(b => b !== brand)
-        : [...prev, brand]
+      prev.includes(brandId)
+        ? prev.filter(b => b !== brandId)
+        : [...prev, brandId]
     );
+  };
+
+  // ========== معالجات تغيير السعر المؤقت ==========
+  const handleTempPriceRangeChange = (value: number[]) => {
+    setTempPriceRange(value);
+    setTempMinPrice(value[0]);
+    setTempMaxPrice(value[1]);
   };
 
   // ========== إعادة تعيين جميع الفلاتر ==========
   const resetFilters = () => {
-    // ✅ تفعيل تطبيق الفلاتر عند إعادة التعيين
-    shouldApplyFilters.current = true;
-    setMinPrice(300);
-    setMaxPrice(700);
-    setPriceRange([300, 700]);
     setTempMinPrice(300);
     setTempMaxPrice(700);
     setTempPriceRange([300, 700]);
+    setAppliedPriceRange(undefined);
+    
     setSelectedCategories([]);
     setSelectedColors([]);
     setSelectedSizes([]);
     setSelectedBrands([]);
+    
+    console.log('🔄 Reset all filters');
+    onFilterChange({});
     
     if (onClose && isMobile) onClose();
   };
@@ -190,7 +199,6 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
       className={`border sticky top-[10%] rounded-xl p-4 mx-auto my-3`}
       style={{ width: '344.66px' }}
     >
-      {/* Header */}
       <h3 className="text-[18.28px] mb-4 text-[#180100] flex justify-between items-center">
         فلتر
         <button
@@ -264,7 +272,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         </div>
       </FilterSection>
       
-      {/* ===== فلتر الفئات (ديناميكي) ===== */}
+      {/* ===== فلتر الفئات ===== */}
       <FilterSection title="الفئات">
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {categories.length === 0 ? (
@@ -285,7 +293,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         </div>
       </FilterSection>
       
-      {/* ===== فلتر الألوان (ديناميكي من الـ API) ===== */}
+      {/* ===== فلتر الألوان ===== */}
       <FilterSection title="الألوان">
         <div className="flex flex-wrap gap-3">
           {colors.length === 0 ? (
@@ -293,12 +301,12 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
           ) : (
             colors.map((color) => {
               const isWhite = isWhiteColor(color.name, color.code);
-              const isSelected = selectedColors.includes(color.name);
+              const isSelected = selectedColors.includes(color.code);
               
               return (
                 <button
-                  key={color.name}
-                  onClick={() => handleColorChange(color.name)}
+                  key={color.id}
+                  onClick={() => handleColorChange(color.code)}
                   className="group relative"
                   aria-label={`لون ${color.name}`}
                 >
@@ -320,33 +328,45 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         </div>
       </FilterSection>
       
-      {/* ===== فلتر المقاسات (ديناميكي من الـ API) ===== */}
+      {/* ===== فلتر المقاسات ===== */}
       <FilterSection title="المقاسات">
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {sizes.length === 0 ? (
             <p className="text-sm text-gray-400">جاري تحميل المقاسات...</p>
           ) : (
             sizes.map((size) => (
-              <label key={size} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <label key={size.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                 <input
                   type="checkbox"
-                  checked={selectedSizes.includes(size)}
-                  onChange={() => handleSizeChange(size)}
+                  checked={selectedSizes.includes(size.value)}
+                  onChange={() => handleSizeChange(size.value)}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-600">{size}</span>
+                <span className="text-sm text-gray-600">{size.value}</span>
               </label>
             ))
           )}
         </div>
       </FilterSection>
       
-      {/* ===== فلتر العلامات التجارية ===== */}
+      {/* ===== فلتر العلامات التجارية - ✅ الآن يعمل ===== */}
       <FilterSection title="العلامات التجارية">
-        <div className="space-y-2 overflow-y-auto">
-          <p className="text-sm text-gray-400 text-center py-4">
-            سيتم إضافة العلامات التجارية قريباً
-          </p>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {brands.length === 0 ? (
+            <p className="text-sm text-gray-400">جاري تحميل العلامات التجارية...</p>
+          ) : (
+            brands.map((brand) => (
+              <label key={brand.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                <input
+                  type="checkbox"
+                  checked={selectedBrands.includes(brand.id)}
+                  onChange={() => handleBrandChange(brand.id)}
+                  className="rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">{brand.name}</span>
+              </label>
+            ))
+          )}
         </div>
       </FilterSection>
     </div>

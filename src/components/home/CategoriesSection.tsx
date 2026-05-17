@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { getCategories } from "@/services/api";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Category {
   id: number;
@@ -13,7 +14,7 @@ interface Category {
   slug: string;
 }
 
-// تحويل الاسم العربي إلى slug للإنجليزية
+// تحويل الاسم العربي إلى slug للإنجليزية (للعرض فقط)
 const generateSlug = (name: string): string => {
   const slugMap: { [key: string]: string } = {
     "رجال": "men",
@@ -77,14 +78,13 @@ export function CategoriesSection() {
     fetchCategories();
   }, []);
 
+  // ✅ عرض Spinner بدلاً من الـ loading القديم
   if (loading) {
     return (
       <section className="py-4 md:py-8 container mx-auto px-7" style={{ minHeight: '568px' }}>
         <h2 className="text-3xl font-bold mb-4 md:mb-10 text-[#112B40]">الاقسام</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 auto-rows-[270px]">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-gray-200 animate-pulse rounded-2xl h-full"></div>
-          ))}
+        <div className="flex items-center justify-center min-h-[400px]">
+          <LoadingSpinner size="lg" text="" />
         </div>
       </section>
     );
@@ -141,10 +141,13 @@ export function CategoriesSection() {
             isLarge = false;
           }
 
+          // ✅ الرابط يذهب إلى /products مع فلتر categories
+          const productsUrl = `/products?categories=[${category.id}]`;
+
           return (
             <Link 
               key={category.id}
-              href={`/categories/${category.slug}`} 
+              href={productsUrl}
               className={`${layoutClass} block`}
             >
               <div className="group relative h-full w-full overflow-hidden rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-3">

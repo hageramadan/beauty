@@ -133,7 +133,8 @@ export function YouMayAlsoLike() {
         
         // إذا كان لا يزال لا توجد منتجات، جلب جميع المنتجات
         if (productsData.length === 0) {
-          const { products: allProducts } = await getAllProducts(page, 12);
+          const { products: allProducts } = await getAllProducts({page: 1,
+        per_page: 12});
           productsData = allProducts;
         }
       } catch (err) {
