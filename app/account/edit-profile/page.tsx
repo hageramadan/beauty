@@ -1,34 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { FaUser, FaCamera, FaArrowRight, FaEye, FaEyeSlash, FaRegEdit } from "react-icons/fa";
+import { FaUser, FaCamera, FaArrowRight, FaEye, FaEyeSlash } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { changePassword, updateUserProfile, getUserProfile } from "@/services/api";
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const { user, isAuthenticated, loading, logoutUser } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [user, setUser] = useState({
-    name: "ملك أحمد",
-    email: "malak.ahmed@email.com",
-    phone: "01234567890",
-    avatar: "/images/account/profile.jpg",
-  });
-
   const [formData, setFormData] = useState({
-    name: "ملك أحمد",
-    email: "malak.ahmed@email.com",
-    phone: "01234567890",
+    name: "",
+    email: "",
+    phone: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [existingAvatar, setExistingAvatar] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
@@ -38,14 +36,83 @@ export default function EditProfilePage() {
     confirmPassword?: string;
   }>({});
 
+  // تحميل بيانات المستخدم من الـ API مباشرة
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!loading && isAuthenticated) {
+        try {
+          const result = await getUserProfile();
+          if (result.result && result.data?.user) {
+            setFormData({
+              name: result.data.user.name || "",
+              email: result.data.user.email || "",
+              phone: result.data.user.phone || "",
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: "",
+            });
+            if (result.data.user.image) {
+              setExistingAvatar(result.data.user.image);
+            }
+          } else if (user) {
+            // fallback to context data
+            setFormData({
+              name: user.name || "",
+              email: user.email || "",
+              phone: user.phone || "",
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: "",
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          if (user) {
+            setFormData({
+              name: user.name || "",
+              email: user.email || "",
+              phone: user.phone || "",
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: "",
+            });
+          }
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, loading, isAuthenticated]);
+
+  // التحقق من حالة تسجيل الدخول
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      toast.error("الرجاء تسجيل الدخول أولاً", {
+        duration: 2000,
+        position: "top-center",
+      });
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 1500);
+    }
+  }, [isAuthenticated, loading, router]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("حجم الصورة يجب أن يكون أقل من 2 ميجابايت");
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast.error("الرجاء اختيار ملف صورة صالح");
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatar(reader.result as string);
-        // تحديث الصورة المعروضة
-        setUser({ ...user, avatar: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -62,16 +129,19 @@ export default function EditProfilePage() {
     }
 
     // التحقق من البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email) {
-      newErrors.email = "البريد الإلكتروني مطلوب";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "البريد الإلكتروني غير صحيح";
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "البريد الإلكتروني غير صحيح";
+      }
     }
 
-    // التحقق من رقم الهاتف (اختياري)
-    if (formData.phone && !/^\d{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = "رقم الهاتف يجب أن يكون 10-11 رقم";
+    // التحقق من رقم الهاتف
+    if (formData.phone) {
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+        newErrors.phone = "رقم الهاتف غير صحيح (10-15 رقم)";
+      }
     }
 
     // التحقق من كلمة المرور الجديدة (إذا تم إدخالها)
@@ -91,7 +161,71 @@ export default function EditProfilePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // دالة تغيير كلمة المرور باستخدام changePassword API
+  const handleChangePassword = async () => {
+    if (!formData.newPassword) return true; // لم يتم إدخال كلمة مرور جديدة
+    
+    try {
+      const result = await changePassword({
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword,
+        new_password_confirmation: formData.confirmPassword,
+      });
+
+      if (result.result) {
+        toast.success("تم تغيير كلمة المرور بنجاح! ✅");
+        return true;
+      } else {
+        toast.error(result.message || "فشل تغيير كلمة المرور");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast.error("حدث خطأ أثناء تغيير كلمة المرور");
+      return false;
+    }
+  };
+
+  // دالة تحديث المعلومات الشخصية
+  const handleUpdateProfile = async () => {
+    const profileData: any = {
+      name: formData.name,
+      locale: "ar", // كما هو مطلوب في الـ API
+    };
+    
+    // إضافة البريد الإلكتروني فقط إذا تم تغييره
+    if (formData.email && formData.email !== user?.email) {
+      profileData.email = formData.email;
+    }
+    
+    // إضافة رقم الهاتف فقط إذا تم تغييره
+    if (formData.phone && formData.phone !== user?.phone) {
+      profileData.phone = formData.phone;
+    }
+    
+    // إضافة الصورة إذا تم تغييرها
+    if (avatar) {
+      profileData.image = avatar;
+    }
+    
+    try {
+      const result = await updateUserProfile(profileData);
+      
+      if (result.result) {
+        // toast.success("تم تحديث المعلومات الشخصية بنجاح ✅");
+        return true;
+      } else {
+        toast.error(result.message || "فشل تحديث المعلومات الشخصية");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("حدث خطأ أثناء تحديث المعلومات الشخصية");
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -102,28 +236,46 @@ export default function EditProfilePage() {
       return;
     }
 
-    // تحضير البيانات للحفظ
-    const dataToSave: any = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      avatar: avatar || user.avatar,
-    };
+    setIsSubmitting(true);
 
-    // إذا تم تغيير كلمة المرور
-    if (formData.newPassword) {
-      dataToSave.password = formData.newPassword;
+    try {
+      // 1. تغيير كلمة المرور إذا تم إدخالها
+      let passwordChanged = true;
+      if (formData.newPassword) {
+        passwordChanged = await handleChangePassword();
+      }
+
+      if (!passwordChanged) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. تحديث المعلومات الشخصية عبر API
+      const profileUpdated = await handleUpdateProfile();
+
+      if (!profileUpdated) {
+        setIsSubmitting(false);
+        return;
+      }
+      
+      toast.success("تم تحديث الملف الشخصي بنجاح ✅", {
+        duration: 3000,
+        position: "top-center",
+      });
+      
+      setTimeout(() => {
+        router.push("/account");
+        router.refresh();
+      }, 1500);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("حدث خطأ أثناء تحديث الملف الشخصي", {
+        duration: 3000,
+        position: "top-center",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    console.log("تم حفظ البيانات:", dataToSave);
-    toast.success("تم تحديث الملف الشخصي بنجاح ✅", {
-      duration: 3000,
-      position: "top-center",
-    });
-    
-    setTimeout(() => {
-      router.push("/account");
-    }, 1500);
   };
 
   const clearFieldError = (field: keyof typeof errors) => {
@@ -131,6 +283,32 @@ export default function EditProfilePage() {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
+
+  // عرض شاشة تحميل أثناء جلب بيانات المستخدم
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#ff3c27] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل بيانات الحساب...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // إذا لم يكن المستخدم مسجل دخول، لا نعرض المحتوى
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  // الحصول على الحرف الأول من اسم المستخدم للصورة الافتراضية
+  const getUserInitial = () => {
+    if (!formData.name) return "U";
+    return formData.name.charAt(0).toUpperCase();
+  };
+
+  // تحديد الصورة المعروضة
+  const displayAvatar = avatar || existingAvatar;
 
   return (
     <>
@@ -147,7 +325,7 @@ export default function EditProfilePage() {
       />
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-        <div className="container mx-auto  py-6">
+        <div className="container mx-auto py-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <button
@@ -159,23 +337,25 @@ export default function EditProfilePage() {
             <h1 className="text-xl font-bold text-[#180100]">تعديل الملف الشخصي</h1>
           </div>
 
-          <form onSubmit={handleSubmit} className="">
-            {/* Profile Info Section - نفس تصميم صفحة الحساب */}
-            <div className="bg-white rounded-2xl shadow-sm p-3 md:p-6  mb-5 flex flex-col md:flex-row items-center justify-between  ">
+          <form onSubmit={handleSubmit}>
+            {/* Profile Info Section */}
+            <div className="bg-white rounded-2xl shadow-sm p-3 md:p-6 mb-5 flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center">
                 {/* Profile Image */}
                 <div className="relative">
-                  {avatar || user.avatar ? (
+                  {displayAvatar ? (
                     <Image
-                      src={avatar || user.avatar || ""}
-                      alt={user.name}
+                      src={displayAvatar}
+                      alt={formData.name || "User"}
                       width={100}
                       height={100}
                       className="rounded-full object-cover h-16 w-16 md:w-24 md:h-24 border-4 border-white shadow-lg"
                     />
                   ) : (
                     <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
-                      <FaUser className="w-8 h-8 md:w-12 md:h-12 text-white" />
+                      <span className="text-white text-2xl md:text-4xl font-bold">
+                        {getUserInitial()}
+                      </span>
                     </div>
                   )}
                   <label className="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md cursor-pointer hover:bg-gray-50 transition">
@@ -192,212 +372,234 @@ export default function EditProfilePage() {
                 {/* User Info */}
                 <div className="mr-4">
                   <h2 className="text-xl font-bold text-gray-800 mb-1">
-                    {user.name}
+                    {formData.name || "مستخدم"}
                   </h2>
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <span>{user.email}</span>
+                    <span>{formData.email || "البريد الإلكتروني غير مضاف"}</span>
+                  </div>
+                  {formData.phone && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      {formData.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm p-6 mt-3">
+              {/* المعلومات الشخصية */}
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-gray-800 pb-2 mb-4">
+                  المعلومات الشخصية
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
+                  {/* الاسم الكامل */}
+                  <div className="mb-4">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      الاسم الكامل <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        clearFieldError("name");
+                      }}
+                      placeholder="أدخل الاسم الكامل"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.name ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    {errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
+                  </div>
+
+                  {/* رقم الجوال */}
+                  <div className="mb-4">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      رقم الجوال
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        clearFieldError("phone");
+                      }}
+                      placeholder="مثال: 01234567890"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.phone ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    {errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
 
-           <div className="bg-white rounded-2xl shadow-sm p-6 mt-3">
-             {/* المعلومات الشخصية */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-gray-800  pb-2 mb-4">
-                المعلومات الشخصية
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
-                {/* الاسم الكامل */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  الاسم الكامل <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
-                    setUser({ ...user, name: e.target.value });
-                    clearFieldError("name");
-                  }}
-                  placeholder="أدخل الاسم الكامل"
-                  className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                )}
-              </div>
-               {/* رقم الجوال */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  رقم الجوال
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => {
-                    setFormData({ ...formData, phone: e.target.value });
-                    setUser({ ...user, phone: e.target.value });
-                    clearFieldError("phone");
-                  }}
-                  placeholder="مثال: 01234567890"
-                  className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                    errors.phone ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.phone && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-                )}
-              </div>
-              </div>
-
-              {/* البريد الإلكتروني */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  البريد الإلكتروني <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => {
-                    setFormData({ ...formData, email: e.target.value });
-                    setUser({ ...user, email: e.target.value });
-                    clearFieldError("email");
-                  }}
-                  placeholder="example@email.com"
-                  className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                )}
-              </div>
-
-             
-            </div>
-
-            {/* تغيير كلمة المرور */}
-            <div className="my-6">
-              <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
-                تغيير كلمة المرور
-              </h2>
-
-              {/* كلمة المرور الحالية */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  كلمة المرور الحالية
-                </label>
-                <div className="relative">
+                {/* البريد الإلكتروني */}
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    البريد الإلكتروني
+                  </label>
                   <input
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={formData.currentPassword}
+                    type="email"
+                    value={formData.email}
                     onChange={(e) => {
-                      setFormData({ ...formData, currentPassword: e.target.value });
-                      clearFieldError("currentPassword");
+                      setFormData({ ...formData, email: e.target.value });
+                      clearFieldError("email");
                     }}
-                    placeholder="************"
+                    placeholder="example@email.com"
+                    disabled={isSubmitting}
                     className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                      errors.currentPassword ? "border-red-500" : "border-gray-300"
-                    }`}
+                      errors.email ? "border-red-500" : "border-gray-300"
+                    } ${isSubmitting ? "opacity-50" : ""}`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                  >
-                    {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    ملاحظة: تغيير البريد الإلكتروني قد يتطلب إعادة التحقق
+                  </p>
                 </div>
-                {errors.currentPassword && (
-                  <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
-                )}
               </div>
 
-              {/* كلمة المرور الجديدة */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  كلمة المرور الجديدة
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? "text" : "password"}
-                    value={formData.newPassword}
-                    onChange={(e) => {
-                      setFormData({ ...formData, newPassword: e.target.value });
-                      clearFieldError("newPassword");
-                    }}
-                    placeholder="************"
-                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                      errors.newPassword ? "border-red-500" : "border-gray-300"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                  >
-                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
+              {/* تغيير كلمة المرور */}
+              <div className="my-6">
+                <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
+                  تغيير كلمة المرور
+                </h2>
+
+                {/* كلمة المرور الحالية */}
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    كلمة المرور الحالية
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={formData.currentPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, currentPassword: e.target.value });
+                        clearFieldError("currentPassword");
+                      }}
+                      placeholder="************"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.currentPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.currentPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
+                  )}
                 </div>
-                {errors.newPassword && (
-                  <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
-                )}
+
+                {/* كلمة المرور الجديدة */}
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    كلمة المرور الجديدة
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={formData.newPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, newPassword: e.target.value });
+                        clearFieldError("newPassword");
+                      }}
+                      placeholder="************ (6 أحرف على الأقل)"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.newPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.newPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
+                  )}
+                </div>
+
+                {/* تأكيد كلمة المرور */}
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    تأكيد كلمة المرور
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, confirmPassword: e.target.value });
+                        clearFieldError("confirmPassword");
+                      }}
+                      placeholder="************"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
               </div>
 
-              {/* تأكيد كلمة المرور */}
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  تأكيد كلمة المرور
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={(e) => {
-                      setFormData({ ...formData, confirmPassword: e.target.value });
-                      clearFieldError("confirmPassword");
-                    }}
-                    placeholder="************"
-                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                      errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                  >
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
-                )}
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 flex justify-center gap-1 px-4 py-2 bg-black text-white rounded-[8px] hover:bg-gray-800 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      جاري الحفظ...
+                    </>
+                  ) : (
+                    "حفظ التغييرات"
+                  )}
+                </button>
               </div>
             </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                className="flex-1 flex justify-center gap-1 px-4 py-2 bg-black text-white rounded-[8px] hover:bg-gray-800 transition"
-              >
-                حفظ <span className="hidden md:flex">التغييرات</span>
-              </button>
-            </div>
-           </div>
           </form>
         </div>
       </div>

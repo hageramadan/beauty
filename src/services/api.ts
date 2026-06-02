@@ -1,6 +1,7 @@
 // services/api.ts
 const API_URL = "https://dukanah.admin.t-carts.com/api";
 
+// ========== واجهات (Interfaces) السلايدر ==========
 interface SliderResponse {
   result: boolean;
   errNum: number;
@@ -26,10 +27,8 @@ export async function getSliders(): Promise<SlideData[]> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // إذا كان الـ API يحتاج توثيق، ضيفي الـ token هنا
-        // 'Authorization': `Bearer ${yourToken}`,
       },
-      cache: 'no-store', // أو 'force-cache' إذا حبيتي caching
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -49,6 +48,7 @@ export async function getSliders(): Promise<SlideData[]> {
   }
 }
 
+// ========== واجهات (Interfaces) الكاتجوريز ==========
 interface CategoryResponse {
   result: boolean;
   errNum: number;
@@ -92,6 +92,7 @@ export async function getCategories(): Promise<CategoryData[]> {
   }
 }
 
+// ========== واجهات (Interfaces) المنتجات ==========
 interface ProductResponse {
   result: boolean;
   errNum: number;
@@ -169,6 +170,7 @@ export async function getNewProducts(page: number = 1, perPage: number = 20): Pr
   }
 }
 
+// ========== واجهات (Interfaces) الإعلانات ==========
 interface AdResponse {
   result: boolean;
   errNum: number;
@@ -207,7 +209,6 @@ export async function getAds(): Promise<AdData[]> {
     const result: AdResponse = await response.json();
     
     if (result.result && result.errNum === 200) {
-      // تصفية الإعلانات النشطة فقط
       return result.data.ad_pop_up.filter(ad => ad.is_active === 1);
     } else {
       throw new Error(result.message || 'Failed to fetch ads');
@@ -247,11 +248,11 @@ export async function getMostSellingProducts(page: number = 1, perPage: number =
 
 // ========== واجهات الفلاتر والمنتجات ==========
 export interface ProductFilters {
-  price_range?: [number, number];  // [min, max]
-  brands?: number[];               // مصفوفة من ارقام البراندات
-  sizes?: string[];               // مصفوفة من المقاسات ["S", "M", "L"]
-  colors?: string[];              // مصفوفة من أكواد الألوان URL encoded
-  categories?: number[];          // مصفوفة من ارقام الكاتجوريز
+  price_range?: [number, number];
+  brands?: number[];
+  sizes?: string[];
+  colors?: string[];
+  categories?: number[];
   page?: number;
   per_page?: number;
 }
@@ -275,11 +276,6 @@ interface ProductsListResponse {
   };
 }
 
-// services/api.ts - استبدلي دالة buildFiltersQueryString بهذه النسخة
-
-/**
- * تحويل الفلاتر إلى query string بتنسيق JSON arrays (بدون ترميز)
- */
 function buildFiltersQueryString(filters: ProductFilters): string {
   const queryParts: string[] = [];
   
@@ -290,67 +286,31 @@ function buildFiltersQueryString(filters: ProductFilters): string {
   const perPage = filters.per_page || 20;
   queryParts.push(`per_page=${perPage}`);
   
-  // price_range: [5000, 10000] - بدون ترميز
   if (filters.price_range && filters.price_range.length === 2) {
     queryParts.push(`price_range=[${filters.price_range[0]},${filters.price_range[1]}]`);
   }
   
-  // brands: [4]
   if (filters.brands && filters.brands.length > 0) {
     queryParts.push(`brands=[${filters.brands.join(',')}]`);
   }
   
-  // sizes: ["S"]
   if (filters.sizes && filters.sizes.length > 0) {
     const formattedSizes = filters.sizes.map(s => `"${s}"`).join(',');
     queryParts.push(`sizes=[${formattedSizes}]`);
   }
   
-  // colors: ["#252B42"]
   if (filters.colors && filters.colors.length > 0) {
     const formattedColors = filters.colors.map(c => `"${c}"`).join(',');
     queryParts.push(`colors=[${formattedColors}]`);
   }
   
-  // categories: [1]
   if (filters.categories && filters.categories.length > 0) {
     queryParts.push(`categories=[${filters.categories.join(',')}]`);
   }
   
   return queryParts.join('&');
 }
-/**
- * الدالة الرئيسية لجلب المنتجات مع الفلاتر
- * @param filters الفلاتر المطلوب تطبيقها
- * @returns قائمة المنتجات ومعلومات التصفح
- * 
- * @example
- * // فلتر بالسعر فقط
- * getAllProducts({ price_range: [5000, 10000], page: 1 })
- * 
- * // فلتر بالبراند فقط
- * getAllProducts({ brands: [4], page: 1 })
- * 
- * // فلتر بالمقاسات فقط
- * getAllProducts({ sizes: ["S"], page: 1 })
- * 
- * // فلتر باللون فقط
- * getAllProducts({ colors: ["%23252B42"], page: 1 })
- * 
- * // فلتر بالكاتجري فقط
- * getAllProducts({ categories: [1], page: 1 })
- * 
- * // عدة فلاتر معاً
- * getAllProducts({
- *   price_range: [5000, 10000],
- *   brands: [4],
- *   colors: ["%23252B42"],
- *   categories: [1],
- *   sizes: ["S"],
- *   page: 1,
- *   per_page: 20
- * })
- */
+
 export async function getAllProducts(
   filters: ProductFilters = {}
 ): Promise<{ products: ProductData[]; pagination: ProductsListResponse['data']['pagination'] | null }> {
@@ -392,12 +352,6 @@ export async function getAllProducts(
   }
 }
 
-/**
- * دالة البحث عن المنتجات باستخدام كلمات مفتاحية
- * @param query كلمة البحث
- * @param page رقم الصفحة
- * @param perPage عدد النتائج في الصفحة
- */
 export async function searchProducts(
   query: string,
   page: number = 1,
@@ -434,10 +388,6 @@ export async function searchProducts(
   }
 }
 
-/**
- * دالة جلب منتجات محددة باستخدام IDs
- * @param productIds قائمة IDs المنتجات المطلوبة
- */
 export async function getProductsByIds(productIds: number[]): Promise<ProductData[]> {
   try {
     const url = `${API_URL}/products?ids=${productIds.join(',')}`;
@@ -470,16 +420,16 @@ export async function getProductsByIds(productIds: number[]): Promise<ProductDat
 // ========== واجهات (Interfaces) خاصة بـ Attributes ==========
 interface AttributeValue {
   id: number;
-  value: string;  // هذه تحمل اسم اللون (مثل "ازرق داكن") أو المقاس (مثل "M")
+  value: string;
   meta: {
-    color?: string; // الكود الخاص باللون (مثل "#252B42") - موجود فقط للألوان
+    color?: string;
   } | null;
 }
 
 interface Attribute {
   id: number;
-  name: string;    // "اللون" أو "مقاس"
-  slug: string;    // "color" أو "size"
+  name: string;
+  slug: string;
   values: AttributeValue[];
 }
 
@@ -492,10 +442,6 @@ interface AttributesResponse {
   };
 }
 
-/**
- * دالة جلب خصائص المنتج (الألوان، المقاسات، إلخ)
- * @returns {Promise<Attribute[]>} قائمة الخصائص
- */
 export async function getAttributes(): Promise<Attribute[]> {
   try {
     const response = await fetch(`${API_URL}/products/attributes`, {
@@ -523,10 +469,6 @@ export async function getAttributes(): Promise<Attribute[]> {
   }
 }
 
-/**
- * دالة جلب الألوان فقط من الـ Attributes
- * @returns {Promise<{name: string, code: string, id: number}[]>} قائمة الألوان (الاسم والكود)
- */
 export async function getColors(): Promise<{ id: number; name: string; code: string }[]> {
   const attributes = await getAttributes();
   const colorAttribute = attributes.find(attr => attr.slug === 'color');
@@ -534,18 +476,14 @@ export async function getColors(): Promise<{ id: number; name: string; code: str
   if (colorAttribute && colorAttribute.values) {
     return colorAttribute.values.map(value => ({
       id: value.id,
-      name: value.value,           // مثلاً: "ازرق داكن"
-      code: value.meta?.color || '#000000'  // مثلاً: "#252B42"
+      name: value.value,
+      code: value.meta?.color || '#000000'
     }));
   }
   
   return [];
 }
 
-/**
- * دالة جلب المقاسات فقط من الـ Attributes
- * @returns {Promise<{id: number, value: string}[]>} قائمة المقاسات
- */
 export async function getSizes(): Promise<{ id: number; value: string }[]> {
   const attributes = await getAttributes();
   const sizeAttribute = attributes.find(attr => attr.slug === 'size');
@@ -553,30 +491,21 @@ export async function getSizes(): Promise<{ id: number; value: string }[]> {
   if (sizeAttribute && sizeAttribute.values) {
     return sizeAttribute.values.map(value => ({
       id: value.id,
-      value: value.value // مثلاً: ["S", "M", "L", "XL"]
+      value: value.value
     }));
   }
   
   return [];
 }
 
-/**
- * ترميز اللون للـ URL
- */
 export function encodeColor(colorCode: string): string {
   return encodeURIComponent(colorCode);
 }
 
-/**
- * فك ترميز اللون من الـ URL
- */
 export function decodeColor(encodedColor: string): string {
   return decodeURIComponent(encodedColor);
 }
 
-/**
- * جلب جميع البراندات من الـ API
- */
 export async function getBrands(): Promise<any[]> {
   try {
     const response = await fetch(`${API_URL}/brands`, {
@@ -614,11 +543,6 @@ interface SingleProductResponse {
   };
 }
 
-/**
- * دالة جلب منتج معين بواسطة ID
- * @param productId رقم المنتج
- * @returns بيانات المنتج
- */
 export async function getProductById(productId: string | number): Promise<ProductData | null> {
   try {
     const response = await fetch(`${API_URL}/products/${productId}`, {
@@ -646,11 +570,6 @@ export async function getProductById(productId: string | number): Promise<Produc
   }
 }
 
-/**
- * دالة لاستخراج الألوان من المتغيرات (variants)
- * @param product المنتج
- * @returns قائمة الألوان
- */
 export function extractColorsFromProduct(product: ProductData): { name: string; code: string }[] {
   const colors: { name: string; code: string }[] = [];
   
@@ -675,11 +594,6 @@ export function extractColorsFromProduct(product: ProductData): { name: string; 
   return colors;
 }
 
-/**
- * دالة لاستخراج المقاسات من المتغيرات (variants)
- * @param product المنتج
- * @returns قائمة المقاسات
- */
 export function extractSizesFromProduct(product: ProductData): string[] {
   const sizes: string[] = [];
   
@@ -701,11 +615,6 @@ export function extractSizesFromProduct(product: ProductData): string[] {
   return sizes;
 }
 
-/**
- * دالة لحساب السعر النهائي
- * @param product المنتج
- * @returns السعر النهائي
- */
 export function getFinalPrice(product: ProductData): number {
   if (product.has_variants && product.variants?.[0]?.price_after_discount) {
     return product.variants[0].price_after_discount;
@@ -713,11 +622,6 @@ export function getFinalPrice(product: ProductData): number {
   return product.pricing?.final_price || product.pricing?.price || 0;
 }
 
-/**
- * دالة لحساب السعر الأصلي (قبل الخصم)
- * @param product المنتج
- * @returns السعر الأصلي أو null إذا لا يوجد خصم
- */
 export function getOriginalPrice(product: ProductData): number | null {
   if (product.pricing?.has_discount && product.pricing?.price) {
     return product.pricing.price;
@@ -725,11 +629,6 @@ export function getOriginalPrice(product: ProductData): number | null {
   return null;
 }
 
-/**
- * دالة لحساب نسبة الخصم
- * @param product المنتج
- * @returns نسبة الخصم أو null
- */
 export function getDiscountPercentage(product: ProductData): number | null {
   if (product.pricing?.has_discount && product.pricing?.price && product.pricing?.final_price) {
     return Math.round(((product.pricing.price - product.pricing.final_price) / product.pricing.price) * 100);
@@ -776,13 +675,6 @@ export interface ReviewData {
   updated_at: string;
 }
 
-/**
- * دالة جلب تقييمات المنتج
- * @param productId رقم المنتج
- * @param page رقم الصفحة
- * @param perPage عدد التقييمات في الصفحة
- * @returns بيانات التقييمات
- */
 export async function getProductReviews(
   productId: number,
   page: number = 1,
@@ -853,9 +745,6 @@ export async function getProductReviews(
   }
 }
 
-/**
- * دالة مساعدة لجلب جميع بيانات الفلاتر مرة واحدة
- */
 export async function getAllFiltersData() {
   const [colors, sizes, brands, categories] = await Promise.all([
     getColors(),
@@ -865,9 +754,686 @@ export async function getAllFiltersData() {
   ]);
 
   return {
-    colors,    // [{ id, name, code }]
-    sizes,     // [{ id, value }]
-    brands,    // [{ id, name, ... }]
-    categories // [{ id, name, ... }]
+    colors,
+    sizes,
+    brands,
+    categories
   };
+}
+
+// ========== واجهات (Interfaces) الخاصة بالتسجيل وتسجيل الدخول ==========
+
+interface RegisterWithEmailRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+interface RegisterWithPhoneRequest {
+  name: string;
+  phone: string;
+  password: string;
+  country_code: string;
+}
+
+interface LoginWithEmailRequest {
+  email: string;
+  password: string;
+}
+
+interface LoginWithPhoneRequest {
+  phone: string;
+  password: string;
+  country_code: string;
+}
+
+interface AuthResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    token?: string;
+    user?: {
+      id: number;
+      name: string;
+      email?: string;
+      phone?: string;
+    };
+  } | null;
+}
+
+interface LogoutResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: null;
+}
+
+export async function registerWithEmail(data: RegisterWithEmailRequest): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in registerWithEmail:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في التسجيل',
+      data: null,
+    };
+  }
+}
+
+export async function registerWithPhone(data: RegisterWithPhoneRequest): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in registerWithPhone:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في التسجيل',
+      data: null,
+    };
+  }
+}
+
+export async function loginWithEmail(data: LoginWithEmailRequest): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in loginWithEmail:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تسجيل الدخول',
+      data: null,
+    };
+  }
+}
+
+export async function loginWithPhone(data: LoginWithPhoneRequest): Promise<AuthResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: AuthResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in loginWithPhone:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تسجيل الدخول',
+      data: null,
+    };
+  }
+}
+
+// ========== دوال مساعدة للمصادقة ==========
+export function saveToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token);
+  }
+}
+
+export function getToken(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+}
+
+export function removeToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+  }
+}
+
+export function saveUserData(user: AuthResponse['data']): void {
+  if (typeof window !== 'undefined' && user) {
+    localStorage.setItem('user_data', JSON.stringify(user));
+  }
+}
+
+export function getUserData(): AuthResponse['data'] | null {
+  if (typeof window !== 'undefined') {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      return JSON.parse(userData);
+    }
+  }
+  return null;
+}
+
+// ========== دالة تسجيل الخروج ==========
+export async function logout(token?: string): Promise<LogoutResponse> {
+  try {
+    const authToken = token || getToken();
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    const response = await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: LogoutResponse = await response.json();
+    
+    if (result.result) {
+      removeToken();
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in logout:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تسجيل الخروج',
+      data: null,
+    };
+  }
+}
+
+export async function logoutAndCleanup(redirectTo?: string): Promise<boolean> {
+  try {
+    const result = await logout();
+    
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      }
+    }
+    
+    return result.result;
+  } catch (error) {
+    console.error('Error in logoutAndCleanup:', error);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      }
+    }
+    
+    return false;
+  }
+}
+// ========== واجهات (Interfaces) خاصة بنسيت كلمة المرور ==========
+
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ForgotPasswordResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: any[] | null;
+}
+
+interface VerifyForgotPasswordRequest {
+  otp: string;
+  email: string;
+}
+
+interface VerifyForgotPasswordResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    token?: string;
+  } | null;
+}
+
+interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+}
+
+interface ChangePasswordResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: null;
+}
+
+/**
+ * دالة إرسال طلب إعادة تعيين كلمة المرور (نسيت كلمة المرور)
+ * @param data البريد الإلكتروني
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await forgotPassword({ email: "user@example.com" });
+ * if (result.result) {
+ *   console.log("تم إرسال رمز التحقق");
+ * }
+ */
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result: ForgotPasswordResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في إرسال رمز التحقق',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة التحقق من رمز إعادة تعيين كلمة المرور
+ * @param data رمز التحقق والبريد الإلكتروني
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await verifyForgotPassword({ otp: "123456", email: "user@example.com" });
+ * if (result.result) {
+ *   console.log("تم التحقق بنجاح");
+ * }
+ */
+export async function verifyForgotPassword(data: VerifyForgotPasswordRequest): Promise<VerifyForgotPasswordResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/verify-forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result: VerifyForgotPasswordResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in verifyForgotPassword:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في التحقق من الرمز',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة تغيير كلمة المرور (للمستخدم المسجل دخول)
+ * @param data كلمة المرور الحالية والجديدة
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await changePassword({
+ *   current_password: "oldPassword123",
+ *   new_password: "newPassword456",
+ *   new_password_confirmation: "newPassword456"
+ * });
+ * if (result.result) {
+ *   console.log("تم تغيير كلمة المرور بنجاح");
+ * }
+ */
+export async function changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+  try {
+    const token = getToken();
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(data),
+    });
+
+    const result: ChangePasswordResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in changePassword:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تغيير كلمة المرور',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة إعادة تعيين كلمة المرور بعد التحقق
+ * @param data البريد الإلكتروني وكلمة المرور الجديدة وتأكيدها
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await resetPassword({
+ *   email: "user@example.com",
+ *   new_password: "newPassword123",
+ *   new_password_confirmation: "newPassword123"
+ * });
+ */
+export async function resetPassword(data: {
+  email: string;
+  new_password: string;
+  new_password_confirmation: string;
+}): Promise<ChangePasswordResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: data.email,
+        new_password: data.new_password,
+        new_password_confirmation: data.new_password_confirmation,
+      }),
+    });
+
+    const result: ChangePasswordResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في إعادة تعيين كلمة المرور',
+      data: null,
+    };
+  }
+}
+
+// أضف هذه الدالة في نهاية ملف services/api.ts (في قسم دوال المصادقة)
+
+/**
+ * دالة إعادة إرسال رمز التحقق (OTP)
+ * @param email البريد الإلكتروني
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await resendOTP({ email: "user@example.com" });
+ * if (result.result) {
+ *   console.log("تم إرسال رمز جديد");
+ * }
+ */
+export async function resendOTP(email: string): Promise<ForgotPasswordResponse> {
+  try {
+    const response = await fetch(`${API_URL}/auth/resend-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const result: ForgotPasswordResponse = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error in resendOTP:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في إعادة إرسال الرمز',
+      data: null,
+    };
+  }
+}
+
+// ========== واجهات (Interfaces) خاصة بتحديث الملف الشخصي ==========
+
+interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+  locale?: string;
+  image?: string; // يمكن أن تكون base64 string أو رابط الصورة
+}
+
+interface UpdateProfileResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    user?: {
+      id: number;
+      name: string;
+      email?: string;
+      phone?: string;
+      image?: string;
+    };
+  } | null;
+}
+
+interface GetProfileResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    user: {
+      id: number;
+      name: string;
+      email?: string;
+      phone?: string;
+      image?: string;
+    };
+  } | null;
+}
+
+/**
+ * دالة تحديث الملف الشخصي للمستخدم
+ * @param data بيانات الملف الشخصي المراد تحديثها
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ * 
+ * @example
+ * const result = await updateUserProfile({
+ *   name: "أحمد محمد",
+ *   email: "ahmed@example.com",
+ *   locale: "ar",
+ *   image: "data:image/png;base64,..."
+ * });
+ * if (result.result) {
+ *   console.log("تم تحديث الملف الشخصي بنجاح");
+ * }
+ */
+export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+  try {
+    const token = getToken();
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // إضافة _method='put' كما هو مطلوب في الـ API
+    const bodyData = {
+      ...data,
+      _method: 'put'
+    };
+    
+    const response = await fetch(`${API_URL}/user/profile`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(bodyData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: UpdateProfileResponse = await response.json();
+    
+    if (result.result && result.errNum === 200 && result.data?.user) {
+      // تحديث بيانات المستخدم المخزنة محلياً
+      const currentUserData = getUserData();
+      if (currentUserData) {
+        const updatedUserData = {
+          ...currentUserData,
+          user: {
+            ...currentUserData.user,
+            ...result.data.user
+          }
+        };
+        saveUserData(updatedUserData);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تحديث الملف الشخصي',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة جلب بيانات الملف الشخصي للمستخدم
+ * @returns وعد (Promise) يحتوي على بيانات المستخدم
+ */
+export async function getUserProfile(): Promise<GetProfileResponse> {
+  try {
+    const token = getToken();
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}/user/profile`, {
+      method: 'GET',
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: GetProfileResponse = await response.json();
+    
+    if (result.result && result.errNum === 200 && result.data?.user) {
+      // تحديث بيانات المستخدم المخزنة محلياً
+      const currentUserData = getUserData();
+      if (currentUserData) {
+        const updatedUserData = {
+          ...currentUserData,
+          user: result.data.user
+        };
+        saveUserData(updatedUserData);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في جلب بيانات الملف الشخصي',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة رفع صورة الملف الشخصي
+ * @param imageBase64 الصورة بصيغة base64
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ */
+export async function updateProfileImage(imageBase64: string): Promise<UpdateProfileResponse> {
+  return updateUserProfile({ image: imageBase64 });
+}
+
+/**
+ * دالة تحديث اللغة
+ * @param locale اللغة ('ar' أو 'en')
+ * @returns وعد (Promise) يحتوي على نتيجة العملية
+ */
+export async function updateUserLocale(locale: string): Promise<UpdateProfileResponse> {
+  return updateUserProfile({ locale });
 }

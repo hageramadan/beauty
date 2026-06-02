@@ -1,7 +1,6 @@
-// app/account/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,22 +16,35 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AccountPage() {
   const router = useRouter();
+  const { user, isAuthenticated, loading, logoutUser } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [user, setUser] = useState({
-    name: "ملك أحمد",
-    email: "malak.ahmed@email.com",
-    avatar: "/images/account/profile.jpg",
-  });
+
+  // التحقق من حالة تسجيل الدخول
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      toast.error("الرجاء تسجيل الدخول أولاً", {
+        duration: 2000,
+        position: "top-center",
+      });
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 1500);
+    }
+  }, [isAuthenticated, loading, router]);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setShowLogoutModal(false);
+    
+    await logoutUser();
+    
     toast.success("تم تسجيل الخروج بنجاح 👋", {
       duration: 2000,
       position: "top-center",
@@ -74,6 +86,29 @@ export default function AccountPage() {
     },
   ];
 
+  // عرض شاشة تحميل أثناء جلب بيانات المستخدم
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#ff3c27] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل بيانات الحساب...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // إذا لم يكن المستخدم مسجل دخول، لا نعرض المحتوى
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  // الحصول على الحرف الأول من اسم المستخدم للصورة الافتراضية
+  const getUserInitial = () => {
+    if (!user.name) return "U";
+    return user.name.charAt(0).toUpperCase();
+  };
+
   return (
     <>
       <Toaster
@@ -89,28 +124,26 @@ export default function AccountPage() {
       />
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-        <div className="container mx-auto mb-4">
+        <div className="container mx-auto pb-4">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-[#180100]">حسابي</h1>
           </div>
 
           {/* Profile Card */}
-          <div className="bg-white rounded-2xl shadow-sm px-4 py-4 mb-3 md:mb-5 flex flex-col md:flex-row justify-between items-center">
+          <div className="bg-white rounded-2xl shadow-sm px-4 py-4 mb-3 md:mb-8 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center">
-              {/* Profile Image */}
+              {/* Profile Image - صورة افتراضية تعتمد على أول حرف من الاسم */}
               <div className="relative mb-4 md:mb-0">
-                {user.avatar ? (
-                  <Image
-                    src={user.avatar}
-                    alt={user.name}
-                    width={100}
-                    height={100}
-                    className="rounded-full object-cover h-16 w-16 md:w-24 md:h-24 border-4 border-white shadow-lg"
-                  />
+                {user.email ? (
+                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
+                    <span className="text-white text-2xl md:text-4xl font-bold">
+                      {getUserInitial()}
+                    </span>
+                  </div>
                 ) : (
                   <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
-                    <FaUser className="w-12 h-12 text-white" />
+                    <FaUser className="w-8 h-8 md:w-12 md:h-12 text-white" />
                   </div>
                 )}
                 <button 
@@ -121,14 +154,20 @@ export default function AccountPage() {
                 </button>
               </div>
 
-              {/* User Info */}
+              {/* User Info - بيانات حقيقية من Context */}
               <div className="mr-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">
-                  {user.name}
+                  {user.name || "مستخدم"}
                 </h2>
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  <span>{user.email}</span>
+                  {user.email && (
+                    <span>{user.email}</span>
+                  )}
+                  {user.phone && (
+                    <span className="mr-2">{user.phone}</span>
+                  )}
                 </div>
+              
               </div>
             </div>
             
@@ -152,7 +191,7 @@ export default function AccountPage() {
           </div>
 
           {/* Menu Items */}
-          <div className="space-y-3 bg-white rounded-[8px] p-2 md:p-4 shadow-sm">
+          <div className="space-y-3 bg-white rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
             {menuItems.map((item) => (
               <Link
                 key={item.id}
@@ -169,6 +208,8 @@ export default function AccountPage() {
               </Link>
             ))}
           </div>
+
+        
         </div>
       </div>
 

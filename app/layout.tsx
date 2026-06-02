@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/contexts/CartContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const almarai = Almarai({
   subsets: ["arabic"],
@@ -26,21 +27,19 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={almarai.className}>
-        <CartProvider>
-          <FavoritesProvider>
-          
-            <Navbar />
-            <main 
-            >{children}</main>
-             <Toaster
-            
-          position="top-center" // مكان ظهور الإشعار
-          reverseOrder={false}
-          
-        />
-            <Footer />
-          </FavoritesProvider>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <FavoritesProvider>
+              <Navbar />
+              <main>{children}</main>
+              <Toaster
+                position="top-center" // مكان ظهور الإشعار
+                reverseOrder={false}
+              />
+              <Footer />
+            </FavoritesProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

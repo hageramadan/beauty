@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/select";
 
 interface PhoneInputProps {
-  value: string;
-  onChange: (phone: string) => void;
+  value: string;  // القيمة كاملة (مثال: "+966512345678")
+  onChange: (phone: string, countryCode: string) => void;
   required?: boolean;
 }
 
@@ -22,72 +22,89 @@ interface CountryCode {
   countryCode: string;
   placeholder: string;
   example: string;
-  pattern: RegExp;
-  maxLength: number;
 }
 
+// تم إزالة pattern و maxLength من هنا، لأن الفالديشن أصبح عاماً
 const countryCodes: CountryCode[] = [
   { 
     code: "+20", 
     country: "مصر", 
     countryCode: "EG",
-    placeholder: "1XX XXX XXXX",
-    example: "012 3456 7890",
-    pattern: /^1[0-9]{9}$/,
-    maxLength: 10
+    placeholder: "01X XXX XXXX",
+    example: "012 3456 7890"
   },
   { 
     code: "+966", 
     country: "السعودية", 
     countryCode: "SA",
-    placeholder: "5X XXX XXXX",
-    example: "05 1234 5678",
-    pattern: /^5[0-9]{8}$/,
-    maxLength: 9
+    placeholder: "05X XXX XXXX",
+    example: "05 1234 5678"
   },
   { 
     code: "+964", 
     country: "العراق", 
     countryCode: "IQ",
-    placeholder: "7XX XXX XXXX",
-    example: "0770 123 4567",
-    pattern: /^7[0-9]{9}$/,
-    maxLength: 10
+    placeholder: "07XX XXX XXXX",
+    example: "0770 123 4567"
   },
   { 
     code: "+971", 
     country: "الإمارات", 
     countryCode: "AE",
-    placeholder: "5X XXX XXXX",
-    example: "050 123 4567",
-    pattern: /^5[0-9]{8}$/,
-    maxLength: 9
+    placeholder: "05X XXX XXXX",
+    example: "050 123 4567"
   },
 ];
+
+// الفالديشن الجديد كما طلبتِ
+const GLOBAL_PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 
 export default function PhoneInput({ value, onChange, required = false }: PhoneInputProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(countryCodes[0]);
   const [error, setError] = useState("");
 
-  // تعديل الدالة لاستقبال string | null
   const handleCountrySelect = (countryCode: string | null) => {
-    if (!countryCode) return; // التعامل مع حالة null
+    if (!countryCode) return;
     const country = countryCodes.find(c => c.code === countryCode);
     if (country) {
       setSelectedCountry(country);
-      // تحديث الرقم مع الكود الجديد
-      const phoneNumber = value.replace(/^\+\d+/, "").trim();
-      onChange(`${country.code} ${phoneNumber}`);
+      // الحصول على الرقم الحالي (بدون مسافات) وإزالة الكود القديم
+      const currentPhoneNumber = getPhoneNumberOnly(value);
+      const fullPhoneWithoutSpaces = `${country.code}${currentPhoneNumber}`;
+      
+      // إرسال الرقم الجديد ورمز الدولة
+      onChange(currentPhoneNumber, country.code);
+      
+      // التحقق من صحة الرقم الكامل الجديد
+      validateFullPhone(fullPhoneWithoutSpaces);
       setError("");
     }
   };
 
-  const validatePhoneNumber = (phone: string, countryCode: string): boolean => {
-    const number = phone.replace(countryCode, "").trim().replace(/\s/g, "");
-    const country = countryCodes.find(c => c.code === countryCode);
-    return country ? country.pattern.test(number) : number.length >= 8;
+  // دالة لاستخراج الرقم فقط بدون رمز الدولة
+  const getPhoneNumberOnly = (fullPhone: string): string => {
+    // إزالة أي رمز دولة موجود (تبدأ بـ + وتنتهي بمسافة أو نهاية النص)
+    let phoneNumber = fullPhone.replace(/^\+\d+\s?/, "");
+    // إزالة المسافات
+    phoneNumber = phoneNumber.replace(/\s/g, "");
+    return phoneNumber;
   };
 
+  // دالة التحقق باستخدام الـ Regex الجديد
+  const validateFullPhone = (fullPhone: string): boolean => {
+    // إزالة المسافات قبل التحقق
+    const phoneWithoutSpaces = fullPhone.replace(/\s/g, "");
+    const isValid = GLOBAL_PHONE_REGEX.test(phoneWithoutSpaces);
+    
+    if (!isValid && phoneWithoutSpaces.length > 0) {
+      setError(`رقم الهاتف غير صحيح. يجب أن يكون من 10 إلى 15 رقماً، ويمكن أن يبدأ بعلامة "+" اختيارياً.`);
+    } else {
+      setError("");
+    }
+    return isValid;
+  };
+
+  // تنسيق الرقم للعرض (حسب كل دولة) - هذه الوظيفة بقيت كما هي للعرض فقط
   const formatPhoneNumber = (number: string, countryCode: string): string => {
     const cleanNumber = number.replace(/\s/g, "");
     
@@ -112,29 +129,37 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let number = e.target.value;
     
-    // إزالة أي أحرف غير رقمية
+    // إزالة أي أحرف غير رقمية (مع السماح بـ + لأن الفالديشن الجديد يدعمها)
+    // لكن هنا نمنع إدخال + لأن المستخدم سيختارها من القائمة، لتجنب الـ +
+    // نسمح فقط بالأرقام لأن رمز البلد سيتم إضافته تلقائياً
     number = number.replace(/[^\d]/g, "");
     
-    // تحديد الحد الأقصى لطول الرقم حسب الدولة
-    if (number.length > selectedCountry.maxLength) {
-      number = number.slice(0, selectedCountry.maxLength);
+    // تحديد حد أقصى (مثلاً 15 رقم كحد أقصى حسب الـ Regex)
+    const MAX_DIGITS = 15;
+    if (number.length > MAX_DIGITS) {
+      number = number.slice(0, MAX_DIGITS);
     }
     
-    // تنسيق الرقم
+    // تنسيق الرقم للعرض
     const formattedNumber = formatPhoneNumber(number, selectedCountry.code);
-    const fullPhone = `${selectedCountry.code} ${formattedNumber}`;
-    onChange(fullPhone);
     
-    // التحقق من صحة الرقم
-    if (number.length > 0 && !validatePhoneNumber(fullPhone, selectedCountry.code)) {
-      setError(`رقم الهاتف غير صحيح. يجب أن يكون ${selectedCountry.maxLength} أرقام. مثال: ${selectedCountry.example}`);
-    } else {
+    // بناء الرقم الكامل (مع رمز البلد) للتحقق
+    const fullPhone = `${selectedCountry.code}${number}`;
+    
+    // التحقق من صحة الرقم الكامل باستخدام الـ Regex الجديد
+    const isValid = validateFullPhone(fullPhone);
+    
+    // إرسال الرقم (بدون رمز الدولة) ورمز الدولة
+    onChange(number, selectedCountry.code);
+    
+    // إذا كان الرقم فارغاً، نزيل الخطأ
+    if (number.length === 0) {
       setError("");
     }
   };
 
-  // استخراج الرقم بدون الكود
-  const displayNumber = value.replace(selectedCountry.code, "").trim();
+  // استخراج الرقم بدون الكود للعرض
+  const displayNumber = getPhoneNumberOnly(value);
 
   return (
     <div className="w-full">
@@ -143,9 +168,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
       </label>
       
       <div>
-        {/* حاوية الـ Select والـ Input كقطعة واحدة */}
         <div className="relative flex flex-row-reverse items-stretch">
-              {/* حقل إدخال رقم الهاتف - على اليسار */}
           <div className="flex-1 relative">
             <input
               type="tel"
@@ -165,7 +188,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
               dir="ltr"
             />
           </div>
-          {/* Select الخاص بالدولة - على اليمين */}
+          
           <div className="relative">
             <Select value={selectedCountry.code} onValueChange={handleCountrySelect}>
               <SelectTrigger 
@@ -219,14 +242,8 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
               </SelectContent>
             </Select>
           </div>
-
-        
         </div>
         
-        {/* نص توضيحي أسفل الحقل */}
-       
-        
-        {/* رسالة الخطأ */}
         {error && (
           <p className="text-xs text-red-500 mt-1 text-left">
             {error}

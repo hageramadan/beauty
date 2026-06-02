@@ -1,16 +1,16 @@
-// components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, ShoppingCart, User, Search, X, ChevronDown } from "lucide-react";
+import { Heart, ShoppingCart, User, Search, X, ChevronDown, LogOut, HeartIcon, Package, RotateCcw, UserCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { PiUserBold } from "react-icons/pi";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getCategories } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 // تحويل الاسم العربي إلى slug للإنجليزية (للعرض فقط)
 const generateSlug = (name: string): string => {
@@ -29,7 +29,7 @@ const generateSlug = (name: string): string => {
 interface Category {
   id: number;
   name: string;
-  href: string;  // الآن سيكون `/products?categories=[id]`
+  href: string;
 }
 
 const navLinks = [
@@ -42,6 +42,8 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { cartCount } = useCart();
+  const { isAuthenticated, user, logoutUser, loading } = useAuth();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -50,10 +52,12 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // التحقق من أن الصفحة الحالية هي الهوم
   const isHomePage = pathname === "/";
@@ -65,17 +69,15 @@ export function Navbar() {
         setLoadingCategories(true);
         const categoriesData = await getCategories();
         
-        // ✅ تغيير: الرابط الآن يذهب إلى /products مع فلتر category
         const transformedCategories: Category[] = categoriesData.map(cat => ({
           id: cat.id,
           name: cat.name,
-          href: `/products?categories=[${cat.id}]`  // ✅ الرابط الجديد
+          href: `/products?categories=[${cat.id}]`
         }));
         
         setCategories(transformedCategories);
       } catch (error) {
         console.error('Error fetching categories for navbar:', error);
-        // بيانات افتراضية في حالة الخطأ
         setCategories([
           { id: 1, name: "رجال", href: "/products?categories=[1]" },
           { id: 2, name: "نساء", href: "/products?categories=[2]" },
@@ -119,16 +121,6 @@ export function Navbar() {
     }
   }, [showSearchInput]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setShowSearchInput(false);
-      setSearchQuery("");
-      setMobileMenuOpen(false);
-    }
-  };
-
   // Close search input when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -148,11 +140,14 @@ export function Navbar() {
       if (showCategoriesDropdown && categoriesRef.current && !categoriesRef.current.contains(event.target as Node)) {
         setShowCategoriesDropdown(false);
       }
+      if (showUserDropdown && userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showCategoriesDropdown]);
+  }, [showCategoriesDropdown, showUserDropdown]);
 
   // Close on escape key
   useEffect(() => {
@@ -167,11 +162,40 @@ export function Navbar() {
       if (e.key === 'Escape' && showMobileCategoriesDropdown) {
         setShowMobileCategoriesDropdown(false);
       }
+      if (e.key === 'Escape' && showUserDropdown) {
+        setShowUserDropdown(false);
+      }
     };
     
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showSearchInput, showCategoriesDropdown, showMobileCategoriesDropdown]);
+  }, [showSearchInput, showCategoriesDropdown, showMobileCategoriesDropdown, showUserDropdown]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearchInput(false);
+      setSearchQuery("");
+      setMobileMenuOpen(false);
+    }
+  };
+
+  // تسجيل الخروج
+  const handleLogout = async () => {
+    await logoutUser();
+    setShowUserDropdown(false);
+    setMobileMenuOpen(false);
+    router.push("/");
+    // إعادة تحميل الصفحة لتحديث حالة الناف بار في كل مكان
+    window.location.reload();
+  };
+
+  // الحرف الأول من اسم المستخدم
+  const getUserInitial = () => {
+    if (!user) return "";
+    return user.name ? user.name.charAt(0).toUpperCase() : (user.email?.charAt(0).toUpperCase() || "U");
+  };
 
   // تحديد ألوان الناف بار
   const getNavbarStyles = () => {
@@ -197,6 +221,20 @@ export function Navbar() {
   };
 
   const styles = getNavbarStyles();
+
+  // عرض شاشة تحميل مؤقتة أثناء التحقق من حالة المستخدم
+  if (loading) {
+    return (
+      <header className="fixed top-0 z-50 w-full bg-white shadow-md">
+        <div className="container-custom">
+          <div className="flex h-16 items-center justify-between">
+            <div className="text-[32px] font-bold text-[#EC221F]">Logo</div>
+            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header 
@@ -361,18 +399,104 @@ export function Navbar() {
               </Link>
             </Button>
 
-            <Button 
-              variant="ghost" 
-              asChild 
-              aria-label="login"
-              className={`hidden sm:inline-flex gap-2 hover:bg-[#EC221F] transition-all duration-300 ${styles.buttonBg} rounded-[16px]`}
-              style={{ color: styles.buttonTextColor }}
-            >
-              <Link href="/auth/login">
-                <PiUserBold className="h-5 w-5" />
-                <span className="text-[14px] font-bold">تسجيل دخول</span>
-              </Link>
-            </Button>
+            {/* Conditional Rendering: User Avatar or Login Button */}
+            {isAuthenticated && user ? (
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 hover:bg-gray-100"
+                  style={{ color: styles.textColor }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center text-white font-bold text-sm shadow-md">
+                    {getUserInitial()}
+                  </div>
+                  <span className="text-sm font-medium hidden lg:block">
+                    {user.name?.split(' ')[0] || user.email?.split('@')[0] || "مستخدم"}
+                  </span>
+                  <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* User Dropdown Menu */}
+                {showUserDropdown && (
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ borderColor: '#e2e8f0' }}>
+                    <div className="py-2">
+                      {/* اسم المستخدم الكامل */}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-800">{user.name || "مستخدم"}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{user.email || user.phone || ""}</p>
+                      </div>
+
+                      {/* المفضلة */}
+                      <Link
+                        href="/account/wishlist"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                        style={{ color: '#112B40' }}
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <HeartIcon className="h-4 w-4" />
+                        <span>المفضلة</span>
+                      </Link>
+
+                      {/* الطلبات */}
+                      <Link
+                        href="/account/orders"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                        style={{ color: '#112B40' }}
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <Package className="h-4 w-4" />
+                        <span>الطلبات</span>
+                      </Link>
+
+                      {/* المرتجعات */}
+                      <Link
+                        href="/account/returns"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                        style={{ color: '#112B40' }}
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        <span>المرتجعات</span>
+                      </Link>
+
+                      {/* الملف الشخصي */}
+                      <Link
+                        href="/account"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                        style={{ color: '#112B40' }}
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <UserCircle className="h-4 w-4" />
+                        <span>الملف الشخصي</span>
+                      </Link>
+
+                      {/* تسجيل الخروج */}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 border-t border-gray-100 mt-1"
+                        style={{ color: '#EC221F' }}
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>تسجيل الخروج</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Button 
+                variant="ghost" 
+                asChild 
+                aria-label="login"
+                className={`hidden sm:inline-flex gap-2 hover:bg-[#EC221F] transition-all duration-300 ${styles.buttonBg} rounded-[16px]`}
+                style={{ color: styles.buttonTextColor }}
+              >
+                <Link href="/auth/login">
+                  <PiUserBold className="h-5 w-5" />
+                  <span className="text-[14px] font-bold">تسجيل دخول</span>
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -428,15 +552,59 @@ export function Navbar() {
                 <span className="text-xs" style={{ color: '#112B40' }}>السلة</span>
               </Link>
 
-              <Link 
-                href="/auth/login" 
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <User className="h-5 w-5" style={{ color: '#195073' }} />
-                <span className="text-xs" style={{ color: '#112B40' }}>تسجيل دخول</span>
-              </Link>
+              {isAuthenticated && user ? (
+                <div className="flex flex-col items-center gap-1 p-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center text-white font-bold text-sm">
+                    {getUserInitial()}
+                  </div>
+                  <span className="text-xs" style={{ color: '#112B40' }}>حسابي</span>
+                </div>
+              ) : (
+                <Link 
+                  href="/auth/login" 
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <User className="h-5 w-5" style={{ color: '#195073' }} />
+                  <span className="text-xs" style={{ color: '#112B40' }}>تسجيل دخول</span>
+                </Link>
+              )}
             </div>
+
+            {/* إذا كان المستخدم مسجل دخول، عرض روابط إضافية في الموبايل */}
+            {isAuthenticated && user && (
+              <div className="px-3 space-y-1 border-b border-gray-100 pb-3">
+                <Link 
+                  href="/account/orders" 
+                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  style={{ color: '#112B40' }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Package className="h-4 w-4" />
+                  <span>الطلبات</span>
+                </Link>
+                <Link 
+                  href="/account/returns" 
+                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  style={{ color: '#112B40' }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>المرتجعات</span>
+                </Link>
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  style={{ color: '#EC221F' }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>تسجيل الخروج</span>
+                </button>
+              </div>
+            )}
 
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (

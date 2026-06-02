@@ -10,6 +10,7 @@ interface ContactFormData {
   name: string;
   email: string;
   phone: string;
+  country_code: string;
   message: string;
 }
 
@@ -18,41 +19,87 @@ export default function ContactForm() {
     name: "",
     email: "",
     phone: "",
+    country_code: "+966",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePhoneChange = (phone: string) => {
-    setFormData((prev) => ({ ...prev, phone }));
+  // معالج رقم الهاتف المعدل - يستقبل الرقم ورمز الدولة بشكل منفصل
+  const handlePhoneChange = (phone: string, countryCode: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      phone: phone,
+      country_code: countryCode,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // محاكاة إرسال البيانات
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log("Form submitted:", formData);
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({ name: "", email: "", phone: "", message: "" });
-    setTimeout(() => setIsSubmitted(false), 5000);
+    setErrorMessage("");
+
+    try {
+      // تجهيز البيانات للإرسال
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone, // الرقم فقط بدون رمز الدولة
+        country_code: formData.country_code, // رمز الدولة منفصل
+        message: formData.message,
+      };
+
+      console.log("Sending data:", payload);
+
+      const response = await fetch("https://dukanah.admin.t-carts.com/api/contact-us", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.result === true) {
+        setIsSubmitted(true);
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          country_code: "+966",
+          message: "",
+        });
+        setTimeout(() => setIsSubmitted(false), 5000);
+      } else {
+        setErrorMessage(data.message || "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setErrorMessage("حدث خطأ في الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm h-fit">
-      
-
       {isSubmitted && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
-          تم إرسال رسالتك بنجاح! سنقوم بالرد عليك في أقرب وقت.
+          تم إرسال رسالتك بنجاح! سنقوم بالرد عليك قريباً.
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {errorMessage}
         </div>
       )}
 
@@ -63,7 +110,7 @@ export default function ContactForm() {
           type="text"
           value={formData.name}
           onChange={handleChange}
-          placeholder="الأسم"
+          placeholder="أدخل اسمك كاملاً"
           required
         />
 
@@ -78,7 +125,7 @@ export default function ContactForm() {
         />
 
         <PhoneInput
-          value={formData.phone}
+          value={`${formData.country_code} ${formData.phone}`}
           onChange={handlePhoneChange}
           required
         />

@@ -363,7 +363,7 @@ export default function WishlistPage() {
 
           {/* قائمة المنتجات */}
           {wishlistItems.length === 0 ? (
-            <div className=" rounded-2xl  p-12 text-center">
+            <div className=" rounded-2xl  p-12 text-center h-[70vh] flex flex-col items-center justify-center gap-4">
               
               <h2 className="text-xl font-bold text-gray-800 mb-2">قائمة المفضلة فارغة</h2>
               <p className="text-gray-500 mb-6">لم تقم بإضافة أي منتجات إلى قائمة المفضلة بعد</p>

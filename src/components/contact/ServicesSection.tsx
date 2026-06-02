@@ -35,7 +35,7 @@ const servicesData: ServiceItem[] = [
 
 export default function ServicesSection() {
   return (
-    <div className="bg-[#141718] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm">
+    <div className="bg-[#141718] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm mb-5">
       <div className="grid grid-cols-1  gap-3  md:gap-6 ">
         {servicesData.map((service) => {
           const Icon = service.icon;
