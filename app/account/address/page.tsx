@@ -1,66 +1,99 @@
 // app/account/address/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SavedAddresses from "@/components/address/SavedAddresses";
 import AddAddress from "@/components/address/AddAddress";
 import { BsFillPlusCircleFill } from "react-icons/bs";
+import toast, { Toaster } from "react-hot-toast";
+import { Address } from "@/types/address";
 
 export default function AddressPage() {
   const [showAddAddress, setShowAddAddress] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: "المنزل",
-      governorate: "القاهرة",
-      apartmentNumber: "5",
-      floor: "5",
-      street: "شارع النيل",
-      city: "مدينة نصر",
-    },
-    {
-      id: 2,
-      type: "الدوام",
-      governorate: "الجيزة",
-      apartmentNumber: "3",
-      floor: "2",
-      street: "شارع الهرم",
-      city: "المهندسين",
-    },
-  ]);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleAddAddress = (newAddress: any) => {
+  const API_URL = 'https://dukanah.admin.t-carts.com/api';
+
+  // جلب جميع العناوين
+  const fetchAddresses = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/addresses`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      const result = await response.json();
+      
+      console.log("📦 البيانات القادمة من API:", result);
+      
+      if (result.result === true && Array.isArray(result.data)) {
+        setAddresses(result.data);
+      } else {
+        throw new Error("فشل في تحميل العناوين");
+      }
+    } catch (error) {
+      console.error("❌ خطأ في جلب العناوين:", error);
+      toast.error("فشل في تحميل العناوين");
+      setAddresses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const handleAddAddress = async (newAddress: Address) => {
     console.log("📦 إضافة عنوان جديد:", newAddress);
-    console.log("🏙️ المدينة المستخرجة:", newAddress.city);
-    console.log("📍 المحافظة المستخرجة:", newAddress.governorate);
-    setAddresses([...addresses, { ...newAddress, id: Date.now() }]);
+    await fetchAddresses();
     setShowAddAddress(false);
     setEditingAddress(null);
   };
 
-  const handleEditAddress = (address: any) => {
+  const handleEditAddress = (address: Address) => {
     console.log("✏️ تعديل عنوان:", address);
     setEditingAddress(address);
     setShowAddAddress(true);
   };
 
-  const handleUpdateAddress = (updatedAddress: any) => {
+  const handleUpdateAddress = async (updatedAddress: Address) => {
     console.log("🔄 تحديث عنوان:", updatedAddress);
-    console.log("🏙️ المدينة بعد التحديث:", updatedAddress.city);
-    console.log("📍 المحافظة بعد التحديث:", updatedAddress.governorate);
-    setAddresses(
-      addresses.map((addr) =>
-        addr.id === updatedAddress.id ? updatedAddress : addr
-      )
-    );
+    await fetchAddresses();
     setShowAddAddress(false);
     setEditingAddress(null);
   };
 
-  const handleDeleteAddress = (id: number) => {
-    console.log("🗑️ حذف عنوان بالرقم:", id);
-    setAddresses(addresses.filter((addr) => addr.id !== id));
+  const handleDeleteAddress = async (id: number) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/addresses/${id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.result === true) {
+        toast.success("تم حذف العنوان بنجاح");
+        await fetchAddresses();
+      } else {
+        throw new Error(result.message || "فشل في حذف العنوان");
+      }
+    } catch (error) {
+      console.error("❌ خطأ في حذف العنوان:", error);
+      toast.error(error instanceof Error ? error.message : "فشل في حذف العنوان");
+    }
   };
 
   const handleCloseModal = () => {
@@ -68,8 +101,39 @@ export default function AddressPage() {
     setEditingAddress(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-gray-600">جاري تحميل العناوين...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          style: {
+            fontSize: '14px',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            direction: 'rtl',
+          },
+          success: {
+            style: { background: '#10B981', color: 'white' },
+            iconTheme: { primary: 'white', secondary: '#10B981' },
+          },
+          error: {
+            style: { background: '#EF4444', color: 'white' },
+            iconTheme: { primary: 'white', secondary: '#EF4444' },
+          },
+        }}
+      />
       <div className="container mx-auto">
         <div className="mb-3">
           <div className="flex justify-between items-center mb-6">
@@ -101,7 +165,7 @@ export default function AddressPage() {
               key={editingAddress?.id || "new"}
               onClose={handleCloseModal}
               onSave={editingAddress ? handleUpdateAddress : handleAddAddress}
-              initialData={editingAddress}
+              initialData={editingAddress || undefined}
               isEditing={!!editingAddress}
             />
           )}

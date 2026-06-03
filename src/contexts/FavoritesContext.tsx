@@ -1,50 +1,200 @@
+// src/contexts/FavoritesContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { 
+  fetchFavorites, 
+  addToFavorites, 
+  removeFromFavorites, 
+  clearAllFavorites,
+  FavoriteProduct,
+} from '@/services/favorites';
+import toast from 'react-hot-toast';
 
 interface FavoritesContextType {
-  favorites: number[];
-  favoritesCount: number;
-  addToFavorites: (id: number) => void;
-  removeFromFavorites: (id: number) => void;
-  isFavorite: (id: number) => boolean;
+  favorites: FavoriteProduct[];
+  isLoading: boolean;
+  isMutating: boolean;
+  total: number;
+  addFavorite: (productId: string | number) => Promise<boolean>;
+  removeFavorite: (productId: string | number) => Promise<boolean>;
+  toggleFavorite: (productId: string | number, currentState?: boolean) => Promise<boolean>;
+  clearAllFavorites: () => Promise<boolean>;
+  refetch: () => Promise<void>;
+  isFavorite: (productId: string | number) => boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
-export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const [favorites, setFavorites] = useState<number[]>([]);
+export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const [favorites, setFavorites] = useState<FavoriteProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
+  const [total, setTotal] = useState(0);
+  
+  const favoritesMapRef = useRef<Map<string, boolean>>(new Map());
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("favorites");
-    if (saved) setFavorites(JSON.parse(saved));
+  const fetchData = useCallback(async (showLoading: boolean = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const response = await fetchFavorites(1, 100);
+      console.log("📦 fetchData response:", response);
+      
+      if (response.result === true && response.data && Array.isArray(response.data.favorites)) {
+        const validFavorites = response.data.favorites.filter(item => item && item.id);
+        
+        if (isMountedRef.current) {
+          console.log("✅ تحديث القائمة:", validFavorites.length, "منتج");
+          setFavorites([...validFavorites]); // استخدام spread لإنشاء مصفوفة جديدة
+          setTotal(validFavorites.length);
+          
+          const newMap = new Map<string, boolean>();
+          validFavorites.forEach((item: FavoriteProduct) => {
+            if (item && item.id) {
+              newMap.set(item.id.toString(), true);
+            }
+          });
+          favoritesMapRef.current = newMap;
+        }
+      }
+    } catch (error) {
+      console.error('خطأ في جلب المفضلة:', error);
+    } finally {
+      if (showLoading && isMountedRef.current) {
+        setIsLoading(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    isMountedRef.current = true;
+    fetchData();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchData]);
 
-  const addToFavorites = (id: number) => {
-    setFavorites((prev) => [...prev, id]);
+  const addFavorite = async (productId: string | number): Promise<boolean> => {
+    setIsMutating(true);
+    const productIdStr = productId.toString();
+    
+    try {
+      const response = await addToFavorites(productId);
+      console.log("➕ addFavorite response:", response);
+      
+      if (response.result === true && response.data) {
+        toast.success('تم إضافة المنتج إلى المفضلة');
+        
+        // إعادة جلب البيانات بالكامل للتأكد من التزامن
+        await fetchData(false);
+        
+        return true;
+      } else {
+        if (response.message === "هذا المنتج موجود بالفعل في مفضلتك.") {
+          toast.success('المنتج موجود بالفعل في المفضلة');
+          favoritesMapRef.current.set(productIdStr, true);
+          return true;
+        }
+        toast.error(response.message || 'فشل في إضافة المنتج');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في إضافة المنتج');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
   };
 
-  const removeFromFavorites = (id: number) => {
-    setFavorites((prev) => prev.filter((favId) => favId !== id));
+  const removeFavorite = async (productId: string | number): Promise<boolean> => {
+    setIsMutating(true);
+    const productIdStr = productId.toString();
+    
+    try {
+      const response = await removeFromFavorites(productId);
+      console.log("🗑️ removeFavorite response:", response);
+      
+      if (response.result === true) {
+        toast.success('تم إزالة المنتج من المفضلة');
+        
+        // إعادة جلب البيانات بالكامل للتأكد من التزامن
+        await fetchData(false);
+        
+        return true;
+      } else {
+        toast.error(response.message || 'فشل في إزالة المنتج');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في إزالة المنتج');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
   };
 
-  const isFavorite = (id: number) => favorites.includes(id);
+  const toggleFavorite = async (productId: string | number, currentState?: boolean): Promise<boolean> => {
+    const productIdStr = productId.toString();
+    const isCurrentlyFavorite = currentState !== undefined ? currentState : (favoritesMapRef.current.get(productIdStr) || false);
+    
+    if (isCurrentlyFavorite) {
+      return await removeFavorite(productId);
+    } else {
+      return await addFavorite(productId);
+    }
+  };
+
+  const clearAll = async (): Promise<boolean> => {
+    setIsMutating(true);
+    try {
+      const success = await clearAllFavorites();
+      if (success) {
+        toast.success('تم حذف جميع المنتجات من المفضلة');
+        await fetchData(false);
+        return true;
+      } else {
+        toast.error('فشل في حذف جميع المنتجات');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في حذف المنتجات');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const isFavorite = (productId: string | number): boolean => {
+    if (!productId) return false;
+    return favoritesMapRef.current.get(productId.toString()) || false;
+  };
+
+  const value = {
+    favorites,
+    isLoading,
+    isMutating,
+    total,
+    addFavorite,
+    removeFavorite,
+    toggleFavorite,
+    clearAllFavorites: clearAll,
+    refetch: () => fetchData(true),
+    isFavorite,
+  };
 
   return (
-    <FavoritesContext.Provider
-      value={{ favorites, favoritesCount: favorites.length, addToFavorites, removeFromFavorites, isFavorite }}
-    >
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );
 }
 
-export function useFavorites() {
+export function useFavoritesContext() {
   const context = useContext(FavoritesContext);
-  if (!context) throw new Error("useFavorites must be used within FavoritesProvider");
+  if (context === undefined) {
+    throw new Error('useFavoritesContext must be used within a FavoritesProvider');
+  }
   return context;
 }

@@ -5,13 +5,14 @@ import { useState } from "react";
 import Image from "next/image";
 import { Heart, Truck, RefreshCw, Ruler, Info } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { useFavorites } from "@/hooks/useFavorites";
 import Link from "next/link";
 import { BsShare } from "react-icons/bs";
 import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa6";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { FaRegStar } from "react-icons/fa";
+
 interface ProductDetailsProps {
   product: {
     id: number;
@@ -44,7 +45,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   >("info");
 
   const { addToCart } = useCart();
-  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const { toggleFavorite, isFavorite, isMutating } = useFavorites();
+
+  // التحقق من أن المنتج في المفضلة
+  const isProductFavorite = isFavorite(product.id.toString());
 
   // معالجة إضافة إلى السلة
   const handleAddToCart = () => {
@@ -59,19 +63,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   };
 
-  // معالجة إضافة إلى المفضلة
-  // const handleToggleFavorite = () => {
-  //   if (isFavorite(product.id.toString())) {
-  //     removeFromFavorites(product.id.toString());
-  //   } else {
-  //     addToFavorites({
-  //       id: product.id.toString(),
-  //       name: product.name,
-  //       price: product.price,
-  //       image: product.images[0],
-  //     });
-  //   }
-  // };
+  // معالجة إضافة/إزالة من المفضلة
+  const handleToggleFavorite = async () => {
+    await toggleFavorite(product.id.toString(), isProductFavorite);
+  };
 
   // تحديث الكمية
   const increaseQuantity = () => setQuantity((prev) => prev + 1);
@@ -96,14 +91,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     : 0;
 
   return (
-    <div className="container-custom  ">
+    <div className="container-custom">
       <div className="flex gap-2 mb-5">
         <Link href="/" className="text-[#726C6C] text-[20px]">
           الرئيسية
         </Link>
         <span className="text-[#333333] font-bold">/</span>
         <Link href="/products" className="text-[#726C6C] font-bold text-[20px]">
-           {product.brand}
+          {product.brand}
         </Link>
         <span className="text-[#180100] font-bold text-[20px]">/</span>
 
@@ -158,7 +153,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               {/* اسم المنتج */}
-              <h1 className="text-2xl  font-bold text-[#000000]">
+              <h1 className="text-2xl font-bold text-[#000000]">
                 {product.name}
               </h1>
               {/* الماركة */}
@@ -211,12 +206,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   key={color.name}
                   onClick={() => setSelectedColor(color.name)}
                   className={`
-          group relative w-10 h-10 rounded-full transition-all duration-200
-          ${selectedColor === color.name ? "ring-2 ring-offset-2 scale-110" : "hover:scale-105"}
-        `}
+                    group relative w-10 h-10 rounded-full transition-all duration-200
+                    ${selectedColor === color.name ? "ring-2 ring-offset-2 scale-110" : "hover:scale-105"}
+                  `}
                   style={{
                     backgroundColor: color.code,
-                 
                   }}
                   aria-label={`لون ${color.name}`}
                 >
@@ -242,6 +236,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           </div>
           <hr />
+          
           {/* ===== اختيار المقاس ===== */}
           <div>
             <div className="flex justify-between items-center my-4">
@@ -254,13 +249,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <label
                   key={size}
                   className={`
-          flex items-center justify-center rounded-[8px] gap-2 w-[84px] px-3 h-[36px]  font-medium transition-all duration-200 cursor-pointer
-          ${
-            selectedSize === size
-              ? "bg-[#EDF0F8] text-[#3A4980]"
-              : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
-          }
-        `}
+                    flex items-center justify-center rounded-[8px] gap-2 w-[84px] px-3 h-[36px] font-medium transition-all duration-200 cursor-pointer
+                    ${
+                      selectedSize === size
+                        ? "bg-[#EDF0F8] text-[#3A4980]"
+                        : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
+                    }
+                  `}
                 >
                   <input
                     type="radio"
@@ -268,7 +263,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     value={size}
                     checked={selectedSize === size}
                     onChange={() => setSelectedSize(size)}
-                    className="w-4 h-4 accent-[#3A4980] "
+                    className="w-4 h-4 accent-[#3A4980]"
                   />
                   <span>{size}</span>
                 </label>
@@ -278,15 +273,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           {/* ===== الكمية ===== */}
           <div>
-            <div className="flex items-center gap-4 my-4 ">
-              <div className="flex items-center  rounded-full bg-[#F3F3F3] h-[56px] w-[169px] justify-center">
+            <div className="flex items-center gap-4 my-4">
+              <div className="flex items-center rounded-full bg-[#F3F3F3] h-[56px] w-[169px] justify-center">
                 <button
                   onClick={increaseQuantity}
                   className="w-10 h-10 flex items-center justify-center text-[#3A4980] font-bold transition"
                 >
                   <FaPlus className="w-4 h-4 font-bold" />
                 </button>
-                <span className="w-14 text-center text-[22px]  font-bold text-[#222222]">
+                <span className="w-14 text-center text-[22px] font-bold text-[#222222]">
                   {quantity}
                 </span>
                 <button
@@ -309,19 +304,24 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </button>
             <div className="flex gap-4 pt-4">
               <button
-                onClick={handleAddToCart}
-                className="flex-1   px-6 py-3 border border-[#0A0500] rounded-[8px] font-bold hover:bg-[#f3f1f1] transition-all duration-300 flex items-center justify-center gap-2"
+                onClick={handleToggleFavorite}
+                disabled={isMutating}
+                className={`
+                  flex-1 px-6 py-3 rounded-[8px] font-bold transition-all duration-300 flex items-center justify-center gap-2
+                  ${isProductFavorite 
+                    ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" 
+                    : "border border-[#0A0500] hover:bg-[#f3f1f1]"
+                  }
+                `}
               >
-                <Heart className="w-5 h-5" />
-                أضف إلى المفضلة
+                <Heart 
+                  className="w-5 h-5" 
+                  fill={isProductFavorite ? "#ef4444" : "none"}
+                />
+                {isProductFavorite ? "تمت الإضافة إلى المفضلة" : "أضف إلى المفضلة"}
               </button>
               <button
-             
-                className={`
-                w-12 h-12 rounded-[8px] border border-[#313131] flex items-center
-                 justify-center transition-all duration-300
-               
-              `}
+                className="w-12 h-12 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100"
               >
                 <BsShare className="w-5 h-5 font-bold" />
               </button>
@@ -389,7 +389,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         <th className="py-2 font-semibold">الصدر (سم)</th>
                         <th className="py-2 font-semibold">الطول (سم)</th>
                         <th className="py-2 font-semibold">الكتف (سم)</th>
-                      </tr>
+                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-gray-100">
@@ -397,27 +397,27 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         <td className="py-2">86-91</td>
                         <td className="py-2">65</td>
                         <td className="py-2">40</td>
-                      </tr>
+                       </tr>
                       <tr className="border-b border-gray-100">
                         <td className="py-2">M</td>
                         <td className="py-2">91-96</td>
                         <td className="py-2">67</td>
                         <td className="py-2">42</td>
-                      </tr>
+                       </tr>
                       <tr className="border-b border-gray-100">
                         <td className="py-2">L</td>
                         <td className="py-2">96-101</td>
                         <td className="py-2">69</td>
                         <td className="py-2">44</td>
-                      </tr>
-                      <tr>
+                       </tr>
+                      <tr className="border-b border-gray-100">
                         <td className="py-2">XL</td>
                         <td className="py-2">101-106</td>
                         <td className="py-2">71</td>
                         <td className="py-2">46</td>
-                      </tr>
+                       </tr>
                     </tbody>
-                  </table>
+                   </table>
                   <p className="text-xs text-gray-400 mt-3">
                     * قد تختلف القياسات بنسبة 1-2 سم
                   </p>

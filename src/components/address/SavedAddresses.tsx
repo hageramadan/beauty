@@ -5,16 +5,7 @@ import { CiEdit } from "react-icons/ci";
 import { FaHome, FaBriefcase, FaMapMarkerAlt } from "react-icons/fa";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-
-interface Address {
-  id: number;
-  type: string;
-  governorate: string;
-  apartmentNumber: string;
-  floor: string;
-  street: string;
-  city: string;
-}
+import { Address } from "@/types/address";
 
 interface SavedAddressesProps {
   addresses: Address[];
@@ -30,36 +21,36 @@ export default function SavedAddresses({
   const [deleteConfirm, setDeleteConfirm] = useState<{
     show: boolean;
     id: number | null;
-    type: string;
-  }>({ show: false, id: null, type: "" });
+  }>({ show: false, id: null });
 
+  // دالة للحصول على الأيقونة المناسبة لنوع العنوان
   const getAddressIcon = (type: string) => {
     switch (type) {
-      case "المنزل":
-        return <FaHome className="text-blue-600 text-xl" />;
-      case "الدوام":
-        return <FaBriefcase className="text-green-600 text-xl" />;
+      case 'home':
+        return <FaHome className="text-gray-600 text-xl" />;
+      case 'work':
+        return <FaBriefcase className="text-gray-600 text-xl" />;
       default:
         return <FaMapMarkerAlt className="text-gray-600 text-xl" />;
     }
   };
 
-  const handleDeleteClick = (id: number, type: string) => {
-    setDeleteConfirm({ show: true, id, type });
+  const handleDeleteClick = (id: number) => {
+    setDeleteConfirm({ show: true, id });
   };
 
   const confirmDelete = () => {
     if (deleteConfirm.id) {
       onDelete(deleteConfirm.id);
     }
-    setDeleteConfirm({ show: false, id: null, type: "" });
+    setDeleteConfirm({ show: false, id: null });
   };
 
   const cancelDelete = () => {
-    setDeleteConfirm({ show: false, id: null, type: "" });
+    setDeleteConfirm({ show: false, id: null });
   };
 
-  if (addresses.length === 0) {
+  if (!addresses || addresses.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-8 text-center">
         <div className="text-gray-400 mb-3">
@@ -96,9 +87,12 @@ export default function SavedAddresses({
           <div key={address.id} className="rounded-xl p-2 bg-[#f5f5f5e1]">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
-                <span className="font-bold text-[#0A0500] px-3 py-1 rounded-full text-lg">
-                  {address.type}
-                </span>
+                <div className="flex items-center">
+                  {getAddressIcon(address.type)}
+                  <span className="font-bold text-[#0A0500] px-3 py-1 rounded-full text-lg">
+                    {address.type_label}
+                  </span>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -108,7 +102,7 @@ export default function SavedAddresses({
                   <CiEdit className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => handleDeleteClick(address.id, address.type)}
+                  onClick={() => handleDeleteClick(address.id)}
                   className="text-red-500 hover:text-red-700 transition p-2 hover:bg-red-50 rounded-full"
                 >
                   <FaRegTrashAlt />
@@ -118,16 +112,24 @@ export default function SavedAddresses({
 
             <div className="bg-white border border-gray-100 p-4 rounded-[8px] text-sm mt-3">
               <div className="flex items-center gap-1">
-                <p className="text-gray-800 font-medium">{address.governorate}</p>
+                <p className="text-gray-800 font-medium">
+                  {address.city.name}
+                </p>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 mt-1">
                 <div className="flex items-center gap-1">
-                  <p className="text-gray-800 font-medium">{address.city}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <p className="text-gray-800 font-medium">{address.street}</p>
+                  <p className="text-gray-800 font-medium">
+                    {address.street}
+                  </p>
                 </div>
               </div>
+              {(address.building || address.floor || address.apartment) && (
+                <div className="flex gap-2 mt-2 text-gray-600 text-xs flex-wrap">
+                  {address.building && <span> مبنى {address.building}</span>}
+                  {address.floor && <span> دور {address.floor}</span>}
+                  {address.apartment && <span> شقة {address.apartment}</span>}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -149,8 +151,7 @@ export default function SavedAddresses({
             
             <div className="mb-6">
               <p className="text-gray-700 text-center">
-                هل أنت متأكد من حذف عنوان{" "}
-                <span className="font-bold text-red-600">`{deleteConfirm.type}`</span>؟
+                هل أنت متأكد من حذف هذا العنوان؟
               </p>
               <p className="text-gray-500 text-sm text-center mt-2">
                 لا يمكنك التراجع عن هذا الإجراء.

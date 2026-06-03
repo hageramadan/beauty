@@ -1,15 +1,10 @@
 // components/address/AddAddress.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import toast, { Toaster } from "react-hot-toast";
-import {
-  FaHome,
-  FaBriefcase,
-  FaMapMarkerAlt,
- 
-} from "react-icons/fa";
+import { FaHome, FaBriefcase, FaMapMarkerAlt } from "react-icons/fa";
 import { FaLocationDot } from "react-icons/fa6";
 import {
   Select,
@@ -19,11 +14,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import LocationMap from "./LocationMap";
+import { Address } from "@/types/address";
+
+// تعريف نوع العنوان باللغة الإنجليزية
+type AddressTypeValue = "home" | "work" | "other";
 
 interface AddAddressProps {
   onClose: () => void;
   onSave: (address: any) => void;
-  initialData?: any;
+  initialData?: Address;
   isEditing?: boolean;
 }
 
@@ -33,23 +32,57 @@ export default function AddAddress({
   initialData,
   isEditing,
 }: AddAddressProps) {
-  const [formData, setFormData] = useState(() => ({
-    street: initialData?.street || "",
-    city: initialData?.city || "",
-    governorate: initialData?.governorate || "",
-    apartmentNumber: initialData?.apartmentNumber || "",
-    floor: initialData?.floor || "",
-    addressType: initialData?.type || "المنزل",
-    saveForFuture: true,
-    latitude: initialData?.latitude || null,
-    longitude: initialData?.longitude || null,
-  }));
+  // تحويل القيمة المخزنة من العربية إلى الإنجليزية إذا وجدت
+  const getInitialAddressType = (type?: string): AddressTypeValue => {
+    if (type === "home" || type === "work" || type === "other")
+      return type as AddressTypeValue;
+    if (type === "المنزل") return "home";
+    if (type === "الدوام" || type === "العمل") return "work";
+    if (type === "اخرى") return "other";
+    return "home";
+  };
 
+  // إعداد البيانات الأولية من initialData (بيانات التعديل)
+  const getInitialFormData = () => {
+    if (initialData && isEditing) {
+      return {
+        street: initialData.street || "",
+        city: initialData.city?.name || "",
+        cityId: initialData.city?.id?.toString() || "",
+        governorate: initialData.city?.governate?.name || "", // محاولة جلب المحافظة من البيانات
+        building: initialData.building || "",
+        apartmentNumber: initialData.apartment || "",
+        floor: initialData.floor || "",
+        addressType: getInitialAddressType(initialData.type),
+        saveForFuture: true,
+        latitude: initialData.latitude,
+        longitude: initialData.longitude,
+      };
+    }
+    return {
+      street: "",
+      city: "",
+      cityId: "",
+      governorate: "",
+      building: "",
+      apartmentNumber: "",
+      floor: "",
+      addressType: "home" as AddressTypeValue,
+      saveForFuture: true,
+      latitude: null,
+      longitude: null,
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
   const [errors, setErrors] = useState<{
     street?: string;
     city?: string;
     governorate?: string;
-    location?: string;
+    building?: string;
+    apartment?: string;
+    floor?: string;
+    addressType?: string;
   }>({});
 
   const [selectedLocation, setSelectedLocation] = useState<{
@@ -59,24 +92,162 @@ export default function AddAddress({
     city?: string;
     governorate?: string;
   } | null>(
-    initialData?.latitude && initialData?.longitude
+    initialData?.latitude && initialData?.longitude && isEditing
       ? {
-          lat: initialData.latitude,
-          lng: initialData.longitude,
+          lat: parseFloat(initialData.latitude),
+          lng: parseFloat(initialData.longitude),
           address: initialData.street || "",
-          city: initialData.city,
-          governorate: initialData.governorate,
+          city: initialData.city?.name,
+          governorate: "",
         }
       : null,
   );
 
-  const [extractedInfo, setExtractedInfo] = useState<{
-    city: string;
-    governorate: string;
-  } | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // قائمة المحافظات المصرية
+  // --- حالات جديدة للـ API ---
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [governoratesFromAPI, setGovernoratesFromAPI] = useState<any[]>([]);
+  const [citiesFromAPI, setCitiesFromAPI] = useState<any[]>([]);
+  const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
+
+  const API_URL = "https://dukanah.admin.t-carts.com/api";
+
+  // --- جلب المحافظات من الـ API ---
+  useEffect(() => {
+    const fetchGovernorates = async () => {
+      setIsLoadingGovernorates(true);
+      try {
+        const token = localStorage.getItem("auth_token");
+
+        const response = await fetch(`${API_URL}/governates`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (
+          result.result === true &&
+          result.data &&
+          Array.isArray(result.data.governates)
+        ) {
+          setGovernoratesFromAPI(result.data.governates);
+
+          // استخراج جميع المدن من المحافظات
+          const allCities: any[] = [];
+          result.data.governates.forEach((gov: any) => {
+            if (gov.cities && Array.isArray(gov.cities)) {
+              allCities.push(
+                ...gov.cities.map((city: any) => ({
+                  ...city,
+                  governorateId: gov.id,
+                  governorateName: gov.name,
+                })),
+              );
+            }
+          });
+          setCitiesFromAPI(allCities);
+
+          // إذا كان في وضع التعديل، قم بتعيين المحافظة الصحيحة
+          if (isEditing && initialData?.city?.name) {
+            // البحث عن المحافظة التي تحتوي على هذه المدينة
+            const foundGovernorate = result.data.governates.find((gov: any) =>
+              gov.cities.some(
+                (city: any) => city.name === initialData.city.name,
+              ),
+            );
+            if (foundGovernorate) {
+              setFormData((prev) => ({
+                ...prev,
+                governorate: foundGovernorate.name,
+                cityId: initialData.city?.id?.toString() || "",
+                city: initialData.city?.name || "",
+              }));
+            }
+          }
+
+          console.log("✅ تم تحميل المحافظات من API:", result.data.governates);
+        } else {
+          console.log("⚠️ استخدام المحافظات المحلية بدلاً من API");
+        }
+      } catch (error) {
+        console.error("❌ خطأ في جلب المحافظات:", error);
+        toast.error("فشل في تحميل المحافظات، سيتم استخدام القائمة المحلية");
+      } finally {
+        setIsLoadingGovernorates(false);
+      }
+    };
+
+    fetchGovernorates();
+  }, [isEditing, initialData]);
+
+  // دالة للحصول على قائمة المحافظات (من API أو المحلية)
+  const getGovernoratesList = () => {
+    if (governoratesFromAPI.length > 0) {
+      return governoratesFromAPI.map((gov: any) => gov.name);
+    }
+    return governorates;
+  };
+
+  // دالة للحصول على قائمة المدن بناءً على المحافظة المختارة
+  const getCitiesListByGovernorate = (governorateName: string) => {
+    if (citiesFromAPI.length > 0 && governorateName) {
+      const governorate = governoratesFromAPI.find(
+        (gov: any) => gov.name === governorateName,
+      );
+      if (governorate && governorate.cities) {
+        return governorate.cities;
+      }
+    }
+    return [];
+  };
+
+  // دالة للحصول على city_id من المدينة المختارة
+  const getCityIdFromName = (
+    cityName: string,
+    governorateName: string,
+  ): string => {
+    const cities = getCitiesListByGovernorate(governorateName);
+    const city = cities.find((c: any) => c.name === cityName);
+    return city?.id?.toString() || "";
+  };
+
+  // دالة لعرض النص العربي للمستخدم
+  const getAddressTypeDisplay = (type: AddressTypeValue): string => {
+    switch (type) {
+      case "home":
+        return "المنزل";
+      case "work":
+        return "الدوام";
+      case "other":
+        return "اخرى";
+      default:
+        return "المنزل";
+    }
+  };
+
+  // دالة للحصول على الأيقونة المناسبة
+  const getAddressTypeIcon = (type: AddressTypeValue) => {
+    switch (type) {
+      case "home":
+        return <FaHome className="inline ml-1" />;
+      case "work":
+        return <FaBriefcase className="inline ml-1" />;
+      case "other":
+        return <FaMapMarkerAlt className="inline ml-1" />;
+      default:
+        return <FaHome className="inline ml-1" />;
+    }
+  };
+
+  // قائمة المحافظات المصرية (احتياطي)
   const governorates = [
     "القاهرة",
     "الجيزة",
@@ -106,78 +277,59 @@ export default function AddAddress({
     "الوادي الجديد",
   ];
 
-  // قائمة المدن والمناطق
-  const cities = [
-    "مدينة نصر",
-    "الهرم",
-    "الشيخ زايد",
-    "6 أكتوبر",
-    "المقطم",
-    "المعادي",
-    "الجيزة",
-    "وسط البلد",
-    "مصر الجديدة",
-    "حلوان",
-    "العاصمة الإدارية",
-    "الرحاب",
-    "مدينتي",
-    "التجمع الخامس",
-    "شبرا",
-    "روض الفرج",
-    "الزمالك",
-    "مصر القديمة",
-    "العباسية",
-    "بني سويف",
-    "المنيا",
-    "أسيوط",
-    "سوهاج",
-    "قنا",
-    "الأقصر",
-    "أسوان",
-    "طنطا",
-    "المحلة",
-    "دمنهور",
-    "المنصورة",
-    "الزقازيق",
-    "بورفؤاد",
-  ];
-
-  // دالة التحقق من صحة الحقول
+  // دالة التحقق من صحة الحقول (جميع الحقول مطلوبة ما عدا الخريطة)
   const validateForm = (): boolean => {
     const newErrors: {
       street?: string;
       city?: string;
       governorate?: string;
-      location?: string;
+      building?: string;
+      apartment?: string;
+      floor?: string;
+      addressType?: string;
     } = {};
 
-    // التحقق من اختيار موقع من الخريطة
-    if (!selectedLocation) {
-      newErrors.location = "الرجاء اختيار موقع من الخريطة";
-    }
-
-    // التحقق من عنوان التوصيل المفصل
+    // التحقق من عنوان الشارع (مطلوب)
     if (!formData.street.trim()) {
       newErrors.street = "عنوان التوصيل المفصل مطلوب";
     } else if (formData.street.trim().length < 5) {
       newErrors.street = "عنوان التوصيل قصير جداً (على الأقل 5 حروف)";
     }
 
-    // التحقق من المحافظة
+    // التحقق من المحافظة (مطلوب)
     if (!formData.governorate) {
       newErrors.governorate = "الرجاء اختيار المحافظة";
     }
 
-    // التحقق من المدينة
+    // التحقق من المدينة (مطلوب)
     if (!formData.city) {
       newErrors.city = "الرجاء اختيار المدينة";
+    }
+
+    // التحقق من اسم المبنى (مطلوب)
+    if (!formData.building.trim()) {
+      newErrors.building = "اسم المبنى مطلوب";
+    }
+
+    // التحقق من رقم الشقة (مطلوب)
+    if (!formData.apartmentNumber.trim()) {
+      newErrors.apartment = "رقم الشقة مطلوب";
+    }
+
+    // التحقق من رقم الدور (مطلوب)
+    if (!formData.floor.trim()) {
+      newErrors.floor = "رقم الدور مطلوب";
+    }
+
+    // التحقق من نوع العنوان (مطلوب)
+    if (!formData.addressType) {
+      newErrors.addressType = "الرجاء اختيار تصنيف العنوان";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // دالة مسح خطأ حقل معين عند التعديل
   const clearFieldError = (field: keyof typeof errors) => {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -189,44 +341,31 @@ export default function AddAddress({
     lng: number;
     address: string;
   }) => {
-    console.log("📍 تم اختيار موقع من الخريطة:", location);
-    console.log("🌐 العنوان الخام:", location.address);
-
-    // مسح خطأ الموقع عند الاختيار
-    clearFieldError("location");
-
     setIsExtracting(true);
 
-    // استخراج المدينة والمحافظة من العنوان باستخدام الـ coordinates
     const { city, governorate } = await reverseGeocode(
       location.lat,
       location.lng,
     );
-
-    console.log("🏙️ النتيجة النهائية:", { city, governorate });
-
     setIsExtracting(false);
 
-    setExtractedInfo({ city, governorate });
-
-    const selectedLoc = {
+    setSelectedLocation({
       ...location,
       city,
       governorate,
-    };
-
-    setSelectedLocation(selectedLoc);
-    setFormData({
-      ...formData,
-      street: location.address,
-      latitude: location.lat,
-      longitude: location.lng,
-      city: city || formData.city,
-      governorate: governorate || formData.governorate,
     });
+
+    setFormData((prev) => ({
+      ...prev,
+      street: location.address,
+      latitude: location.lat.toString(),
+      longitude: location.lng.toString(),
+      city: city || prev.city,
+      governorate: governorate || prev.governorate,
+      cityId: getCityIdFromName(city, governorate),
+    }));
   };
 
-  // دالة عكس الإحداثيات باستخدام API أفضل
   const reverseGeocode = async (
     lat: number,
     lng: number,
@@ -234,195 +373,136 @@ export default function AddAddress({
     let city = "";
     let governorate = "";
 
-    console.log("🔍 جاري استخراج الموقع من الإحداثيات:", lat, lng);
-
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=ar`,
       );
       const data = await response.json();
 
-      console.log("📦 بيانات API:", data);
-
       if (data && data.address) {
         const address = data.address;
+        if (address.state) governorate = address.state;
+        else if (address.province) governorate = address.province;
+        else if (address.region) governorate = address.region;
 
-        console.log("🏠 تفاصيل العنوان:", address);
+        if (address.city) city = address.city;
+        else if (address.town) city = address.town;
+        else if (address.village) city = address.village;
+        else if (address.suburb) city = address.suburb;
 
-        // استخراج المحافظة
-        if (address.state) {
-          governorate = address.state;
-          console.log("✅ المحافظة من state:", governorate);
-        } else if (address.province) {
-          governorate = address.province;
-          console.log("✅ المحافظة من province:", governorate);
-        } else if (address.region) {
-          governorate = address.region;
-          console.log("✅ المحافظة من region:", governorate);
-        }
-
-        // استخراج المدينة
-        if (address.city) {
-          city = address.city;
-          console.log("✅ المدينة من city:", city);
-        } else if (address.town) {
-          city = address.town;
-          console.log("✅ المدينة من town:", city);
-        } else if (address.village) {
-          city = address.village;
-          console.log("✅ المدينة من village:", city);
-        } else if (address.suburb) {
-          city = address.suburb;
-          console.log("✅ المدينة من suburb:", city);
-        } else if (address.county) {
-          city = address.county;
-          console.log("✅ المدينة من county:", city);
-        }
-
-        // إذا لم يتم العثور على محافظة، نحاول من display_name
-        if (!governorate && data.display_name) {
-          for (const gov of governorates) {
-            if (data.display_name.includes(gov)) {
-              governorate = gov;
-              console.log("✅ المحافظة من display_name:", governorate);
-              break;
-            }
-          }
-        }
-
-        // إذا لم يتم العثور على مدينة، نحاول من display_name
-        if (!city && data.display_name) {
-          for (const c of cities) {
-            if (data.display_name.includes(c) && c !== governorate) {
-              city = c;
-              console.log("✅ المدينة من display_name:", city);
-              break;
-            }
-          }
-        }
+        governorate = governorate.replace("محافظة ", "");
+        city = city.replace("مدينة ", "");
       }
-
-      // تنظيف الأسماء
-      governorate = cleanGovernorateName(governorate);
-      city = city.replace("محافظة ", "").replace("مدينة ", "");
     } catch (error) {
       console.error("❌ خطأ في استخراج الموقع:", error);
     }
 
-    // إذا كانت المحافظة موجودة والمدينة فاضية، نستخدم المحافظة
-    if (governorate && !city) {
-      city = governorate;
-      console.log("🔄 تم تعيين المدينة كمحافظة:", city);
-    }
-
-    console.log("📊 النتيجة النهائية:", { city, governorate });
     return { city, governorate };
   };
 
-  // دالة لتنظيف أسماء المحافظات
-  const cleanGovernorateName = (name: string): string => {
-    if (!name) return "";
-
-    let cleaned = name.replace("محافظة ", "").replace("Governorate", "");
-
-    const nameMap: { [key: string]: string } = {
-      Cairo: "القاهرة",
-      Giza: "الجيزة",
-      Alexandria: "الإسكندرية",
-      "Beni Suef": "بني سويف",
-      "Beni Souef": "بني سويف",
-      Minya: "المنيا",
-      Sohag: "سوهاج",
-      Qena: "قنا",
-      Luxor: "الأقصر",
-      Aswan: "أسوان",
-    };
-
-    if (nameMap[cleaned]) {
-      cleaned = nameMap[cleaned];
-    }
-
-    for (const gov of governorates) {
-      if (cleaned.includes(gov) || gov.includes(cleaned)) {
-        return gov;
-      }
-    }
-
-    return cleaned;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // التحقق من صحة البيانات
+
     if (!validateForm()) {
-      // عرض أول خطأ موجود
       const firstError = Object.values(errors)[0];
-      if (firstError) {
-        toast.error(firstError);
-      }
+      if (firstError) toast.error(firstError);
       return;
     }
 
-    console.log("💾 حفظ العنوان:", {
-      street: formData.street,
-      city: formData.city,
-      governorate: formData.governorate,
-      apartmentNumber: formData.apartmentNumber,
-      floor: formData.floor,
-      addressType: formData.addressType,
-      latitude: formData.latitude,
-      longitude: formData.longitude,
-    });
+    setIsSubmitting(true);
 
-    const addressToSave = {
-      ...(initialData?.id && { id: initialData.id }),
-      ...formData,
-      type: formData.addressType,
-    };
-    
-    
-    
-    onSave(addressToSave);
+    try {
+      const cityId =
+        formData.cityId ||
+        getCityIdFromName(formData.city, formData.governorate);
+
+      if (!cityId) {
+        toast.error("لم يتم العثور على المدينة في النظام");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const addressData = {
+        city_id: parseInt(cityId),
+        street: formData.street,
+        building: formData.building,
+        floor: formData.floor,
+        apartment: formData.apartmentNumber,
+        latitude: formData.latitude || null,
+        longitude: formData.longitude || null,
+        type: formData.addressType,
+      };
+
+      const token = localStorage.getItem("auth_token");
+
+      let url = `${API_URL}/addresses`;
+      let method = "POST";
+
+      if (isEditing && initialData?.id) {
+        url = `${API_URL}/addresses/${initialData.id}/update`;
+        method = "POST";
+        (addressData as any)._method = "put";
+      }
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(addressData),
+      });
+
+      const result = await response.json();
+
+      if (result.result === true) {
+        toast.success(
+          isEditing ? "تم تحديث العنوان بنجاح" : "تم إضافة العنوان بنجاح",
+        );
+        onSave(result.data);
+        onClose();
+      } else {
+        throw new Error(result.message || "حدث خطأ في حفظ العنوان");
+      }
+    } catch (error) {
+      console.error("❌ خطأ في حفظ العنوان:", error);
+      toast.error(
+        error instanceof Error ? error.message : "حدث خطأ في حفظ العنوان",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoadingGovernorates) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-gray-600">جاري تحميل البيانات...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-      <Toaster 
+      <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{
           style: {
-            fontSize: '14px',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            direction: 'rtl',
+            fontSize: "14px",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            direction: "rtl",
           },
-          success: {
-            style: {
-              background: '#10B981',
-              color: 'white',
-            },
-            iconTheme: {
-              primary: 'white',
-              secondary: '#10B981',
-            },
-          },
-          error: {
-            style: {
-              background: '#EF4444',
-              color: 'white',
-            },
-            iconTheme: {
-              primary: 'white',
-              secondary: '#EF4444',
-            },
-          },
+          success: { style: { background: "#10B981", color: "white" } },
+          error: { style: { background: "#EF4444", color: "white" } },
         }}
       />
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-          {/* Header */}
           <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
             <h2 className="text-xl font-bold text-gray-800">
               {isEditing ? "تعديل العنوان" : "إضافة عنوان جديد"}
@@ -435,12 +515,10 @@ export default function AddAddress({
             </button>
           </div>
 
-          {/* Form - تنسيق مرن: جنب بعض في الكبير، فوق بعض في الصغير */}
           <form onSubmit={handleSubmit} className="p-6">
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* الجانب الأيسر: الفورم */}
               <div className="lg:w-1/2 space-y-5 order-2 md:order-1">
-                {/* عنوان التوصيل */}
+                {/* عنوان التوصيل - Required */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     عنوان التوصيل المفصل <span className="text-red-500">*</span>
@@ -453,7 +531,7 @@ export default function AddAddress({
                       clearFieldError("street");
                     }}
                     placeholder="اسم الشارع بالتفصيل"
-                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                       errors.street ? "border-red-500" : "border-gray-300"
                     }`}
                   />
@@ -462,25 +540,33 @@ export default function AddAddress({
                   )}
                 </div>
 
-                {/* City and Governorate */}
+                {/* المحافظة والمدينة - Required */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
                       المحافظة <span className="text-red-500">*</span>
                     </label>
                     <Select
-                      value={formData.governorate}
+                      value={formData.governorate || ""}
                       onValueChange={(value) => {
-                        console.log("📍 تم تغيير المحافظة يدوياً إلى:", value);
-                        setFormData({ ...formData, governorate: value });
+                        // معالجة القيمة null
+                        const selectedValue = value || "";
+                        setFormData({
+                          ...formData,
+                          governorate: selectedValue,
+                          city: "",
+                          cityId: "",
+                        });
                         clearFieldError("governorate");
                       }}
                     >
-                      <SelectTrigger className={`w-full ${errors.governorate ? "border-red-500" : ""}`}>
+                      <SelectTrigger
+                        className={`w-full ${errors.governorate ? "border-red-500" : ""}`}
+                      >
                         <SelectValue placeholder="اختر المحافظة" />
                       </SelectTrigger>
                       <SelectContent>
-                        {governorates.map((gov) => (
+                        {getGovernoratesList().map((gov) => (
                           <SelectItem key={gov} value={gov}>
                             {gov}
                           </SelectItem>
@@ -488,30 +574,54 @@ export default function AddAddress({
                       </SelectContent>
                     </Select>
                     {errors.governorate && (
-                      <p className="text-red-500 text-xs mt-1">{errors.governorate}</p>
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.governorate}
+                      </p>
                     )}
                   </div>
+
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
                       المدينة <span className="text-red-500">*</span>
                     </label>
+                    {/* المدينة */}
                     <Select
-                      value={formData.city}
+                      value={formData.city || ""}
                       onValueChange={(value) => {
-                        console.log("🏙️ تم تغيير المدينة يدوياً إلى:", value);
-                        setFormData({ ...formData, city: value });
+                        // معالجة القيمة null
+                        const selectedValue = value || "";
+                        const cityId = getCityIdFromName(
+                          selectedValue,
+                          formData.governorate,
+                        );
+                        setFormData({
+                          ...formData,
+                          city: selectedValue,
+                          cityId,
+                        });
                         clearFieldError("city");
                       }}
+                      disabled={!formData.governorate}
                     >
-                      <SelectTrigger className={`w-full ${errors.city ? "border-red-500" : ""}`}>
-                        <SelectValue placeholder="اختر المدينة" />
+                      <SelectTrigger
+                        className={`w-full ${errors.city ? "border-red-500" : ""}`}
+                      >
+                        <SelectValue
+                          placeholder={
+                            !formData.governorate
+                              ? "اختر المحافظة أولاً"
+                              : "اختر المدينة"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {cities.map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
-                          </SelectItem>
-                        ))}
+                        {getCitiesListByGovernorate(formData.governorate).map(
+                          (city: any) => (
+                            <SelectItem key={city.id} value={city.name}>
+                              {city.name}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                     {errors.city && (
@@ -520,85 +630,127 @@ export default function AddAddress({
                   </div>
                 </div>
 
-                {/* Apartment and Floor */}
+                {/* اسم المبنى - Required */}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    اسم المبنى <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.building}
+                    onChange={(e) => {
+                      setFormData({ ...formData, building: e.target.value });
+                      clearFieldError("building");
+                    }}
+                    placeholder="اسم المبنى"
+                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                      errors.building ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  {errors.building && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.building}
+                    </p>
+                  )}
+                </div>
+
+                {/* رقم الشقة ورقم الدور - Required */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      رقم الشقة (اختياري)
+                      رقم الشقة <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.apartmentNumber}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setFormData({
                           ...formData,
                           apartmentNumber: e.target.value,
-                        })
-                      }
+                        });
+                        clearFieldError("apartment");
+                      }}
                       placeholder="رقم الشقة"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none"
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                        errors.apartment ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
+                    {errors.apartment && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.apartment}
+                      </p>
+                    )}
                   </div>
-
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      رقم الدور (اختياري)
+                      رقم الدور <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.floor}
-                      onChange={(e) =>
-                        setFormData({ ...formData, floor: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setFormData({ ...formData, floor: e.target.value });
+                        clearFieldError("floor");
+                      }}
                       placeholder="رقم الدور"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none"
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                        errors.floor ? "border-red-500" : "border-gray-300"
+                      }`}
                     />
+                    {errors.floor && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.floor}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Address Type */}
+                {/* تصنيف العنوان - Required */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
-                    تصنيف العنوان
+                    تصنيف العنوان <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-3 flex-wrap">
-                    {["المنزل", "الدوام", "اخرى"].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, addressType: type })
-                        }
-                        className={`flex items-center gap-2 p-2 md:px-5 md:py-3 border font-semibold rounded-[8px] cursor-pointer ${
-                          formData.addressType === type
-                            ? "border-black bg-[#D2D6DB3D]"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        <span
-                          className={
-                            formData.addressType === type
-                              ? "text-black"
-                              : "text-gray-700"
-                          }
+                    {(["home", "work", "other"] as AddressTypeValue[]).map(
+                      (typeValue) => (
+                        <button
+                          key={typeValue}
+                          type="button"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              addressType: typeValue,
+                            });
+                            clearFieldError("addressType");
+                          }}
+                          className={`flex items-center gap-2 p-2 md:px-5 md:py-3 border font-semibold rounded-[8px] cursor-pointer ${
+                            formData.addressType === typeValue
+                              ? "border-black bg-[#D2D6DB3D]"
+                              : "border-gray-300"
+                          }`}
                         >
-                          {type === "المنزل" && (
-                            <FaHome className="inline ml-1" />
-                          )}
-                          {type === "الدوام" && (
-                            <FaBriefcase className="inline ml-1" />
-                          )}
-                          {type === "اخرى" && (
-                            <FaMapMarkerAlt className="inline ml-1" />
-                          )}
-                          {type}
-                        </span>
-                      </button>
-                    ))}
+                          <span
+                            className={
+                              formData.addressType === typeValue
+                                ? "text-black"
+                                : "text-gray-700"
+                            }
+                          >
+                            {getAddressTypeIcon(typeValue)}
+                            {getAddressTypeDisplay(typeValue)}
+                          </span>
+                        </button>
+                      ),
+                    )}
                   </div>
+                  {errors.addressType && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.addressType}
+                    </p>
+                  )}
                 </div>
 
-                {/* Save for future */}
+                {/* Save for future - Optional */}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -622,35 +774,41 @@ export default function AddAddress({
                     type="button"
                     onClick={onClose}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
+                    disabled={isSubmitting}
                   >
                     إلغاء
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-black text-white rounded-[8px] hover:bg-gray-800 transition"
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-[8px] hover:bg-gray-800 transition disabled:opacity-50"
                   >
-                    {isEditing ? "تحديث" : "حفظ"}
+                    {isSubmitting
+                      ? "جاري الحفظ..."
+                      : isEditing
+                        ? "تحديث"
+                        : "حفظ"}
                   </button>
                 </div>
               </div>
 
-              {/* الجانب الأيمن: الخريطة */}
+              {/* الخريطة - Optional (بدون علامة نجمة) */}
               <div className="lg:w-1/2 order-1 md:order-2">
                 <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                   <FaLocationDot className="text-red-500" />
-                  اختر موقعك على الخريطة <span className="text-red-500">*</span>
+                  اختر موقعك على الخريطة (اختياري)
                 </label>
                 <LocationMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={
                     formData.latitude && formData.longitude
-                      ? { lat: formData.latitude, lng: formData.longitude }
+                      ? {
+                          lat: parseFloat(formData.latitude),
+                          lng: parseFloat(formData.longitude),
+                        }
                       : undefined
                   }
                 />
-                {errors.location && (
-                  <p className="text-red-500 text-xs mt-1">{errors.location}</p>
-                )}
                 {isExtracting && (
                   <div className="mt-2 text-center text-sm text-blue-600">
                     جاري استخراج المدينة والمحافظة...

@@ -1,12 +1,13 @@
-// components/products/ProductCard.tsx (معدل)
+// src/components/products/ProductCard.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { FaRegStar } from "react-icons/fa";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface ColorOption {
   color: string;
@@ -26,11 +27,8 @@ interface ProductCardProps {
   rating?: number;
   reviewsCount?: number;
   isBestSeller?: boolean;
-  isFavorite?: boolean; // جديد - للتحكم من الخارج
-  onFavoriteToggle?: (id: string, isFavorite: boolean) => void; // جديد - عند الضغط على القلب
 }
 
-// ألوان افتراضية في حالة عدم وجود ألوان من API
 const DEFAULT_COLORS: ColorOption[] = [
   { color: "#252B42", name: "أزرق داكن" },
   { color: "#E77C40", name: "برتقالي" },
@@ -51,25 +49,58 @@ export function ProductCard({
   rating = 0,
   reviewsCount = 0,
   isBestSeller = false,
-  isFavorite: externalIsFavorite = false, // قيمة افتراضية من الخارج
-  onFavoriteToggle
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(externalIsFavorite);
   const [currentImage, setCurrentImage] = useState(image);
+  const [isLocalMutating, setIsLocalMutating] = useState(false); // حالة محلية لكل منتج
+  
+  const { isFavorite, toggleFavorite, isLoading } = useFavorites();
+  
+  // الحصول على الحالة الحالية من الـ Context
+  const isProductFavorite = isFavorite(id);
+  const [localFavorite, setLocalFavorite] = useState(isProductFavorite);
 
- 
+  // مزامنة الحالة المحلية مع الـ Context
+  useEffect(() => {
+    setLocalFavorite(isProductFavorite);
+  }, [isProductFavorite]);
 
-  // استخدام الألوان من API أو الألوان الافتراضية إذا كانت فارغة
   const displayColors = colors && colors.length > 0 ? colors : DEFAULT_COLORS;
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const newFavoriteState = !isFavorite;
-    setIsFavorite(newFavoriteState);
-    onFavoriteToggle?.(id, newFavoriteState);
-  };
+ // src/components/products/ProductCard.tsx (الجزء المعدل فقط)
+
+const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // منع الضغط المتكرر على نفس المنتج
+  if (isLocalMutating || isLoading) return;
+  
+  // تفعيل حالة التحميل لهذا المنتج فقط
+  setIsLocalMutating(true);
+  
+  // حفظ الحالة القديمة
+  const previousState = localFavorite;
+  
+  // تحديث الواجهة فوراً (لإعطاء استجابة سريعة للمستخدم)
+  setLocalFavorite(!previousState);
+  
+  console.log(`🖱️ تم الضغط على القلب للمنتج ${id} - الحالة السابقة: ${previousState ? "مفضل" : "غير مفضل"}`);
+  
+  // استدعاء API - تمرير الحالة الحالية
+  const success = await toggleFavorite(id, previousState);
+  
+  if (!success) {
+    // إذا فشلت العملية، نرجع الحالة القديمة
+    console.log(`❌ فشلت العملية للمنتج ${id} - الرجوع للحالة السابقة`);
+    setLocalFavorite(previousState);
+  } else {
+    console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
+  }
+  
+  // إلغاء حالة التحميل لهذا المنتج
+  setIsLocalMutating(false);
+}, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -83,7 +114,6 @@ export function ProductCard({
     setCurrentImage(image);
   };
 
-  // دالة عرض النجوم بناءً على التقييم
   const renderStars = () => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -120,20 +150,27 @@ export function ProductCard({
       onMouseLeave={handleMouseLeave}
     >
       <Link href={href} className="block h-full" aria-label={`عرض تفاصيل ${name}`}>
-        {/* Image Container */}
         <div className="relative w-full" style={{ height: 'calc(100% - 120px)' }}>
-          {/* Heart Icon - Top Left Corner */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-2 left-2 z-10 rounded-full p-1.5 bg-white/80 hover:bg-red-50 transition-all duration-200 hover:scale-110"
-            style={{ color: isFavorite ? '#ef4444' : '#112B40' }}
-            aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
-            aria-pressed={isFavorite}
+            disabled={isLocalMutating || isLoading}
+            className="absolute top-2 left-2 z-10 rounded-full p-1.5 bg-white/80 hover:bg-red-50 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={localFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            aria-pressed={localFavorite}
           >
-            <Heart className="h-4 w-4 sm:h-5 sm:w-5" fill={isFavorite ? '#ef4444' : 'none'} />
+            {isLocalMutating ? (
+              <div className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-gray-300 border-t-red-500" />
+            ) : (
+              <Heart 
+                className="h-4 w-4 sm:h-5 sm:w-5 transition-colors duration-200" 
+                style={{ 
+                  color: localFavorite ? '#ef4444' : '#112B40',
+                  fill: localFavorite ? '#ef4444' : 'none'
+                }} 
+              />
+            )}
           </button>
           
-          {/* Best Seller Badge */}
           {isBestSeller && (
             <div className="absolute top-2 right-2 z-10">
               <p className="text-[9px] sm:text-xs font-bold text-white bg-[#EC221F] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
@@ -142,7 +179,6 @@ export function ProductCard({
             </div>
           )}
 
-          {/* Discount Badge */}
           {discount && discount > 0 && (
             <div className="absolute bottom-2 right-2 z-10">
               <p className="text-[9px] sm:text-xs font-bold text-white bg-[#23856D] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
@@ -151,7 +187,6 @@ export function ProductCard({
             </div>
           )}
 
-          {/* Image */}
           <div className="overflow-hidden rounded-t-lg w-full h-full">
             <Image
               src={currentImage}
@@ -162,16 +197,12 @@ export function ProductCard({
               style={{
                 transform: isHovered ? 'scale(1.05)' : 'scale(1)',
               }}
+              priority={false}
             />
           </div>
         </div>
 
-        {/* Product Info */}
-        <div 
-          className="px-3 py-2 flex flex-col"
-          style={{ height: '120px' }}
-        >
-          {/* Rating Section */}
+        <div className="px-3 py-2 flex flex-col" style={{ height: '120px' }}>
           <div className="flex gap-1 items-center mb-1 flex-wrap">
             <p className="text-[#77878F] text-[10px] sm:text-xs">
               ({reviewsCount > 0 ? reviewsCount : 0})
@@ -181,12 +212,10 @@ export function ProductCard({
             </div>
           </div>
           
-          {/* Product Name */}
           <h3 className="text-[11px] sm:text-[13px] font-medium line-clamp-2 mb-1" style={{ color: '#112B40' }}>
             {name}
           </h3>
 
-          {/* Price */}
           <div className="flex items-center gap-2 mb-2">
             {originalPrice && originalPrice > price ? (
               <>
@@ -204,8 +233,7 @@ export function ProductCard({
             )}
           </div>
 
-          {/* Color Circles */}
-          <div className="flex items-center justify-center gap-2 ">
+          <div className="flex items-center justify-center gap-2">
             {displayColors.map((circle, index) => (
               <button
                 key={index}
@@ -225,7 +253,6 @@ export function ProductCard({
         </div>
       </Link>
 
-      {/* استايلات للشاشات الصغيرة */}
       <style jsx>{`
         @media (max-width: 640px) {
           .group {

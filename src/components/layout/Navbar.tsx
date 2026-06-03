@@ -11,6 +11,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getCategories } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/hooks/useFavorites"; // إضافة import
 
 // تحويل الاسم العربي إلى slug للإنجليزية (للعرض فقط)
 const generateSlug = (name: string): string => {
@@ -43,6 +44,7 @@ export function Navbar() {
   const router = useRouter();
   const { cartCount } = useCart();
   const { isAuthenticated, user, logoutUser, loading } = useAuth();
+  const { total: favoritesCount } = useFavorites(); // الحصول على عدد المنتجات المفضلة
   
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -371,6 +373,7 @@ export function Navbar() {
               )}
             </div>
 
+            {/* Favorites Button with real count */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -380,11 +383,16 @@ export function Navbar() {
               style={{ color: styles.textColor }}
             >
               <Link href="/account/wishlist">
-                <span className="text-[12px] me-1 font-bold">1</span>
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {favoritesCount > 99 ? '99+' : favoritesCount}
+                  </span>
+                )}
                 <Heart className="h-[20px] w-[20px]" />
               </Link>
             </Button>
 
+            {/* Cart Button */}
             <Button 
               variant="ghost" 
               aria-label="cart"
@@ -394,7 +402,11 @@ export function Navbar() {
               style={{ color: styles.textColor }}
             >
               <Link href="/cart">
-                <span className="text-[12px] me-1 font-bold">{cartCount || 0}</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
                 <ShoppingCart className="h-5 w-5" />
               </Link>
             </Button>
@@ -420,13 +432,11 @@ export function Navbar() {
                 {showUserDropdown && (
                   <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ borderColor: '#e2e8f0' }}>
                     <div className="py-2">
-                      {/* اسم المستخدم الكامل */}
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-800">{user.name || "مستخدم"}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{user.email || user.phone || ""}</p>
                       </div>
 
-                      {/* المفضلة */}
                       <Link
                         href="/account/wishlist"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
@@ -434,10 +444,9 @@ export function Navbar() {
                         onClick={() => setShowUserDropdown(false)}
                       >
                         <HeartIcon className="h-4 w-4" />
-                        <span>المفضلة</span>
+                        <span>المفضلة {favoritesCount > 0 && `(${favoritesCount})`}</span>
                       </Link>
 
-                      {/* الطلبات */}
                       <Link
                         href="/account/orders"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
@@ -448,7 +457,6 @@ export function Navbar() {
                         <span>الطلبات</span>
                       </Link>
 
-                      {/* المرتجعات */}
                       <Link
                         href="/account/returns"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
@@ -459,7 +467,6 @@ export function Navbar() {
                         <span>المرتجعات</span>
                       </Link>
 
-                      {/* الملف الشخصي */}
                       <Link
                         href="/account"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
@@ -470,7 +477,6 @@ export function Navbar() {
                         <span>الملف الشخصي</span>
                       </Link>
 
-                      {/* تسجيل الخروج */}
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 border-t border-gray-100 mt-1"
@@ -536,18 +542,28 @@ export function Navbar() {
             <div className="flex items-center justify-around px-3 py-2 border-b border-gray-100">
               <Link 
                 href="/account/wishlist" 
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                    {favoritesCount > 99 ? '99+' : favoritesCount}
+                  </span>
+                )}
                 <Heart className="h-5 w-5" style={{ color: '#195073' }} />
                 <span className="text-xs" style={{ color: '#112B40' }}>المفضلة</span>
               </Link>
               
               <Link 
                 href="/cart" 
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
                 <ShoppingCart className="h-5 w-5" style={{ color: '#195073' }} />
                 <span className="text-xs" style={{ color: '#112B40' }}>السلة</span>
               </Link>

@@ -4,7 +4,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import toast from "react-hot-toast";
 import { CheckoutForm, OrderSummary } from "@/components/checkout";
 import { CartItem, CheckoutFormData, CartSummary } from "@/components/checkout/types";
 
