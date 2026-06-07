@@ -1,7 +1,7 @@
 // components/cart/CartSummary.tsx
 "use client";
 
-import Link from "next/link"; // ✅ إضافة import Link
+import Link from "next/link";
 import { PromoCodeInput } from "./PromoCodeInput";
 
 interface CartSummaryProps {
@@ -9,6 +9,8 @@ interface CartSummaryProps {
   totalDiscount: number;
   promoDiscount: number;
   promoCode: string;
+  deliveryFee: number;
+  total: number;
   onApplyPromoCode: (code: string, discount: number) => void;
   onRemovePromoCode: () => void;
 }
@@ -18,12 +20,13 @@ export function CartSummary({
   totalDiscount,
   promoDiscount,
   promoCode,
+  deliveryFee,
+  total,
   onApplyPromoCode,
   onRemovePromoCode,
 }: CartSummaryProps) {
-  const shippingFee = 0;
-  const total = subtotal - totalDiscount - promoDiscount + shippingFee;
-
+  const isDeliveryFree = deliveryFee === 0;
+  
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24 mb-5">
       <h1 className="text-2xl font-bold text-[#180100] pb-2">
@@ -43,7 +46,7 @@ export function CartSummary({
         
         <SummaryRow 
           label="رسوم التوصيل" 
-          value={shippingFee === 0 ? "مجاني" : shippingFee} 
+          value={isDeliveryFree ? "مجاني" : deliveryFee} 
         />
 
         <div className="border-t border-gray-200 my-2" />
@@ -62,15 +65,11 @@ export function CartSummary({
         appliedCode={promoCode}
       />
 
-      {/* زر إكمال الطلب - ينتقل إلى /checkout */}
+      {/* زر إكمال الطلب */}
       <CheckoutButton />
-
-     
     </div>
   );
 }
-
-// ========== المكونات الفرعية ==========
 
 const SummaryRow = ({ 
   label, 
@@ -90,8 +89,8 @@ const SummaryRow = ({
   };
 
   const getValueClassName = () => {
-    if (isDiscount) return "text-[#EC221F] font-bold ";
-    if (isTotal) return "text-[20px] font-bold ";
+    if (isDiscount) return "text-[#EC221F] font-bold";
+    if (isTotal) return "text-[20px] font-bold text-[#EC221F]";
     return "font-semibold text-gray-800";
   };
 
@@ -108,11 +107,10 @@ const SummaryRow = ({
   );
 };
 
-// ✅ تعديل زر إكمال الطلب ليصبح Link من Next.js
 const CheckoutButton = () => (
   <Link href="/checkout" className="block w-full">
     <button className="w-full mt-5 bg-black text-white py-2 rounded-xl font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-gray-800">
-      اكمال الطلب
+      إكمال الطلب
     </button>
   </Link>
 );

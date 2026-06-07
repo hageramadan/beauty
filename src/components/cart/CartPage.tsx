@@ -1,14 +1,19 @@
 // components/cart/CartPage.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CartItemCard } from "./CartCard";
 import { CartSummary } from "./CartSummary";
 import { CartEmpty } from "./CartEmpty";
+import { useCartContext } from "@/contexts/CartContext";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
-// واجهة بيانات المنتج في السلة
-export interface CartItem {
-  id: number;
+// واجهة بيانات المنتج في السلة للعرض
+export interface CartItemDisplay {
+  id: string;
+  productId: string;
   name: string;
   brand: string;
   price: number;
@@ -18,151 +23,169 @@ export interface CartItem {
   size: string;
   quantity: number;
   discount?: number;
+  totalPrice: number;
 }
 
-// بيانات تجريبية - سيتم جلبها من الـ API لاحقاً
-const defaultCartItems: CartItem[] = [
-  {
-    id: 1,
-    name: "بلوزه حرير",
-    brand: "Defacto",
-    price: 371.56,
-    originalPrice: 471.56,
-    image: "/images/products/product1.png",
-    color: "بيج",
-    size: "L",
-    quantity: 2,
-    discount: 21,
-  },
-  {
-    id: 2,
-    name: "بلوزه حرير",
-    brand: "Defacto",
-    price: 371.56,
-    originalPrice: 471.56,
-    image: "/images/products/product1.png",
-    color: "بيج",
-    size: "L",
-    quantity: 2,
-    discount: 21,
-  },
-  {
-    id: 3,
-    name: "بلوزه حرير",
-    brand: "Defacto",
-    price: 371.56,
-    originalPrice: 471.56,
-    image: "/images/products/product1.png",
-    color: "بيج",
-    size: "L",
-    quantity: 2,
-    discount: 21,
-  },
-];
-
 export function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(defaultCartItems);
+  const { cart, isLoading, updateQuantity, removeItem } = useCartContext();
+  const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
   const [promoCode, setPromoCode] = useState("");
   const [promoDiscount, setPromoDiscount] = useState(0);
 
-  // تحديث الكمية
-  const updateQuantity = (id: number, newQuantity: number) => {
+  // ✅ عدد العناصر (المنتجات المختلفة) وليس الكميات
+  const itemsCount = cart?.items?.length || 0;
+
+  // استخراج اللون والمقاس من الـ variant
+  const extractColorAndSize = (variant: any) => {
+    let color = "";
+    let size = "";
+    
+    if (variant && variant.attributes && Array.isArray(variant.attributes)) {
+      for (const attr of variant.attributes) {
+        const attrName = attr.attribute_type?.name;
+        if (attrName === "اللون") {
+          color = attr.value || "";
+        } else if (attrName === "مقاس" || attrName === "المقاس") {
+          size = attr.value || "";
+        }
+      }
+    }
+    
+    return { color, size };
+  };
+
+  // تحويل بيانات السلة من الـ API إلى الشكل المطلوب للعرض
+  useEffect(() => {
+    if (cart && cart.items && cart.items.length > 0) {
+      const transformedItems: CartItemDisplay[] = cart.items.map((item) => {
+        const { color, size } = extractColorAndSize(item.variant);
+        
+        let brandName = "ماركة";
+        if (item.product.brand) {
+          if (typeof item.product.brand === 'string') {
+            brandName = item.product.brand;
+          } else if (typeof item.product.brand === 'object' && item.product.brand) {
+            brandName = item.product.brand;
+          }
+        }
+        
+        const cleanImageUrl = (url: string) => {
+          if (!url) return "/images/placeholder.jpg";
+          if (url.startsWith("/storage")) {
+            return `https://dukanah.admin.t-carts.com${url}`;
+          }
+          return url;
+        };
+        
+        return {
+          id: item.id.toString(),
+          productId: item.product.id.toString(),
+          name: item.product.name,
+          brand: brandName,
+          price: item.final_price,
+          originalPrice: item.product.pricing?.has_discount ? item.product.pricing.price : undefined,
+          image: cleanImageUrl(item.product.images?.[0] || ""),
+          color: color,
+          size: size,
+          quantity: item.quantity,
+          discount: item.discount_amount || undefined,
+          totalPrice: item.total_price,
+        };
+      });
+      
+      setCartItems(transformedItems);
+    } else {
+      setCartItems([]);
+    }
+  }, [cart]);
+
+  // حساب المجاميع من السلة
+  const subtotal = cart?.subtotal || 0;
+  const totalDiscount = cart?.discount_amount || 0;
+  const deliveryFee = cart?.delivery_fee || 0;
+  const total = cart?.total_amount || 0;
+
+  const handleUpdateQuantity = async (cartItemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+    await updateQuantity(parseInt(cartItemId), newQuantity);
   };
 
-  // حذف منتج من السلة
-  const removeItem = (id: number) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = async (cartItemId: string) => {
+    await removeItem(parseInt(cartItemId));
   };
 
-  // حفظ للمرة القادمة
-  const saveForLater = (id: number) => {
-    // TODO: تنفيذ منطق الحفظ للمرة القادمة
+  const saveForLater = (id: string) => {
     console.log("Save for later:", id);
   };
 
-  // حساب المجموع الفرعي
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  // حساب إجمالي الخصم
-  const totalDiscount = cartItems.reduce(
-    (sum, item) => sum + ((item.originalPrice || item.price) - item.price) * item.quantity,
-    0
-  );
-
-  // تطبيق كود الخصم
   const applyPromoCode = (code: string, discount: number) => {
     setPromoCode(code);
     setPromoDiscount(discount);
   };
 
-  // إلغاء كود الخصم
   const removePromoCode = () => {
     setPromoCode("");
     setPromoDiscount(0);
   };
 
-  if (cartItems.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <LoadingSpinner size="lg" text="جاري تحميل السلة..." />
+      </div>
+    );
+  }
+
+  if (!cart || cartItems.length === 0) {
     return <CartEmpty />;
   }
 
   return (
-    <div className=" bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
-      <div className="container page-with-padding ">
-      {/* عنوان الصفحة */}
-      <PageHeader title="سلة التسوق" />
+    <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
+      <div className="container page-with-padding">
+        {/* ✅ استخدام itemsCount بدلاً من total_quantity */}
+        <PageHeader title="سلة التسوق" itemCount={itemsCount} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 md:gap-8 gap-4">
-        {/* قائمة المنتجات */}
-        <div className="lg:col-span-2 space-y-4 bg-white rounded-[16px] p-4 mb-5">
-          {cartItems.map((item) => (
-            <CartItemCard
-              key={item.id}
-              item={item}
-              onUpdateQuantity={updateQuantity}
-              onRemove={removeItem}
-              onSaveForLater={saveForLater}
+        <div className="grid grid-cols-1 lg:grid-cols-3 md:gap-8 gap-4">
+          <div className="lg:col-span-2 space-y-4 bg-white rounded-[16px] p-4 mb-5">
+            {cartItems.map((item) => (
+              <CartItemCard
+                key={item.id}
+                item={item}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemove={handleRemoveItem}
+                onSaveForLater={saveForLater}
+              />
+            ))}
+          </div>
+
+          <div className="lg:col-span-1">
+            <CartSummary
+              subtotal={subtotal}
+              totalDiscount={totalDiscount}
+              promoDiscount={promoDiscount}
+              promoCode={promoCode}
+              deliveryFee={deliveryFee}
+              total={total - promoDiscount}
+              onApplyPromoCode={applyPromoCode}
+              onRemovePromoCode={removePromoCode}
             />
-          ))}
-        </div>
-
-        {/* ملخص الطلب */}
-        <div className="lg:col-span-1">
-          <CartSummary
-            subtotal={subtotal}
-            totalDiscount={totalDiscount}
-            promoDiscount={promoDiscount}
-            promoCode={promoCode}
-            onApplyPromoCode={applyPromoCode}
-            onRemovePromoCode={removePromoCode}
-          />
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }
 
 // مكون عنوان الصفحة
-const PageHeader = ({ title }: { title: string }) => (
-  <div className="mb-8 ">
+const PageHeader = ({ title, itemCount }: { title: string; itemCount: number }) => (
+  <div className="mb-8">
     <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
       <Link href="/" className="hover:text-[#EC221F]">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />
       <span className="text-[#EC221F]">{title}</span>
+      <span className="text-gray-400">({itemCount} منتجات)</span>
     </div>
   </div>
 );
-
-// إضافة الـ import المطلوبة
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";

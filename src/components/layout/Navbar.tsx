@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, ShoppingCart, User, Search, X, ChevronDown, LogOut, HeartIcon, Package, RotateCcw, UserCircle } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+// import { useCart } from "@/contexts/CartContext";
+import { useCartContext } from "@/contexts/CartContext";
 import { PiUserBold } from "react-icons/pi";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
@@ -42,7 +43,7 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { cartCount } = useCart();
+  const { itemCount: cartCount , cart } = useCartContext();
   const { isAuthenticated, user, logoutUser, loading } = useAuth();
   const { total: favoritesCount } = useFavorites(); // الحصول على عدد المنتجات المفضلة
   
@@ -63,7 +64,7 @@ export function Navbar() {
 
   // التحقق من أن الصفحة الحالية هي الهوم
   const isHomePage = pathname === "/";
-
+const itemsCount = cart?.items?.length || 0;
   // جلب الفئات من API
   useEffect(() => {
     const fetchCategories = async () => {
@@ -402,9 +403,9 @@ export function Navbar() {
               style={{ color: styles.textColor }}
             >
               <Link href="/cart">
-                {cartCount > 0 && (
+                {itemsCount > 0 && (
                   <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {cartCount > 99 ? '99+' : cartCount}
+                    {itemsCount > 99 ? '99+' : itemsCount}
                   </span>
                 )}
                 <ShoppingCart className="h-5 w-5" />
@@ -559,9 +560,9 @@ export function Navbar() {
                 className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {cartCount > 0 && (
+                {itemsCount > 0 && (
                   <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
-                    {cartCount > 99 ? '99+' : cartCount}
+                    {itemsCount > 99 ? '99+' : itemsCount}
                   </span>
                 )}
                 <ShoppingCart className="h-5 w-5" style={{ color: '#195073' }} />

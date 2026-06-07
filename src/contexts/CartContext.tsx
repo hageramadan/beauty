@@ -1,83 +1,208 @@
+// src/contexts/CartContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import {
+  getCart,
+  addToCart,
+  updateCartItemQuantity,
+  removeFromCart,
+  clearCart,
+  CartData,
+  AddToCartPayload,
+} from '@/services/cart';
+import toast from 'react-hot-toast';
 
 interface CartContextType {
-  cart: CartItem[];
-  cartCount: number;
-  addToCart: (product: any) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
-  clearCart: () => void;
+  cart: CartData | null;
+  isLoading: boolean;
+  isMutating: boolean;
+  itemCount: number;
+  totalAmount: number;
+  addItem: (productId: number, quantity: number, variantId?: number | null) => Promise<boolean>;
+  updateQuantity: (cartItemId: number, quantity: number) => Promise<boolean>;
+  removeItem: (cartItemId: number) => Promise<boolean>;
+  clearAllItems: () => Promise<boolean>;
+  refetchCart: () => Promise<void>;
+  getItemQuantity: (productId: number) => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [cart, setCart] = useState<CartData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
+  const [itemCount, setItemCount] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+  
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+  const fetchCartData = useCallback(async (showLoading: boolean = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const response = await getCart();
+      
+      if (response.result === true && response.data && response.data.cart) {
+        const cartData = response.data.cart;
+        
+        if (isMountedRef.current) {
+          setCart(cartData);
+          setItemCount(cartData.total_quantity || 0);
+          setTotalAmount(cartData.total_amount || 0);
+        }
+      } else {
+        if (isMountedRef.current) {
+          setCart(null);
+          setItemCount(0);
+          setTotalAmount(0);
+        }
+      }
+    } catch (error) {
+      console.error('خطأ في جلب السلة:', error);
+    } finally {
+      if (showLoading && isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
+    isMountedRef.current = true;
+    fetchCartData();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchCartData]);
 
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const addToCart = (product: any) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+  const addItem = async (productId: number, quantity: number, variantId?: number | null): Promise<boolean> => {
+    setIsMutating(true);
+    
+    try {
+      const payload: AddToCartPayload = {
+        product_id: productId,
+        quantity: quantity,
+        product_variant_id: variantId || null,
+      };
+      
+      const response = await addToCart(payload);
+      
+      if (response.result === true && response.data) {
+        toast.success(response.message || 'تم إضافة المنتج إلى السلة');
+        await fetchCartData(false);
+        return true;
+      } else {
+        toast.error(response.message || 'فشل في إضافة المنتج');
+        return false;
       }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const updateQuantity = (id: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(id);
-      return;
+    } catch (error) {
+      toast.error('حدث خطأ في إضافة المنتج');
+      return false;
+    } finally {
+      setIsMutating(false);
     }
-    setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
-    );
   };
 
-  const clearCart = () => setCart([]);
+  const updateQuantity = async (cartItemId: number, quantity: number): Promise<boolean> => {
+    setIsMutating(true);
+    
+    try {
+      const response = await updateCartItemQuantity(cartItemId, quantity);
+      
+      if (response.result === true && response.data) {
+        toast.success('تم تحديث الكمية بنجاح');
+        await fetchCartData(false);
+        return true;
+      } else {
+        toast.error(response.message || 'فشل في تحديث الكمية');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في تحديث الكمية');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const removeItem = async (cartItemId: number): Promise<boolean> => {
+    setIsMutating(true);
+    
+    try {
+      const response = await removeFromCart(cartItemId);
+      
+      if (response.result === true) {
+        toast.success('تم إزالة المنتج من السلة');
+        await fetchCartData(false);
+        return true;
+      } else {
+        toast.error(response.message || 'فشل في إزالة المنتج');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في إزالة المنتج');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const clearAllItems = async (): Promise<boolean> => {
+    setIsMutating(true);
+    
+    try {
+      const response = await clearCart();
+      
+      if (response.result === true) {
+        toast.success('تم تفريغ السلة بنجاح');
+        await fetchCartData(false);
+        return true;
+      } else {
+        toast.error(response.message || 'فشل في تفريغ السلة');
+        return false;
+      }
+    } catch (error) {
+      toast.error('حدث خطأ في تفريغ السلة');
+      return false;
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const getItemQuantity = (productId: number): number => {
+    if (!cart || !cart.items) return 0;
+    
+    const item = cart.items.find(item => item.product.id === productId);
+    return item?.quantity || 0;
+  };
+
+  const value = {
+    cart,
+    isLoading,
+    isMutating,
+    itemCount,
+    totalAmount,
+    addItem,
+    updateQuantity,
+    removeItem,
+    clearAllItems,
+    refetchCart: () => fetchCartData(true),
+    getItemQuantity,
+  };
 
   return (
-    <CartContext.Provider
-      value={{ cart, cartCount, addToCart, removeFromCart, updateQuantity, clearCart }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
 }
 
-export function useCart() {
+// ✅ هذا السطر مهم جداً - تصدير الـ hook
+export function useCartContext() {
   const context = useContext(CartContext);
-  if (!context) throw new Error("useCart must be used within CartProvider");
+  if (context === undefined) {
+    throw new Error('useCartContext must be used within a CartProvider');
+  }
   return context;
 }

@@ -1,7 +1,7 @@
 // app/account/orders/[id]/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Package,
@@ -9,139 +9,269 @@ import {
   CheckCircle,
   Clock,
   PackageCheck,
-  XCircle,ChevronRight} from "lucide-react";
+  XCircle,
+  ChevronRight
+} from "lucide-react";
+import { GrMoney } from "react-icons/gr";
 import Image from "next/image";
 import Link from "next/link";
 import OrderTracker from "@/components/OrderTracker";
 import { IoCopyOutline } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6";
+import toast from "react-hot-toast";
 
-// تعريف نوع الطلب
+// ========== تعريف الأنواع ==========
 interface OrderItem {
   id: number;
-  name: string;
-  brand: string;
-  color: string;
-  size: string;
-  price: number;
-  originalPrice?: number;
+  title: string;
+  variant_id: number | null;
   quantity: number;
-  image: string;
+  unit_price: number;
+  discount_amount: number;
+  total_price: number;
+  images: string[];
 }
 
-interface Order {
+interface OrderAddress {
+  id: number;
+  street: string;
+  building: string;
+  floor: string;
+  apartment: string;
+  type: string;
+  type_label: string;
+  latitude: string | null;
+  longitude: string | null;
+  city: {
+    id: number;
+    name: string;
+    delivery_fee: string;
+  };
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    image?: string;
+  };
+}
+
+interface OrderDetails {
   id: number;
   orderNumber: string;
   date: string;
-  status:
-    | "pending"
-    | "processing"
-    | "ready"
-    | "delivering"
-    | "delivered"
-    | "cancelled";
-  items: OrderItem[];
-  total: number;
+  status: "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status_label: string;
+  payment_method: string;
+  payment_status: string;
+  delivery_method: string;
   subtotal: number;
-  discount: number;
-  deliveryFee: number;
-  finalTotal: number;
-  shippingAddress: {
-    fullName: string;
-    phone: string;
-    city: string;
-    street: string;
-    building: string;
-    apartment: string;
-    governorate: string;
-  };
-  deliveryMethod: string;
-  paymentMethod: string;
-  notes?: string;
+  coupon_discount_amount: number;
+  total_discount_amount: number;
+  subtotal_after_discount: number;
+  shipping_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  notes: string | null;
+  address: OrderAddress | null;
+  items: OrderItem[];
+  created_at: string;
 }
 
-// بيانات تجريبية للطلب
-const mockOrderDetails: Order = {
-  id: 1,
-  orderNumber: "#12345",
-  date: "April 28, 2025",
-  status: "delivered",
-  total: 371.56,
-  subtotal: 371.56,
-  discount: 100,
-  deliveryFee: 50,
-  finalTotal: 267,
-  shippingAddress: {
-    fullName: "مصطفى محمد مصطفى",
-    phone: "05xxxxxxxxx",
-    city: "الرياض",
-    street: "الشارع الرئيسي",
-    building: "مبنى 5",
-    apartment: "شقة 12",
-    governorate: "الرياض",
-  },
-  deliveryMethod: "توصيل",
-  paymentMethod: "مدى",
-  notes: "",
-  items: [
-    {
-      id: 1,
-      name: "قميص",
-      brand: "Defacto",
-      color: "ابيض",
-      size: "L",
-      price: 371.56,
-      originalPrice: 471.56,
-      quantity: 1,
-      image: "/images/products/product2.png",
-    },
-  ],
+// ========== إعدادات API ==========
+const API_URL = 'https://dukanah.admin.t-carts.com/api';
+
+const getToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
 };
 
-const statusConfig = {
+const getHeaders = (): HeadersInit => {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+};
+
+// صورة ثابتة للمنتجات التي لا تحتوي على صورة
+const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
+
+// ========== دالة جلب تفاصيل الطلب ==========
+const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> => {
+  try {
+    const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Order details API response:", data);
+    
+    if (data.result === true && data.data) {
+      return transformOrderDetails(data.data);
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error fetching order details:", error);
+    toast.error("حدث خطأ في جلب تفاصيل الطلب");
+    return null;
+  }
+};
+
+// ========== تحويل حالة الطلب ==========
+const mapStatusToEnglish = (statusLabel: string): "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled" => {
+  const statusMap: Record<string, any> = {
+    "ordered": "pending",
+    "processing": "processing",
+    "ready": "ready",
+    "delivering": "delivering",
+    "delivered": "delivered",
+    "cancelled": "cancelled",
+  };
+  return statusMap[statusLabel] || "pending";
+};
+
+// ========== تحويل طريقة الدفع ==========
+const mapPaymentMethod = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    "كاش": "الدفع عند الاستلام",
+    "أونلاين": "أونلاين",
+    "card": "بطاقة ائتمان",
+    "mada": "مدى",
+    "wallet": "محفظة",
+  };
+  return methodMap[method] || method;
+};
+
+// ========== تحويل طريقة التوصيل ==========
+const mapDeliveryMethod = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    "توصيل": "توصيل",
+    "receive": "استلام من الفرع",
+  };
+  return methodMap[method] || method;
+};
+
+// ========== تحويل تاريخ الطلب ==========
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+// ========== تنظيف رابط الصورة ==========
+const cleanImageUrl = (url: string): string => {
+  if (!url) return PLACEHOLDER_IMAGE;
+  if (url.startsWith("/storage")) {
+    return `https://dukanah.admin.t-carts.com${url}`;
+  }
+  return url;
+};
+
+// ========== تحويل بيانات الطلب ==========
+const transformOrderDetails = (apiOrder: any): OrderDetails => {
+  const englishStatus = mapStatusToEnglish(apiOrder.status_label);
+  
+  return {
+    id: apiOrder.id,
+    orderNumber: apiOrder.order_number,
+    date: formatDate(apiOrder.created_at),
+    status: englishStatus,
+    status_label: apiOrder.status_label,
+    payment_method: mapPaymentMethod(apiOrder.payment_method),
+    payment_status: apiOrder.payment_status,
+    delivery_method: mapDeliveryMethod(apiOrder.delivery_method),
+    subtotal: apiOrder.subtotal,
+    coupon_discount_amount: apiOrder.coupon_discount_amount,
+    total_discount_amount: apiOrder.total_discount_amount,
+    subtotal_after_discount: apiOrder.subtotal_after_discount,
+    shipping_amount: apiOrder.shipping_amount,
+    tax_amount: apiOrder.tax_amount,
+    total_amount: apiOrder.total_amount,
+    notes: apiOrder.notes,
+    address: apiOrder.address,
+    items: apiOrder.items || [],
+    created_at: apiOrder.created_at,
+  };
+};
+
+// ========== حالة الطلب مع التنسيق ==========
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "تم الطلب", color: "status-pending", icon: Clock },
-  processing: {
-    label: "قيد المعالجة",
-    color: "status-processing",
-    icon: Package,
-  },
+  processing: { label: "قيد المعالجة", color: "status-processing", icon: Package },
   ready: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
   delivering: { label: "في الطريق", color: "status-delivering", icon: Truck },
-  delivered: {
-    label: "تم التسليم",
-    color: "status-delivered",
-    icon: CheckCircle,
-  },
+  delivered: { label: "تم التسليم", color: "status-delivered", icon: CheckCircle },
   cancelled: { label: "ملغي", color: "status-cancelled", icon: XCircle },
 };
 
 export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const order = mockOrderDetails;
+  const orderId = params.id as string;
+  
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
   const [orderNotes, setOrderNotes] = useState("");
-const handleReturnClick = () => {
-  router.push(`/account/orders/${order.id}/return`);
-};
-const handleProductsClick = () => {
-  router.push(`/products`);
-};
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const loadOrderDetails = async () => {
+      setLoading(true);
+      const data = await fetchOrderDetails(orderId);
+      setOrder(data);
+      if (data?.notes) {
+        setOrderNotes(data.notes);
+      }
+      setLoading(false);
+    };
+    
+    if (orderId) {
+      loadOrderDetails();
+    }
+  }, [orderId]);
+
+  const copyOrderNumber = () => {
+    if (order) {
+      navigator.clipboard.writeText(order.orderNumber);
+      setCopied(true);
+      toast.success("تم نسخ رقم الطلب");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleReturnClick = () => {
+    router.push(`/account/orders/${orderId}/return`);
+  };
+
+  const handleProductsClick = () => {
+    router.push(`/products`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC221F] mx-auto"></div>
+          <p className="text-gray-500 mt-4">جاري تحميل تفاصيل الطلب...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            الطلب غير موجود
-          </h2>
-          <p className="text-gray-500 mb-4">
-            عذراً، لا يمكننا العثور على هذا الطلب
-          </p>
-          <Link
-            href="/account/orders"
-            className="inline-block bg-[#000000] text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
-          >
+          <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
+          <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
+          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -154,228 +284,208 @@ const handleProductsClick = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <div className="container mx-auto mb-3 ">
+      <div className="container mx-auto mb-3 px-4 md:px-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+          <Link href="/account" className="hover:text-[#EC221F] transition">حسابي</Link>
+          <ChevronRight className="w-4 h-4" />
+          <Link href="/account/orders" className="hover:text-[#EC221F] transition">طلباتي</Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-[#EC221F] font-medium">تفاصيل الطلب</span>
+        </div>
         
         <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* العمود الأيمن - معلومات الطلب والمنتجات */}
+          {/* العمود الأيمن */}
           <div className="lg:col-span-2 space-y-6">
-            {/* المنتجات */}
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-              <div className="">
-                <div className="flex flex-col gap-3">
-                  {/* الصف الأول: رقم الطلب والحالة */}
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                      <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
-                        <h1 className="text-sm sm:text-base">رقم الطلب</h1>
-                        <div className="flex gap-1 sm:gap-2 items-center">
-                          <p className="font-bold text-gray-800 text-sm sm:text-base">
-                            {order.orderNumber}
-                          </p>
-                          <IoCopyOutline className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
-                        </div>
+            {/* معلومات الطلب الأساسية */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                    <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
+                      <h1 className="text-sm sm:text-base">رقم الطلب</h1>
+                      <div className="flex gap-1 sm:gap-2 items-center">
+                        <p className="font-bold text-gray-800 text-sm sm:text-base">
+                          <span className="hidden sm:inline">{order.orderNumber}</span>
+                          <span className="sm:hidden">
+                            {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
+                          </span>
+                        </p>
+                        <IoCopyOutline 
+                          className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#EC221F]'}`}
+                          onClick={copyOrderNumber}
+                        />
                       </div>
                     </div>
-
-                    <div
-                      className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}
-                    >
-                      <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      {status.label}
-                    </div>
                   </div>
-
-                  {/* الصف الثاني: التاريخ */}
-                  <p className="text-sm sm:text-[18px] text-[#333333]">
-                    {order.date}
-                  </p>
+                  <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}>
+                    <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    {status.label}
+                  </div>
                 </div>
+                <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
               </div>
-              <h2 className="text-lg font-bold text-gray-800 my-4">
-                المنتجات ({order.items.length})
-              </h2>
+            </div>
+           <br />
+            {/* المنتجات */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ">
+              <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
               <div className="space-y-4">
-                {order.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col md:flex-row items-center   gap-4 mb-4 md:mb-6 border  border-gray-500 rounded-[8px] p-3"
-                  >
-                    <div className=" w-20 h-20  overflow-hidden">
-                      {item.image ? (
+                {order.items.map((item, idx) => {
+                  const productImage = item.images && item.images.length > 0 
+                    ? cleanImageUrl(item.images[0]) 
+                    : PLACEHOLDER_IMAGE;
+                  
+                  return (
+                    <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
+                      <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={item.image}
-                          alt={item.name}
+                          src={productImage}
+                          alt={item.title}
                           width={80}
                           height={80}
-                          className="object-cover rounded-xl   w-[80px] h-[80px]"
+                          className="object-cover w-full h-full"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-8 h-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 md:text-right text-center ">
-                      <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
-                        <div>
-                          <p className="font-bold text-gray-800">{item.name}</p>
-                          <p className="text-sm text-gray-500">{item.brand}</p>
-                          <div className="flex gap-1 md:gap-3 mt-2 text-xs  text-black font-bold">
-                            <span className="">اللون: <span className="text-gray-500">{item.color}</span></span>
-                            <span>المقاس: <span className="text-gray-500"> {item.size}</span></span>
-                            <span>الكمية:  <span className="text-gray-500">x{item.quantity}</span></span>
+                      </div>
+                      <div className="flex-1 md:text-right text-center">
+                        <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
+                          <div>
+                            <p className="font-bold text-gray-800">{item.title}</p>
+                            <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
+                              <span>الكمية: <span className="text-gray-500">x{item.quantity}</span></span>
+                              <span>السعر: <span className="text-gray-500">EGP {item.unit_price.toFixed(2)}</span></span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-bold text-gray-800">
-                            EGP {item.price.toFixed(2)}
-                          </p>
-                          {item.originalPrice && (
-                            <p className="text-sm text-gray-400 line-through">
-                              EGP {item.originalPrice.toFixed(2)}
-                            </p>
-                          )}
+                          <div className="text-left">
+                            <p className="font-bold text-[#EC221F]">EGP {item.total_price.toFixed(2)}</p>
+                            {item.discount_amount > 0 && (
+                              <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <div className="">
+              <div className="mt-6">
                 <OrderTracker currentStatus={order.status} />
               </div>
             </div>
-
+           <br />
             {/* ملخص الطلب */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 my-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                ملخص الطلب
-              </h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الطلب</h2>
               <div className="space-y-3">
-                <div className="flex justify-between ">
+                <div className="flex justify-between">
                   <span className="text-gray-500">المبلغ الإجمالي</span>
-                  <span className="font-bold text-gray-800">
-                    EGP {order.subtotal.toFixed(2)}
-                  </span>
+                  <span className="font-bold text-gray-800">EGP {order.subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between  ">
-                  <span className="text-gray-500">خصم (-20%)</span>
-                  <span className="font-bold text-[#EC221F]">
-                    -EGP {order.discount.toFixed(2)}
-                  </span>
+                {order.coupon_discount_amount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">خصم الكوبون</span>
+                    <span className="font-bold text-[#EC221F]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
+                  </div>
+                )}
+                {order.total_discount_amount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">خصم</span>
+                    <span className="font-bold text-[#EC221F]">-EGP {order.total_discount_amount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">رسوم التوصيل</span>
+                  <span className="font-bold text-gray-800">EGP {order.shipping_amount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between ">
-                  <span className="text-gray-500">رسوم التوصيــل</span>
-                  <span className="font-bold text-gray-800">
-                    EGP {order.deliveryFee.toFixed(2)}
-                  </span>
-                </div>
+                {order.tax_amount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">الضرائب</span>
+                    <span className="font-bold text-gray-800">EGP {order.tax_amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
-                  <span className="text-lg font-bold text-gray-800">
-                    الإجمالـــــــي
-                  </span>
-                  <span className="text-xl font-bold ">
-                    EGP {order.finalTotal.toFixed(2)}
-                  </span>
+                  <span className="text-lg font-bold text-gray-800">الإجمالي</span>
+                  <span className="text-xl font-bold text-[#EC221F]">EGP {order.total_amount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* العمود الأيسر - ملخص الطلب */}
+          {/* العمود الأيسر */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-base font-bold text-gray-800 mb-4">
-                معلومات الاتصال
-              </h2>
+              <h2 className="text-base font-bold text-gray-800 mb-4">معلومات الاتصال</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className=" font-bold">الاسم الكامل</span>
-                  <span className="font-medium text-gray-600">
-                    {order.shippingAddress.fullName}
-                  </span>
+                  <span className="font-bold">الاسم الكامل</span>
+                  <span className="font-medium text-gray-600">{order.address?.user?.name || "غير متوفر"}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 text-sm">
-                  <span className="font-bold">رقم الجوال</span>
-                  <span className="font-medium text-gray-600">
-                    {order.shippingAddress.phone}
+                  <span className="font-bold">حالة الدفع</span>
+                  <span className={`font-medium ${order.payment_status === "مدفوع" ? "text-green-600" : "text-yellow-600"}`}>
+                    {order.payment_status}
                   </span>
                 </div>
               </div>
             </div>
-            {/* طريقة الاستلام */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 my-3 md:my-6">
-              <div className="flex items-center gap-3 mb-4">
-               
-                <h2 className="text-base font-bold ">
-                  طريقة الاستلام
-                </h2>
-              </div>
-              <span className="font-medium text-gray-800">
-                {order.deliveryMethod}
-              </span>
-             <div className="flex items-center gap-2  border rounded-xl px-2 py-3 mt-3">
-               <FaLocationDot className="text-gray-500"/>
-              <p className="font-medium text-gray-400">
-                
-
-                {order.shippingAddress.city} , {order.shippingAddress.street} ,{" "}
-                {order.shippingAddress.building} ,{" "}
-                {order.shippingAddress.apartment}
-              </p>
-             </div>
-           
+            <br />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-base font-bold mb-4">طريقة الاستلام</h2>
+              <span className="font-medium text-gray-800">{order.delivery_method}</span>
+              {order.address && (
+                <div className="flex items-center gap-2 border rounded-xl px-2 py-3 mt-3">
+                  <FaLocationDot className="text-gray-500 flex-shrink-0" />
+                  <p className="font-medium text-gray-400 text-sm">
+                    {order.address.street}، {order.address.city?.name}
+                  </p>
+                </div>
+              )}
             </div>
-            {/* طريقة الدفع */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 my-3 md:my-6">
-              <div className="flex items-center gap-3 mb-4">
-               
-                <h2 className="text-base font-bold">طريقة الدفع</h2>
-              </div>
+              <br/>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
               <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                  <Image src="/images/payment/mada.png" width={40} height={40} alt="mada"/>
+                  {/* <Image src="/images/payment/mada.png" width={40} height={40} alt="mada" /> */}
+                  <GrMoney />
                 </div>
                 <div>
-                  <p className=" text-gray-500">
-                    {order.paymentMethod}
-                  </p>
-           
+                  <p className="text-gray-500">{order.payment_method}</p>
                 </div>
               </div>
             </div>
-            {/* ملاحظات */}
+              <br/>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h2 className="text-base font-bold text-gray-800 mb-4">ملاحظات</h2>
               <textarea
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="قم بإدخال ملاحظاتك الإضافية.."
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#EC221F] resize-none"
+                placeholder="لا توجد ملاحظات"
+                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#EC221F] resize-none bg-gray-50"
                 rows={3}
+                readOnly
               />
             </div>
-            {/* أزرار الإجراءات */}
+
             <div className="flex gap-3 mt-3 md:mt-6 mx-2">
-              {/* في حالة تم التسليم (delivered): نعرض الزرين معاً */}
               {order.status === "delivered" && (
                 <>
                   <button onClick={handleReturnClick} className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition">
-                    ارجاع
+                    إرجاع
                   </button>
-                  <button onClick={handleProductsClick} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium transition">
-                    اعادة الطلب
+                  <button onClick={handleProductsClick} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
+                    إعادة الطلب
                   </button>
                 </>
               )}
-
-              {/* في حالة قيد المراجعة (pending): نعرض زر إلغاء الطلب فقط */}
               {order.status === "pending" && (
                 <button className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 transition">
-                  الغاء الطلب
+                  إلغاء الطلب
                 </button>
               )}
             </div>
@@ -384,30 +494,12 @@ const handleProductsClick = () => {
       </div>
 
       <style jsx global>{`
-        .status-pending {
-          background-color: #a0aec03d;
-          color: #a0aec0;
-        }
-        .status-processing {
-          background-color: #ed89363d;
-          color: #ed8936;
-        }
-        .status-ready {
-          background-color: #9f7aea3d;
-          color: #9f7aea;
-        }
-        .status-delivering {
-          background-color: #f6ad553d;
-          color: #f6ad55;
-        }
-        .status-delivered {
-          background-color: #48bb783d;
-          color: #48bb78;
-        }
-        .status-cancelled {
-          background-color: #f565653d;
-          color: #f56565;
-        }
+        .status-pending { background-color: #A0AEC03D; color: #A0AEC0; }
+        .status-processing { background-color: #ED89363D; color: #ED8936; }
+        .status-ready { background-color: #9F7AEA3D; color: #9F7AEA; }
+        .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
+        .status-delivered { background-color: #48BB783D; color: #48BB78; }
+        .status-cancelled { background-color: #F565653D; color: #F56565; }
       `}</style>
     </div>
   );

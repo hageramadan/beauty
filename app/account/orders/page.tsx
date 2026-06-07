@@ -1,172 +1,169 @@
 // app/account/orders/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, ChevronDown, ChevronUp, Truck, CheckCircle, Clock, PackageCheck, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoCopyOutline } from "react-icons/io5";
+import toast from "react-hot-toast";
 
-// تعريف نوع الطلب
+// ========== تعريف الأنواع ==========
 interface OrderItem {
   id: number;
-  name: string;
-  brand: string;
-  color: string;
-  size: string;
-  price: number;
-  originalPrice?: number;
+  title: string;
+  variant_id: number | null;
   quantity: number;
-  image: string;
+  unit_price: number;
+  discount_amount: number;
+  total_price: number;
+  images: string[];
+}
+
+interface OrderAddress {
+  id: number;
+  street: string;
+  building: string;
+  floor: string;
+  apartment: string;
+  city: {
+    id: number;
+    name: string;
+    delivery_fee: string;
+  };
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 
 interface Order {
   id: number;
   orderNumber: string;
   date: string;
-  status: "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status: string;
+  status_label: string;
+  payment_method: string;
+  payment_status: string;
+  delivery_method: string;
+  subtotal: number;
+  coupon_discount_amount: number;
+  total_discount_amount: number;
+  subtotal_after_discount: number;
+  shipping_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  notes: string | null;
+  address: OrderAddress | null;
   items: OrderItem[];
-  total: number;
-  shippingAddress?: string;
+  created_at: string;
 }
 
-// بيانات تجريبية
-const mockOrders: Order[] = [
-  {
-    id: 1,
-    orderNumber: "#12345",
-    date: "28 أبريل 2025",
-    status: "delivered",
-    total: 843.12,
-    items: [
-      {
-        id: 1,
-        name: "بلوزه حرير",
-        brand: "Defacto",
-        color: "بيج",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 1,
-        image: "/images/products/product1.png"
-      },
-      {
-        id: 2,
-        name: "قميص",
-        brand: "Defacto",
-        color: "ابيض",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 1,
-        image: "/images/products/product2.png"
-      }
-    ]
-  },
-  {
-    id: 2,
-    orderNumber: "#12346",
-    date: "28 أبريل 2025",
-    status: "processing",
-    total: 743.12,
-    items: [
-      {
-        id: 3,
-        name: "بلوزه حرير",
-        brand: "Defacto",
-        color: "بيج",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 1,
-        image: "/images/products/product1.png"
-      },
-      {
-        id: 4,
-        name: "قميص",
-        brand: "Defacto",
-        color: "ابيض",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 1,
-        image: "/images/products/product2.png"
-      }
-    ]
-  },
-  {
-    id: 3,
-    orderNumber: "#12347",
-    date: "27 أبريل 2025",
-    status: "delivering",
-    total: 1486.24,
-    items: [
-      {
-        id: 5,
-        name: "بلوزه حرير",
-        brand: "Defacto",
-        color: "بيج",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 2,
-        image: "/images/products/product1.png"
-      },
-      {
-        id: 6,
-        name: "قميص",
-        brand: "Defacto",
-        color: "ابيض",
-        size: "L",
-        price: 371.56,
-        originalPrice: 471.56,
-        quantity: 2,
-        image: "/images/products/product2.png"
-      }
-    ]
-  },
-  {
-    id: 4,
-    orderNumber: "#12348",
-    date: "26 أبريل 2025",
-    status: "ready",
-    total: 471.56,
-    items: [
-      {
-        id: 7,
-        name: "قميص",
-        brand: "Defacto",
-        color: "ابيض",
-        size: "L",
-        price: 471.56,
-        quantity: 1,
-        image: "/images/products/product2.png"
-      }
-    ]
-  },
-  {
-    id: 5,
-    orderNumber: "#12349",
-    date: "25 أبريل 2025",
-    status: "pending",
-    total: 371.56,
-    items: [
-      {
-        id: 8,
-        name: "بلوزه حرير",
-        brand: "Defacto",
-        color: "بيج",
-        size: "L",
-        price: 371.56,
-        quantity: 1,
-        image: "/images/products/product1.png"
-      }
-    ]
-  }
-];
+// ========== إعدادات API ==========
+const API_URL = 'https://dukanah.admin.t-carts.com/api';
 
-// حالة الطلب مع التنسيق العربي - استخدام كلاس ثابت
-const statusConfig = {
+const getToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+};
+
+const getHeaders = (): HeadersInit => {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+};
+
+// صورة ثابتة للمنتجات التي لا تحتوي على صورة
+const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
+
+// ========== دالة جلب الطلبات ==========
+const fetchOrders = async (): Promise<Order[]> => {
+  try {
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Orders API response:", data);
+    
+    if (data.result === true && data.data && data.data.orders) {
+      return data.data.orders.map(transformOrder);
+    }
+    return [];
+  } catch (error) {
+    console.error("❌ Error fetching orders:", error);
+    toast.error("حدث خطأ في جلب الطلبات");
+    return [];
+  }
+};
+
+// ========== تحويل حالة الطلب من العربية إلى الإنجليزية ==========
+const mapStatusToEnglish = (statusLabel: string): "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled" => {
+  const statusMap: Record<string, any> = {
+    "ordered": "pending",
+    "processing": "processing",
+    "ready": "ready",
+    "delivering": "delivering",
+    "delivered": "delivered",
+    "cancelled": "cancelled",
+  };
+  return statusMap[statusLabel] || "pending";
+};
+
+// ========== تحويل تاريخ الطلب ==========
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+// ========== تنظيف رابط الصورة ==========
+const cleanImageUrl = (url: string): string => {
+  if (!url) return PLACEHOLDER_IMAGE;
+  if (url.startsWith("/storage")) {
+    return `https://dukanah.admin.t-carts.com${url}`;
+  }
+  return url;
+};
+
+// ========== تحويل بيانات الطلب ==========
+const transformOrder = (apiOrder: any): Order => {
+  const englishStatus = mapStatusToEnglish(apiOrder.status_label);
+  
+  return {
+    id: apiOrder.id,
+    orderNumber: apiOrder.order_number,
+    date: formatDate(apiOrder.created_at),
+    status: englishStatus,
+    status_label: apiOrder.status_label,
+    payment_method: apiOrder.payment_method,
+    payment_status: apiOrder.payment_status,
+    delivery_method: apiOrder.delivery_method,
+    subtotal: apiOrder.subtotal,
+    coupon_discount_amount: apiOrder.coupon_discount_amount,
+    total_discount_amount: apiOrder.total_discount_amount,
+    subtotal_after_discount: apiOrder.subtotal_after_discount,
+    shipping_amount: apiOrder.shipping_amount,
+    tax_amount: apiOrder.tax_amount,
+    total_amount: apiOrder.total_amount,
+    notes: apiOrder.notes,
+    address: apiOrder.address,
+    items: apiOrder.items || [],
+    created_at: apiOrder.created_at,
+  };
+};
+
+// حالة الطلب مع التنسيق
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "تم الطلب", color: "status-pending", icon: Clock },
   processing: { label: "قيد المعالجة", color: "status-processing", icon: Package },
   ready: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
@@ -175,17 +172,29 @@ const statusConfig = {
   cancelled: { label: "ملغي", color: "status-cancelled", icon: XCircle }
 };
 
-type FilterStatus = "all" | "pending" | "processing" | "ready" | "delivering" | "delivered" | "NotDelivered" | "cancelled";
+type FilterStatus = "all" | "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled";
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      setLoading(true);
+      const data = await fetchOrders();
+      setOrders(data);
+      setLoading(false);
+    };
+    loadOrders();
+  }, []);
 
   const toggleExpand = (orderId: number) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  const filteredOrders = mockOrders.filter(order => 
+  const filteredOrders = orders.filter(order => 
     filterStatus === "all" ? true : order.status === filterStatus
   );
 
@@ -196,20 +205,39 @@ export default function OrdersPage() {
     { value: "delivering", label: "جارٍ التوصيل" },
     { value: "ready", label: "جاهز للاستلام" },
     { value: "delivered", label: "تم التسليم" },
-    { value: "NotDelivered", label: "لم يتم التوصيل" },
     { value: "cancelled", label: "ملغي" },
   ];
 
+  const copyOrderNumber = (orderNumber: string) => {
+    navigator.clipboard.writeText(orderNumber);
+    toast.success("تم نسخ رقم الطلب");
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-l min-h-screen from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC221F] mx-auto"></div>
+              <p className="text-gray-500 mt-4">جاري تحميل الطلبات...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-l min-h-screen from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6 ">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#EC221F]" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">طلباتي</h1>
         </div>
 
-        {/* فلتر الحالات - تحسين للموبايل */}
+        {/* فلتر الحالات */}
         <div className="flex flex-nowrap gap-2 mb-6 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible sm:gap-3 md:gap-4">
           {statusFilters.map((filter) => (
             <button
@@ -235,10 +263,10 @@ export default function OrdersPage() {
             </div>
           ) : (
             filteredOrders.map((order) => {
-              const status = statusConfig[order.status];
+              const status = statusConfig[order.status] || statusConfig.pending;
               const StatusIcon = status.icon;
               const isExpanded = expandedOrderId === order.id;
-              const itemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+             const itemsCount = order.items.length;
 
               return (
                 <div key={order.id} className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -248,16 +276,26 @@ export default function OrdersPage() {
                     onClick={() => toggleExpand(order.id)}
                   >
                     <div className="flex flex-col gap-3">
-                      {/* الصف الأول: رقم الطلب والحالة */}
                       <div className="flex justify-between items-start">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                           <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
-                            <h1 className="text-sm sm:text-base">رقم الطلب</h1>
-                            <div className="flex gap-1 sm:gap-2 items-center">
-                              <p className="font-bold text-gray-800 text-sm sm:text-base">{order.orderNumber}</p>
-                              <IoCopyOutline className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer" />
-                            </div>
-                          </div>
+  <h1 className="text-sm sm:text-base">رقم الطلب</h1>
+  <div className="flex gap-1 sm:gap-2 items-center">
+    <p className="font-bold text-gray-800 text-sm sm:text-base">
+      <span className="hidden sm:inline">{order.orderNumber}</span>
+      <span className="sm:hidden">
+        {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
+      </span>
+    </p>
+    <IoCopyOutline 
+      className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#EC221F] transition" 
+      onClick={(e) => {
+        e.stopPropagation();
+        copyOrderNumber(order.orderNumber);
+      }}
+    />
+  </div>
+</div>
                         </div>
                         
                         <div className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}>
@@ -271,65 +309,71 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
-                      {/* الصف الثاني: التاريخ */}
                       <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
                       
-                      {/* الصف الثالث: عدد المنتجات */}
                       <div className="flex gap-2 items-center text-sm sm:text-base">
-                        <p className="text-[#180100]">المنتاجات</p>
+                        <p className="text-[#180100]">المنتجات</p>
                         <span className="text-gray-500">({itemsCount})</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* تفاصيل الطلب الموسعة - تحسين للموبايل */}
-                  {isExpanded && (
+                  {/* تفاصيل الطلب الموسعة */}
+                  {isExpanded && order.items.length > 0 && (
                     <div className="border-t border-gray-100 p-4 sm:p-5 bg-gray-50">
                       <div className="space-y-3 sm:space-y-4">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0">
-                            {/* صورة المنتج - قابلة للنقر */}
-                            <Link 
-                              href={`/account/orders/${order.id}`}
-                              className="flex-shrink-0"
-                            >
-                              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg sm:rounded-xl overflow-hidden hover:opacity-80 transition cursor-pointer">
-                                {item.image ? (
-                                  <Image src={item.image} alt={item.name} width={80} height={80} className="object-cover w-full h-full" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                    <Package className="w-6 h-6 sm:w-8 sm:h-8" />
-                                  </div>
-                                )}
-                              </div>
-                            </Link>
-                            
-                            {/* تفاصيل المنتج - اسم المنتج قابل للنقر */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                                <div>
-                                  <Link 
-                                    href={`/account/orders/${order.id}`}
-                                    className="hover:underline"
-                                  >
-                                    <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#EC221F] transition">
-                                      {item.name}
-                                    </p>
-                                  </Link>
-                                  <p className="text-[11px] sm:text-xs text-gray-500">{item.brand}</p>
-                                  <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
-                                    <span>اللون: {item.color}</span>
-                                    <span>المقاس: {item.size}</span>
-                                    <span>الكمية: x{item.quantity}</span>
-                                  </div>
+                        {order.items.map((item, idx) => {
+                          // الحصول على الصورة الأولى من الـ images array
+                          const productImage = item.images && item.images.length > 0 
+                            ? cleanImageUrl(item.images[0]) 
+                            : PLACEHOLDER_IMAGE;
+                          
+                          return (
+                            <div key={idx} className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0">
+                              {/* صورة المنتج */}
+                              <Link 
+                                href={`/account/orders/${order.id}`}
+                                className="flex-shrink-0"
+                              >
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg sm:rounded-xl overflow-hidden hover:opacity-80 transition cursor-pointer">
+                                  <Image 
+                                    src={productImage} 
+                                    alt={item.title} 
+                                    width={80} 
+                                    height={80} 
+                                    className="object-cover w-full h-full"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
+                                    }}
+                                  />
                                 </div>
-                                <div className="text-left sm:text-right">
-                                  <p className="font-semibold text-[#000000] text-sm sm:text-base">EGP {item.price.toFixed(2)}</p>
+                              </Link>
+                              
+                              {/* تفاصيل المنتج */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+                                  <div>
+                                    <Link 
+                                      href={`/account/orders/${order.id}`}
+                                      className="hover:underline"
+                                    >
+                                      <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#EC221F] transition">
+                                        {item.title}
+                                      </p>
+                                    </Link>
+                                    <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
+                                      <span>الكمية: x{item.quantity}</span>
+                                      <span>السعر: EGP {item.unit_price.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-left sm:text-right">
+                                    <p className="font-semibold text-[#000000] text-sm sm:text-base">EGP {item.total_price.toFixed(2)}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                         
                         {/* إجمالي الطلب */}
                         <div className="pt-2 sm:pt-3 flex justify-between items-center">
@@ -341,7 +385,7 @@ export default function OrdersPage() {
                           </Link>
                           <div className="text-right">
                             <p className="text-xs sm:text-sm text-gray-500">إجمالي الطلب</p>
-                            <p className="text-lg sm:text-xl font-bold text-[#EC221F]">EGP {order.total.toFixed(2)}</p>
+                            <p className="text-lg sm:text-xl font-bold text-[#EC221F]">EGP {order.total_amount.toFixed(2)}</p>
                           </div>
                         </div>
                       </div>

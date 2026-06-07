@@ -62,17 +62,18 @@ const transformProductData = (apiProduct: ProductData) => {
     reviewsCount: apiProduct.total_reviews || 0,
     sku: `SKU-${apiProduct.id}`,
     availability: apiProduct.is_active && (apiProduct.quantity > 0 || apiProduct.has_variants),
+    // ✅ إضافة variants و has_variants (الأهم)
+    variants: apiProduct.variants || [],
+    has_variants: apiProduct.has_variants || false,
   };
 };
 
-// ✅ الحل: استخدام async function بدلاً من client component عادي
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
 
-  // ✅ استخراج الـ id من الـ Promise
   useEffect(() => {
     const unwrapParams = async () => {
       const unwrappedParams = await params;
@@ -92,7 +93,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         const apiProduct = await getProductById(productId);
         
         if (apiProduct) {
+          console.log("✅ API Product with variants:", apiProduct); // Debug
           const transformedProduct = transformProductData(apiProduct);
+          console.log("✅ Transformed product:", transformedProduct); // Debug
           setProduct(transformedProduct);
         } else {
           setError("المنتج غير موجود");
@@ -133,11 +136,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   return (
     <div className='page-with-padding'>
       <ProductDetails product={product} />
-       <CustomerReviews productId={parseInt(productId!)} />
-      <YouMayAlsoLike 
-      
-        
-      />
+      <CustomerReviews productId={parseInt(productId!)} />
+      <YouMayAlsoLike />
     </div>
   );
 }

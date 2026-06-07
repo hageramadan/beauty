@@ -189,7 +189,27 @@ export default function AccountPage() {
               </button>
             </div>
           </div>
-
+          {/* wallet */}
+          <div className="space-y-3 bg-wallet rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
+            <h2 className="text-lg font-bold text-gray-800">المحفظة</h2>
+              <Link
+             
+                href="/account/wallet"
+                className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-200"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-gray-100 p-2 rounded-full">
+                    <div className="text-gray-600">
+                      <Image src="/images/wallet.png" alt="Wallet" width={20} height={20} />
+                    </div>
+                  </div>
+                  <span className="text-gray-700 text-base md:text-xl font-bold">الرصيد الحالي</span>
+                </div>
+                {/* <FaChevronLeft className="w-4 h-4 text-gray-400" /> */}
+                <span className="text-[#0A0500] text-base md:text-xl font-extrabold"> EGP 371.56</span>
+              </Link>
+     
+          </div>
           {/* Menu Items */}
           <div className="space-y-3 bg-white rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
             {menuItems.map((item) => (

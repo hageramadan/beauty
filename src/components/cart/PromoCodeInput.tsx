@@ -2,7 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface PromoCodeInputProps {
   onApply: (code: string, discount: number) => void;
@@ -10,38 +11,147 @@ interface PromoCodeInputProps {
   appliedCode: string;
 }
 
-// قائمة أكواد الخصم المتاحة
-const AVAILABLE_CODES: Record<string, number> = {
-  "DISCOUNT20": 20, // 20% off
-  "SAVE100": 100,   // 100 EGP off
-  "WELCOME50": 50,  // 50 EGP off
+// API URL
+const API_URL = 'https://dukanah.admin.t-carts.com/api';
+
+// دالة جلب التوكن
+const getToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+};
+
+// دالة جلب الهيدرز
+const getHeaders = (): HeadersInit => {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+};
+
+// دالة تطبيق كود الخصم من الـ API
+const applyCouponAPI = async (code: string): Promise<{ success: boolean; discount: number; message: string }> => {
+  try {
+    const response = await fetch(`${API_URL}/coupons/apply`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ code: code.toUpperCase() }),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Coupon API response:", data);
+    
+    if (data.result === true && data.data) {
+      // افترض أن الخصم في data.discount أو data.data.discount
+      const discount = data.data?.discount || data.data?.discount_amount || 0;
+      return {
+        success: true,
+        discount: discount,
+        message: data.message || "تم تطبيق كود الخصم بنجاح"
+      };
+    } else {
+      return {
+        success: false,
+        discount: 0,
+        message: data.message || "كود الخصم غير صحيح"
+      };
+    }
+  } catch (error) {
+    console.error("❌ Error applying coupon:", error);
+    return {
+      success: false,
+      discount: 0,
+      message: "حدث خطأ في الاتصال بالخادم"
+    };
+  }
+};
+
+// دالة إلغاء كود الخصم
+const removeCouponAPI = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await fetch(`${API_URL}/coupons/remove`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Remove coupon response:", data);
+    
+    if (data.result === true) {
+      return {
+        success: true,
+        message: data.message || "تم إلغاء كود الخصم"
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || "حدث خطأ في إلغاء الكود"
+      };
+    }
+  } catch (error) {
+    console.error("❌ Error removing coupon:", error);
+    return {
+      success: false,
+      message: "حدث خطأ في الاتصال بالخادم"
+    };
+  }
 };
 
 export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInputProps) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!code.trim()) {
       setError("الرجاء إدخال كود الخصم");
       return;
     }
 
-    const discount = AVAILABLE_CODES[code.toUpperCase()];
-    
-    if (discount) {
-      onApply(code.toUpperCase(), discount);
-      setError("");
-      setCode("");
-    } else {
-      setError("كود الخصم غير صحيح");
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const result = await applyCouponAPI(code);
+      
+      if (result.success) {
+        toast.success(result.message);
+        onApply(code.toUpperCase(), result.discount);
+        setCode("");
+        setError("");
+      } else {
+        setError(result.message);
+        toast.error(result.message);
+      }
+    } catch (err) {
+      setError("حدث خطأ غير متوقع");
+      toast.error("حدث خطأ غير متوقع");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRemove = () => {
-    onRemove();
-    setCode("");
-    setError("");
+  const handleRemove = async () => {
+    setIsLoading(true);
+    
+    try {
+      const result = await removeCouponAPI();
+      
+      if (result.success) {
+        toast.success(result.message);
+        onRemove();
+        setCode("");
+        setError("");
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err) {
+      toast.error("حدث خطأ غير متوقع");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (appliedCode) {
@@ -54,9 +164,10 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
           </div>
           <button
             onClick={handleRemove}
-            className="text-gray-400 hover:text-red-500 transition"
+            disabled={isLoading}
+            className="text-gray-400 hover:text-red-500 transition disabled:opacity-50"
           >
-            <X className="w-4 h-4" />
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -73,20 +184,25 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
             setCode(e.target.value);
             setError("");
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && code.trim() && !isLoading) {
+              handleApply();
+            }
+          }}
           placeholder="أدخل كود الخصم..."
-          className="flex-1 px-2 md:px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent text-sm"
+          disabled={isLoading}
+          className="flex-1 px-2 md:px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent text-sm disabled:bg-gray-100"
         />
         <button
           onClick={handleApply}
-          disabled={!code}
-          className="px-3 md:px-5 md:py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!code.trim() || isLoading}
+          className="px-3 md:px-5 overflow-hidden md:py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          تطبيق
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {isLoading ? "جاري.." : "تطبيق"}
         </button>
       </div>
-      {error && (
-        <p className="text-xs text-red-500 mt-2">{error}</p>
-      )}
+      
     </div>
   );
 }

@@ -1,10 +1,10 @@
 // components/products/ProductDetails.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Heart, Truck, RefreshCw, Ruler, Info } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useCartContext } from "@/contexts/CartContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import Link from "next/link";
 import { BsShare } from "react-icons/bs";
@@ -12,6 +12,32 @@ import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa6";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { FaRegStar } from "react-icons/fa";
+import toast from "react-hot-toast";
+
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
+  };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
+}
+
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  attributes: VariantAttribute[];
+}
 
 interface ProductDetailsProps {
   product: {
@@ -21,7 +47,7 @@ interface ProductDetailsProps {
     price: number;
     originalPrice?: number;
     discount?: number;
-    brand: string;
+    brand: string | null;
     category: string;
     images: string[];
     colors: Array<{ name: string; code: string }>;
@@ -30,50 +56,207 @@ interface ProductDetailsProps {
     reviewsCount: number;
     sku: string;
     availability: boolean;
+    variants?: ProductVariant[];
+    has_variants?: boolean;
   };
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(
-    product.colors[0]?.name || "",
-  );
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<
     "info" | "measurements" | "shipping"
   >("info");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
-  const { addToCart } = useCart();
+  const { addItem, getItemQuantity, isLoading: cartLoading } = useCartContext();
   const { toggleFavorite, isFavorite, isMutating } = useFavorites();
 
-  // التحقق من أن المنتج في المفضلة
-  const isProductFavorite = isFavorite(product.id.toString());
+  // ✅ Debug: طباعة كل البيانات
+  useEffect(() => {
+    console.log("========== PRODUCT DATA DEBUG ==========");
+    console.log("1. product.has_variants:", product.has_variants);
+    console.log("2. product.variants:", product.variants);
+    console.log("3. product.variants length:", product.variants?.length);
+    console.log("4. product.colors:", product.colors);
+    console.log("5. product.sizes:", product.sizes);
+    
+    if (product.variants && product.variants.length > 0) {
+      console.log("6. First variant:", product.variants[0]);
+      console.log("7. First variant attributes:", product.variants[0]?.attributes);
+    }
+    console.log("========================================");
+  }, [product]);
 
-  // معالجة إضافة إلى السلة
-  const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0],
-      quantity: quantity,
-      color: selectedColor,
-      size: selectedSize,
+  // ✅ استخراج الألوان من الـ variants
+  const getAvailableColorsFromVariants = (): { name: string; code: string }[] => {
+    console.log("getAvailableColorsFromVariants called");
+    
+    if (!product.variants || product.variants.length === 0) {
+      console.log("No variants found, using product.colors");
+      return product.colors;
+    }
+    
+    const colorSet = new Map<string, string>();
+    
+    product.variants.forEach((variant, index) => {
+      console.log(`Processing variant ${index}:`, variant);
+      
+      if (!variant.attributes) {
+        console.log(`Variant ${index} has no attributes`);
+        return;
+      }
+      
+      const colorAttrs = variant.attributes.filter(attr => {
+        const isColor = attr.attribute_type?.name === "اللون";
+        console.log(`Attribute:`, { name: attr.attribute_type?.name, isColor, value: attr.value });
+        return isColor;
+      });
+      
+      console.log(`Color attributes for variant ${index}:`, colorAttrs);
+      
+      colorAttrs.forEach(colorAttr => {
+        if (colorAttr && colorAttr.value && !colorSet.has(colorAttr.value)) {
+          colorSet.set(colorAttr.value, colorAttr.meta?.color || "#000000");
+        }
+      });
     });
+    
+    const colors = Array.from(colorSet.entries()).map(([name, code]) => ({ name, code }));
+    console.log("Final colors:", colors);
+    return colors;
   };
 
-  // معالجة إضافة/إزالة من المفضلة
+  // ✅ استخراج المقاسات من الـ variants
+  const getAvailableSizesFromVariants = (): string[] => {
+    console.log("getAvailableSizesFromVariants called");
+    
+    if (!product.variants || product.variants.length === 0) {
+      console.log("No variants found, using product.sizes");
+      return product.sizes;
+    }
+    
+    const sizeSet = new Set<string>();
+    
+    product.variants.forEach((variant, index) => {
+      if (!variant.attributes) return;
+      
+      const sizeAttrs = variant.attributes.filter(attr => 
+        attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس"
+      );
+      
+      sizeAttrs.forEach(sizeAttr => {
+        if (sizeAttr && sizeAttr.value) {
+          sizeSet.add(sizeAttr.value);
+        }
+      });
+    });
+    
+    const sizes = Array.from(sizeSet);
+    console.log("Final sizes:", sizes);
+    return sizes;
+  };
+
+  // ✅ الحصول على الـ variant المناسب للون
+  const getVariantForColor = (colorName: string): ProductVariant | null => {
+    if (!product.variants || product.variants.length === 0) return null;
+    
+    const variant = product.variants.find(variant =>
+      variant.attributes?.some(attr => attr.attribute_type?.name === "اللون" && attr.value === colorName)
+    );
+    
+    console.log(`getVariantForColor(${colorName}):`, variant);
+    return variant || null;
+  };
+
+  const displayColors = product.has_variants ? getAvailableColorsFromVariants() : product.colors;
+  const displaySizes = product.has_variants ? getAvailableSizesFromVariants() : product.sizes;
+
+  console.log("displayColors:", displayColors);
+  console.log("displaySizes:", displaySizes);
+  console.log("selectedColor:", selectedColor);
+  console.log("selectedSize:", selectedSize);
+
+  // ✅ تعيين أول لون متاح
+  useEffect(() => {
+    if (displayColors.length > 0 && !selectedColor) {
+      setSelectedColor(displayColors[0].name);
+    }
+  }, [displayColors.length]);
+
+  // ✅ تعيين أول مقاس متاح
+  useEffect(() => {
+    if (displaySizes.length > 0 && !selectedSize) {
+      setSelectedSize(displaySizes[0]);
+    }
+  }, [displaySizes.length]);
+
+  // ✅ تحديث الـ variant المختار
+  useEffect(() => {
+    if (selectedColor) {
+      const variant = getVariantForColor(selectedColor);
+      setSelectedVariant(variant);
+    }
+  }, [selectedColor]);
+
+  // ✅ السعر الحالي
+  const currentPrice = selectedVariant 
+    ? selectedVariant.price_after_discount || selectedVariant.price
+    : product.price;
+  
+  const originalPrice = selectedVariant?.has_discount ? selectedVariant.price : product.originalPrice;
+
+  const isProductFavorite = isFavorite(product.id.toString());
+  const itemInCartQuantity = getItemQuantity(product.id);
+
+  // ✅ إضافة إلى السلة
+  const handleAddToCart = async () => {
+    if (isAddingToCart) return;
+    
+    if (product.has_variants && !selectedVariant) {
+      toast.error("الرجاء اختيار اللون أولاً");
+      return;
+    }
+    
+    setIsAddingToCart(true);
+    
+    try {
+      const variantId = selectedVariant?.id || null;
+      
+      console.log("📦 Sending to cart:", {
+        product_id: product.id,
+        quantity: quantity,
+        product_variant_id: variantId
+      });
+      
+      const success = await addItem(product.id, quantity, variantId);
+      
+      if (success) {
+        setQuantity(1);
+      }
+    } catch (error) {
+      console.error("❌ خطأ في الإضافة إلى السلة:", error);
+      toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
   const handleToggleFavorite = async () => {
     await toggleFavorite(product.id.toString(), isProductFavorite);
   };
 
-  // تحديث الكمية
-  const increaseQuantity = () => setQuantity((prev) => prev + 1);
+  const increaseQuantity = () => {
+    const maxQty = selectedVariant?.quantity && selectedVariant.quantity > 0 ? selectedVariant.quantity : 99;
+    setQuantity((prev) => Math.min(prev + 1, maxQty));
+  };
+  
   const decreaseQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  // تنظيف رابط الصورة
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
@@ -82,32 +265,26 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return url;
   };
 
-  // حساب قيمة الخصم
-  const discountAmount = product.originalPrice
-    ? product.originalPrice - product.price
-    : 0;
-  const discountPercentage = product.originalPrice
-    ? Math.round((discountAmount / product.originalPrice) * 100)
+  const discountAmount = originalPrice ? originalPrice - currentPrice : 0;
+  const discountPercentage = originalPrice
+    ? Math.round((discountAmount / originalPrice) * 100)
     : 0;
 
   return (
     <div className="container-custom">
       <div className="flex gap-2 mb-5">
-        <Link href="/" className="text-[#726C6C] text-[20px]">
-          الرئيسية
-        </Link>
+        <Link href="/" className="text-[#726C6C] text-[20px]">الرئيسية</Link>
         <span className="text-[#333333] font-bold">/</span>
         <Link href="/products" className="text-[#726C6C] font-bold text-[20px]">
-          {product.brand}
+          {product.brand || "المنتجات"}
         </Link>
         <span className="text-[#180100] font-bold text-[20px]">/</span>
-
-        <p className="text-[#180100] font-bold text-[20px]"> {product.name}</p>
+        <p className="text-[#180100] font-bold text-[20px]">{product.name}</p>
       </div>
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-        {/* ========== قسم الصور ========== */}
+        {/* الصور */}
         <div className="space-y-4">
-          {/* الصورة الرئيسية */}
           <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
             <Image
               src={cleanImageUrl(product.images[selectedImage])}
@@ -117,14 +294,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
             />
-            {product.discount && (
+            {discountPercentage > 0 && (
               <span className="absolute top-4 right-4 bg-[#EC221F] text-white text-xs font-bold px-2 py-1 rounded-full">
-                {product.discount}% خصم
+                {discountPercentage}% خصم
               </span>
             )}
           </div>
 
-          {/* الصور المصغرة */}
           <div className="grid grid-cols-3 gap-4">
             {product.images.map((image, index) => (
               <button
@@ -148,31 +324,24 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         </div>
 
-        {/* ========== قسم المعلومات ========== */}
+        {/* المعلومات */}
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
-              {/* اسم المنتج */}
-              <h1 className="text-2xl font-bold text-[#000000]">
-                {product.name}
-              </h1>
-              {/* الماركة */}
+              <h1 className="text-2xl font-bold text-[#000000]">{product.name}</h1>
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-[20px] text-[#666666]">
-                  {product.brand}
-                </span>
+                <span className="text-[20px] text-[#666666]">{product.brand || "بدون ماركة"}</span>
               </div>
             </div>
 
-            {/* السعر */}
             <div className="flex gap-0 flex-col">
               <span className="text-2xl md:text-4xl font-bold text-[#C01A13] flex items-center gap-1">
-                {product.price.toLocaleString()}
+                {currentPrice.toLocaleString()}
                 <span className="text-2xl">EGP</span>
               </span>
-              {product.originalPrice && (
+              {originalPrice && originalPrice !== currentPrice && (
                 <span className="text-xl text-[#00000080] line-through flex items-center gap-1">
-                  {product.originalPrice.toLocaleString()}
+                  {originalPrice.toLocaleString()}
                   <span className="text-base">EGP</span>
                 </span>
               )}
@@ -186,7 +355,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <span> {product.reviewsCount} </span>
               <p>تقييم</p>
             </div>
-
             <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-sm rounded-full px-3 py-1.5 justify-center gap-1">
               <FaRegStar className="w-[14px] h-[14px]" />
               <span> {product.rating}</span>
@@ -194,114 +362,120 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           {/* ===== اختيار اللون ===== */}
-          <div>
-            <div className="flex justify-between items-center my-4">
-              <span className="text-[16px] font-bold text-[#333333]">
-                اللون
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {product.colors.map((color) => (
-                <button
-                  key={color.name}
-                  onClick={() => setSelectedColor(color.name)}
-                  className={`
-                    group relative w-10 h-10 rounded-full transition-all duration-200
-                    ${selectedColor === color.name ? "ring-2 ring-offset-2 scale-110" : "hover:scale-105"}
-                  `}
-                  style={{
-                    backgroundColor: color.code,
-                  }}
-                  aria-label={`لون ${color.name}`}
-                >
-                  {/* علامة الصح للون المختار */}
-                  {selectedColor === color.name && (
-                    <div className="absolute inset-0 flex items-center justify-center text-white text-lg font-bold">
-                      ✓
-                    </div>
-                  )}
+          {product.has_variants && displayColors.length > 0 && (
+            <>
+              <div>
+                <div className="flex justify-between items-center my-4">
+                  <span className="text-[16px] font-bold text-[#333333]">اللون</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {displayColors.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => setSelectedColor(color.name)}
+                      className={`
+                        group relative w-10 h-10 rounded-full transition-all duration-200
+                        ${selectedColor === color.name ? "ring-2 ring-offset-2 scale-110" : "hover:scale-105"}
+                      `}
+                      style={{ backgroundColor: color.code }}
+                      aria-label={`لون ${color.name}`}
+                    >
+                      {selectedColor === color.name && (
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-lg font-bold">
+                          ✓
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <hr />
+            </>
+          )}
 
-                  {/* حدود اللون الأبيض */}
-                  {color.name === "أبيض" && (
-                    <div className="absolute inset-0 rounded-full border border-gray-300" />
-                  )}
-
-                  {/* حدود خفيفة للألوان الفاتحة عشان تبان علامة الصح */}
-                  {selectedColor === color.name &&
-                    (color.name === "أبيض" || color.code === "#FFFFFF") && (
-                      <div className="absolute inset-0 rounded-full border border-gray-400" />
-                    )}
-                </button>
-              ))}
-            </div>
-          </div>
-          <hr />
-          
           {/* ===== اختيار المقاس ===== */}
-          <div>
-            <div className="flex justify-between items-center my-4">
-              <span className="text-[16px] font-bold text-[#333333]">
-                المقاس
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {product.sizes.map((size) => (
-                <label
-                  key={size}
-                  className={`
-                    flex items-center justify-center rounded-[8px] gap-2 w-[84px] px-3 h-[36px] font-medium transition-all duration-200 cursor-pointer
-                    ${
-                      selectedSize === size
-                        ? "bg-[#EDF0F8] text-[#3A4980]"
+          {product.has_variants && displaySizes.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center my-4">
+                <span className="text-[16px] font-bold text-[#333333]">المقاس</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {displaySizes.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    className={`
+                      flex items-center justify-center rounded-[8px] w-[84px] px-3 h-[36px] font-medium transition-all duration-200
+                      ${selectedSize === size 
+                        ? "bg-[#EDF0F8] text-[#3A4980]" 
                         : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
-                    }
-                  `}
-                >
-                  <input
-                    type="radio"
-                    name="product-size"
-                    value={size}
-                    checked={selectedSize === size}
-                    onChange={() => setSelectedSize(size)}
-                    className="w-4 h-4 accent-[#3A4980]"
-                  />
-                  <span>{size}</span>
-                </label>
-              ))}
+                      }
+                    `}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* في حالة عدم وجود ألوان أو مقاسات */}
+          {(!product.has_variants || (displayColors.length === 0 && displaySizes.length === 0)) && (
+            <div className="text-center py-4 text-gray-500">
+              لا توجد خيارات متاحة لهذا المنتج
+            </div>
+          )}
 
           {/* ===== الكمية ===== */}
           <div>
             <div className="flex items-center gap-4 my-4">
               <div className="flex items-center rounded-full bg-[#F3F3F3] h-[56px] w-[169px] justify-center">
                 <button
-                  onClick={increaseQuantity}
-                  className="w-10 h-10 flex items-center justify-center text-[#3A4980] font-bold transition"
-                >
-                  <FaPlus className="w-4 h-4 font-bold" />
-                </button>
-                <span className="w-14 text-center text-[22px] font-bold text-[#222222]">
-                  {quantity}
-                </span>
-                <button
                   onClick={decreaseQuantity}
                   className="w-10 h-10 flex items-center justify-center text-[#A3A3A3] transition"
                 >
                   <FaMinus className="w-4 h-4" />
                 </button>
+                <span className="w-14 text-center text-[22px] font-bold text-[#222222]">
+                  {quantity}
+                </span>
+                <button
+                  onClick={increaseQuantity}
+                  className="w-10 h-10 flex items-center justify-center text-[#3A4980] font-bold transition"
+                >
+                  <FaPlus className="w-4 h-4 font-bold" />
+                </button>
               </div>
+              {itemInCartQuantity > 0 && (
+                <span className="text-sm text-green-600">
+                  ✅ {itemInCartQuantity} في السلة
+                </span>
+              )}
+              {selectedVariant && selectedVariant.quantity !== null && selectedVariant.quantity < 5 && selectedVariant.quantity > 0 && (
+                <span className="text-sm text-orange-600">
+                  ⚠️ متبقي {selectedVariant.quantity} فقط
+                </span>
+              )}
             </div>
           </div>
 
-          {/* ===== الأزرار ===== */}
+          {/* الأزرار */}
           <div className="flex flex-col">
             <button
               onClick={handleAddToCart}
-              className="flex-1 bg-[#0A0500] text-[16px] text-white px-6 py-3 rounded-[8px] font-bold hover:bg-[#2b2b2b] transition-all duration-300 flex items-center justify-center gap-2"
+              disabled={isAddingToCart || cartLoading || (product.has_variants && !selectedVariant)}
+              className="flex-1 bg-[#0A0500] text-[16px] text-white px-6 py-3 rounded-[8px] font-bold hover:bg-[#2b2b2b] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              أضف إلى السلة
+              {isAddingToCart ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  جاري الإضافة...
+                </>
+              ) : (
+                "أضف إلى السلة"
+              )}
             </button>
+            
             <div className="flex gap-4 pt-4">
               <button
                 onClick={handleToggleFavorite}
@@ -312,6 +486,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" 
                     : "border border-[#0A0500] hover:bg-[#f3f1f1]"
                   }
+                  disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
                 <Heart 
@@ -320,126 +495,45 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 />
                 {isProductFavorite ? "تمت الإضافة إلى المفضلة" : "أضف إلى المفضلة"}
               </button>
-              <button
-                className="w-12 h-12 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100"
-              >
+              <button className="w-12 h-12 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
                 <BsShare className="w-5 h-5 font-bold" />
               </button>
             </div>
           </div>
 
-          {/* ========== الأقسام القابلة للطي ========== */}
+          {/* الأقسام القابلة للطي */}
           <div className="border-t border-gray-200 pt-6 space-y-4">
-            {/* معلومات المنتج */}
             <div>
               <button
-                onClick={() =>
-                  setActiveTab(activeTab === "info" ? "shipping" : "info")
-                }
+                onClick={() => setActiveTab(activeTab === "info" ? "shipping" : "info")}
                 className="flex justify-between items-center w-full py-3 text-right"
               >
                 <span className="font-semibold text-gray-800 flex items-center gap-2">
                   <Info className="w-5 h-5 text-[#EC221F]" />
                   معلومات المنتج
                 </span>
-                <span className="text-2xl">
-                  {activeTab === "info" ? "−" : "+"}
-                </span>
+                <span className="text-2xl">{activeTab === "info" ? "−" : "+"}</span>
               </button>
               {activeTab === "info" && (
                 <div className="pt-2 pb-4 text-gray-600 text-sm leading-relaxed space-y-2">
                   <p>{product.description}</p>
-                  <p>
-                    <strong>رمز المنتج:</strong> {product.sku}
-                  </p>
-                  <p>
-                    <strong>القسم:</strong> {product.category}
-                  </p>
-                  <p>
-                    <strong>الماركة:</strong> {product.brand}
-                  </p>
+                  <p><strong>رمز المنتج:</strong> {product.sku}</p>
+                  <p><strong>القسم:</strong> {product.category}</p>
+                  <p><strong>الماركة:</strong> {product.brand || "بدون ماركة"}</p>
                 </div>
               )}
             </div>
 
-            {/* القياسات */}
             <div className="border-t border-gray-100">
               <button
-                onClick={() =>
-                  setActiveTab(
-                    activeTab === "measurements" ? "shipping" : "measurements",
-                  )
-                }
-                className="flex justify-between items-center w-full py-3 text-right"
-              >
-                <span className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Ruler className="w-5 h-5 text-[#EC221F]" />
-                  القياسات
-                </span>
-                <span className="text-2xl">
-                  {activeTab === "measurements" ? "−" : "+"}
-                </span>
-              </button>
-              {activeTab === "measurements" && (
-                <div className="pt-2 pb-4 text-gray-600 text-sm">
-                  <table className="w-full text-right border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="py-2 font-semibold">المقاس</th>
-                        <th className="py-2 font-semibold">الصدر (سم)</th>
-                        <th className="py-2 font-semibold">الطول (سم)</th>
-                        <th className="py-2 font-semibold">الكتف (سم)</th>
-                       </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2">S</td>
-                        <td className="py-2">86-91</td>
-                        <td className="py-2">65</td>
-                        <td className="py-2">40</td>
-                       </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2">M</td>
-                        <td className="py-2">91-96</td>
-                        <td className="py-2">67</td>
-                        <td className="py-2">42</td>
-                       </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2">L</td>
-                        <td className="py-2">96-101</td>
-                        <td className="py-2">69</td>
-                        <td className="py-2">44</td>
-                       </tr>
-                      <tr className="border-b border-gray-100">
-                        <td className="py-2">XL</td>
-                        <td className="py-2">101-106</td>
-                        <td className="py-2">71</td>
-                        <td className="py-2">46</td>
-                       </tr>
-                    </tbody>
-                   </table>
-                  <p className="text-xs text-gray-400 mt-3">
-                    * قد تختلف القياسات بنسبة 1-2 سم
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* التسليم والإرجاع */}
-            <div className="border-t border-gray-100">
-              <button
-                onClick={() =>
-                  setActiveTab(activeTab === "shipping" ? "info" : "shipping")
-                }
+                onClick={() => setActiveTab(activeTab === "shipping" ? "info" : "shipping")}
                 className="flex justify-between items-center w-full py-3 text-right"
               >
                 <span className="font-semibold text-gray-800 flex items-center gap-2">
                   <Truck className="w-5 h-5 text-[#EC221F]" />
                   التسليم والإرجاع والاستبدال
                 </span>
-                <span className="text-2xl">
-                  {activeTab === "shipping" ? "−" : "+"}
-                </span>
+                <span className="text-2xl">{activeTab === "shipping" ? "−" : "+"}</span>
               </button>
               {activeTab === "shipping" && (
                 <div className="pt-2 pb-4 text-gray-600 text-sm space-y-3">

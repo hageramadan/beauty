@@ -10,6 +10,15 @@
   }
 }
 
+.bg-wallet {
+  background-color: #0A05000A; /* لون خلفية المحفظة */
+}
+.bg-card-wallet {
+  /* background: linear-gradient(#0a05009f, #0A05000A); */
+  /* background:linear-gradient(to left) */
+  background: linear-gradient(270deg, #0A05008F, #0A0500);
+}
+
 /* app/globals.css */
 
 
