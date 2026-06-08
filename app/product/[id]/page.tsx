@@ -93,9 +93,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         const apiProduct = await getProductById(productId);
         
         if (apiProduct) {
-          console.log("✅ API Product with variants:", apiProduct); // Debug
           const transformedProduct = transformProductData(apiProduct);
-          console.log("✅ Transformed product:", transformedProduct); // Debug
           setProduct(transformedProduct);
         } else {
           setError("المنتج غير موجود");

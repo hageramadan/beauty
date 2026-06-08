@@ -17,6 +17,14 @@ interface CartItemCardProps {
   onSaveForLater?: (id: string) => void; // اختياري الآن
 }
 
+// دالة للحصول على اسم العلامة التجارية (سواء كانت string أو object)
+const getBrandName = (brand: string | { name: string } | null | undefined): string => {
+  if (!brand) return "";
+  if (typeof brand === "string") return brand;
+  if (typeof brand === "object" && "name" in brand) return brand.name;
+  return "";
+};
+
 export function CartItemCard({
   item,
   onUpdateQuantity,
@@ -29,6 +37,9 @@ export function CartItemCard({
   
   // ✅ التحقق إذا كان المنتج في المفضلة
   const isProductFavorite = isFavorite(productId);
+
+  // الحصول على اسم العلامة التجارية بشكل صحيح
+  const brandName = getBrandName(brand);
 
   // ✅ دالة إضافة/إزالة من المفضلة
   const handleToggleFavorite = async () => {
@@ -102,7 +113,7 @@ export function CartItemCard({
               <ProductDetailsLarge
                 id={parseInt(productId)}
                 name={name}
-                brand={brand}
+                brand={brandName}
                 color={color}
                 size={size}
               />
@@ -134,7 +145,7 @@ export function CartItemCard({
               <ProductDetailsMobile
                 id={parseInt(productId)}
                 name={name}
-                brand={brand}
+                brand={brandName}
                 color={color}
                 size={size}
               />
@@ -205,7 +216,7 @@ const ProductDetailsLarge = ({
         {name}
       </h1>
     </Link>
-    <p className="text-sm text-gray-500 mt-1">{brand}</p>
+    {brand && <p className="text-sm text-gray-500 mt-1">{brand}</p>}
     <div className="flex flex-col gap-3 mt-2 text-sm">
       {color && (
         <span className="font-extrabold">
@@ -349,7 +360,7 @@ const ProductDetailsMobile = ({
         {name}
       </h1>
     </Link>
-    <p className="text-xs text-gray-500">{brand}</p>
+    {brand && <p className="text-xs text-gray-500">{brand}</p>}
     <div className="flex gap-2 mt-0.5 text-xs text-gray-600">
       {color && <span>{color}</span>}
       {color && size && <span>|</span>}

@@ -6,7 +6,9 @@ import Image from "next/image";
 import { Heart, Truck, RefreshCw, Ruler, Info } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BsShare } from "react-icons/bs";
 import { FaPlus } from "react-icons/fa";
 import { FaMinus } from "react-icons/fa6";
@@ -74,49 +76,32 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const { addItem, getItemQuantity, isLoading: cartLoading } = useCartContext();
   const { toggleFavorite, isFavorite, isMutating } = useFavorites();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   // ✅ Debug: طباعة كل البيانات
   useEffect(() => {
-    console.log("========== PRODUCT DATA DEBUG ==========");
-    console.log("1. product.has_variants:", product.has_variants);
-    console.log("2. product.variants:", product.variants);
-    console.log("3. product.variants length:", product.variants?.length);
-    console.log("4. product.colors:", product.colors);
-    console.log("5. product.sizes:", product.sizes);
-    
     if (product.variants && product.variants.length > 0) {
-      console.log("6. First variant:", product.variants[0]);
-      console.log("7. First variant attributes:", product.variants[0]?.attributes);
     }
-    console.log("========================================");
   }, [product]);
 
   // ✅ استخراج الألوان من الـ variants
   const getAvailableColorsFromVariants = (): { name: string; code: string }[] => {
-    console.log("getAvailableColorsFromVariants called");
-    
     if (!product.variants || product.variants.length === 0) {
-      console.log("No variants found, using product.colors");
       return product.colors;
     }
     
     const colorSet = new Map<string, string>();
     
     product.variants.forEach((variant, index) => {
-      console.log(`Processing variant ${index}:`, variant);
-      
       if (!variant.attributes) {
-        console.log(`Variant ${index} has no attributes`);
         return;
       }
       
       const colorAttrs = variant.attributes.filter(attr => {
         const isColor = attr.attribute_type?.name === "اللون";
-        console.log(`Attribute:`, { name: attr.attribute_type?.name, isColor, value: attr.value });
         return isColor;
       });
-      
-      console.log(`Color attributes for variant ${index}:`, colorAttrs);
       
       colorAttrs.forEach(colorAttr => {
         if (colorAttr && colorAttr.value && !colorSet.has(colorAttr.value)) {
@@ -126,16 +111,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
     
     const colors = Array.from(colorSet.entries()).map(([name, code]) => ({ name, code }));
-    console.log("Final colors:", colors);
     return colors;
   };
 
   // ✅ استخراج المقاسات من الـ variants
   const getAvailableSizesFromVariants = (): string[] => {
-    console.log("getAvailableSizesFromVariants called");
-    
     if (!product.variants || product.variants.length === 0) {
-      console.log("No variants found, using product.sizes");
       return product.sizes;
     }
     
@@ -156,7 +137,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
     
     const sizes = Array.from(sizeSet);
-    console.log("Final sizes:", sizes);
     return sizes;
   };
 
@@ -168,17 +148,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       variant.attributes?.some(attr => attr.attribute_type?.name === "اللون" && attr.value === colorName)
     );
     
-    console.log(`getVariantForColor(${colorName}):`, variant);
     return variant || null;
   };
 
   const displayColors = product.has_variants ? getAvailableColorsFromVariants() : product.colors;
   const displaySizes = product.has_variants ? getAvailableSizesFromVariants() : product.sizes;
-
-  console.log("displayColors:", displayColors);
-  console.log("displaySizes:", displaySizes);
-  console.log("selectedColor:", selectedColor);
-  console.log("selectedSize:", selectedSize);
 
   // ✅ تعيين أول لون متاح
   useEffect(() => {
@@ -212,8 +186,27 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const isProductFavorite = isFavorite(product.id.toString());
   const itemInCartQuantity = getItemQuantity(product.id);
 
-  // ✅ إضافة إلى السلة
+  // ✅ إضافة إلى السلة (مع التحقق من تسجيل الدخول)
   const handleAddToCart = async () => {
+    // 🚨 التحقق من حالة المصادقة
+    if (!isAuthenticated) {
+      // عرض رسالة توست
+      toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى السلة", {
+        duration: 3000,
+        position: "top-center",
+        icon: "🔐",
+      });
+      
+      // حفظ الرابط الحالي للعودة إليه بعد تسجيل الدخول
+      const currentUrl = window.location.href;
+      // التوجيه إلى صفحة تسجيل الدخول مع معامل redirect
+      router.push(`/auth/login`);
+      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
+
+      return;
+    }
+
+    // ✅ باقي الكود - المستخدم مسجل دخول
     if (isAddingToCart) return;
     
     if (product.has_variants && !selectedVariant) {
@@ -225,16 +218,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     
     try {
       const variantId = selectedVariant?.id || null;
-      
-      console.log("📦 Sending to cart:", {
-        product_id: product.id,
-        quantity: quantity,
-        product_variant_id: variantId
-      });
+     
       
       const success = await addItem(product.id, quantity, variantId);
       
       if (success) {
+        // toast.success("تمت إضافة المنتج إلى السلة بنجاح");
         setQuantity(1);
       }
     } catch (error) {
@@ -246,6 +235,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   };
 
   const handleToggleFavorite = async () => {
+    // ✅ للمفضلة أيضاً يمكن إضافة نفس المنطق
+    if (!isAuthenticated) {
+      toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى المفضلة", {
+        duration: 3000,
+        position: "top-center",
+      });
+      const currentUrl = window.location.href;
+      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
     await toggleFavorite(product.id.toString(), isProductFavorite);
   };
 
@@ -269,6 +269,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const discountPercentage = originalPrice
     ? Math.round((discountAmount / originalPrice) * 100)
     : 0;
+
+  // عرض مؤقت أثناء التحقق من حالة المصادقة (اختياري)
+  if (authLoading) {
+    return (
+      <div className="container-custom py-8">
+        <div className="animate-pulse">
+          <div className="h-96 bg-gray-200 rounded-lg mb-4"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-custom">

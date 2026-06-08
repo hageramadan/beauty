@@ -55,6 +55,12 @@ interface OrderAddress {
   };
 }
 
+interface AdditionalData {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
 interface OrderDetails {
   id: number;
   orderNumber: string;
@@ -73,6 +79,7 @@ interface OrderDetails {
   total_amount: number;
   notes: string | null;
   address: OrderAddress | null;
+  additional_data?: AdditionalData | null;
   items: OrderItem[];
   created_at: string;
 }
@@ -120,6 +127,45 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
   }
 };
 
+// ========== دالة إلغاء الطلب ==========
+const cancelOrder = async (orderId: number): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_URL}/orders/update/${orderId}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        _method: 'put',
+        status: 'cancelled'
+      }),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Cancel order API response:", data);
+    
+    if (data.result === true && data.errNum === 200) {
+      toast.success("تم إلغاء الطلب بنجاح", {
+        duration: 4000,
+        position: "top-center",
+        icon: "✅",
+      });
+      return true;
+    } else {
+      toast.error(data.message || "حدث خطأ أثناء إلغاء الطلب", {
+        duration: 4000,
+        position: "top-center",
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Error cancelling order:", error);
+    toast.error("حدث خطأ في الاتصال بالخادم", {
+      duration: 4000,
+      position: "top-center",
+    });
+    return false;
+  }
+};
+
 // ========== تحويل حالة الطلب ==========
 const mapStatusToEnglish = (statusLabel: string): "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled" => {
   const statusMap: Record<string, any> = {
@@ -129,6 +175,7 @@ const mapStatusToEnglish = (statusLabel: string): "pending" | "processing" | "re
     "delivering": "delivering",
     "delivered": "delivered",
     "cancelled": "cancelled",
+    "ملغي": "cancelled",
   };
   return statusMap[statusLabel] || "pending";
 };
@@ -149,7 +196,7 @@ const mapPaymentMethod = (method: string): string => {
 const mapDeliveryMethod = (method: string): string => {
   const methodMap: Record<string, string> = {
     "توصيل": "توصيل",
-    "receive": "استلام من الفرع",
+    "استلام": "استلام من الفرع",
   };
   return methodMap[method] || method;
 };
@@ -171,6 +218,20 @@ const cleanImageUrl = (url: string): string => {
     return `https://dukanah.admin.t-carts.com${url}`;
   }
   return url;
+};
+
+// ========== الحصول على اسم المستخدم ==========
+const getUserName = (order: any): string => {
+  // الحالة 1: من address.user.name
+  if (order.address?.user?.name) {
+    return order.address.user.name;
+  }
+  // الحالة 2: من additional_data.name
+  if (order.additional_data?.name) {
+    return order.additional_data.name;
+  }
+  // الحالة 3: غير متوفر
+  return "غير متوفر";
 };
 
 // ========== تحويل بيانات الطلب ==========
@@ -195,6 +256,7 @@ const transformOrderDetails = (apiOrder: any): OrderDetails => {
     total_amount: apiOrder.total_amount,
     notes: apiOrder.notes,
     address: apiOrder.address,
+    additional_data: apiOrder.additional_data,
     items: apiOrder.items || [],
     created_at: apiOrder.created_at,
   };
@@ -219,6 +281,7 @@ export default function OrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [orderNotes, setOrderNotes] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const loadOrderDetails = async () => {
@@ -240,7 +303,10 @@ export default function OrderDetailsPage() {
     if (order) {
       navigator.clipboard.writeText(order.orderNumber);
       setCopied(true);
-      toast.success("تم نسخ رقم الطلب");
+      toast.success("تم نسخ رقم الطلب", {
+        duration: 2000,
+        position: "top-center",
+      });
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -251,6 +317,69 @@ export default function OrderDetailsPage() {
 
   const handleProductsClick = () => {
     router.push(`/products`);
+  };
+
+  // ✅ دالة إلغاء الطلب مع Toast confirmation بدلاً من alert
+  const handleCancelOrder = () => {
+    if (!order) return;
+    
+    // عرض Toast للتأكيد
+    toast((t) => (
+      <div className="flex flex-col gap-3 p-4 min-w-[280px]" dir="rtl">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+            <XCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <p className="text-gray-800 font-bold text-lg mb-1">تأكيد إلغاء الطلب</p>
+          <p className="text-gray-500 text-sm">
+            هل أنت متأكد من إلغاء الطلب <span className="font-bold text-red-500">{order.orderNumber}</span>؟
+          </p>
+          <p className="text-gray-400 text-xs mt-2">لا يمكنك التراجع عن هذا الإجراء</p>
+        </div>
+        <div className="flex justify-center gap-3 mt-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              setIsCancelling(true);
+              
+              const success = await cancelOrder(order.id);
+              
+              if (success) {
+                setOrder({
+                  ...order,
+                  status: "cancelled",
+                  status_label: "ملغي"
+                });
+                
+                // العودة إلى صفحة الطلبات بعد 2 ثانية
+                setTimeout(() => {
+                  router.push("/account/orders");
+                }, 2000);
+              }
+              
+              setIsCancelling(false);
+            }}
+            className="px-5 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition font-medium shadow-sm"
+          >
+            نعم، إلغاء الطلب
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition font-medium"
+          >
+            إلغاء
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 10000,
+      style: {
+        maxWidth: '400px',
+        padding: '0',
+        borderRadius: '20px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      },
+    });
   };
 
   if (loading) {
@@ -281,6 +410,9 @@ export default function OrderDetailsPage() {
 
   const status = statusConfig[order.status];
   const StatusIcon = status.icon;
+  
+  // الحصول على اسم المستخدم
+  const userName = getUserName(order);
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
@@ -373,9 +505,13 @@ export default function OrderDetailsPage() {
                   );
                 })}
               </div>
-              <div className="mt-6">
-                <OrderTracker currentStatus={order.status} />
-              </div>
+              
+              {/* إخفاء OrderTracker عندما يكون الطلب ملغي */}
+              {order.status !== "cancelled" && (
+                <div className="mt-6">
+                  <OrderTracker currentStatus={order.status} />
+                </div>
+              )}
             </div>
            <br />
             {/* ملخص الطلب */}
@@ -423,14 +559,15 @@ export default function OrderDetailsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-bold">الاسم الكامل</span>
-                  <span className="font-medium text-gray-600">{order.address?.user?.name || "غير متوفر"}</span>
+                  <span className="font-medium text-gray-600">{userName}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 text-sm">
-                  <span className="font-bold">حالة الدفع</span>
-                  <span className={`font-medium ${order.payment_status === "مدفوع" ? "text-green-600" : "text-yellow-600"}`}>
-                    {order.payment_status}
-                  </span>
-                </div>
+                {/* عرض رقم الهاتف إذا موجود في additional_data */}
+                {order.additional_data?.phone && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold">رقم الهاتف</span>
+                    <span className="font-medium text-gray-600">{order.additional_data.phone}</span>
+                  </div>
+                )}
               </div>
             </div>
             <br />
@@ -451,7 +588,6 @@ export default function OrderDetailsPage() {
               <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
               <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                  {/* <Image src="/images/payment/mada.png" width={40} height={40} alt="mada" /> */}
                   <GrMoney />
                 </div>
                 <div>
@@ -475,17 +611,34 @@ export default function OrderDetailsPage() {
             <div className="flex gap-3 mt-3 md:mt-6 mx-2">
               {order.status === "delivered" && (
                 <>
-                  <button onClick={handleReturnClick} className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition">
+                  <button 
+                    onClick={handleReturnClick} 
+                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
+                  >
                     إرجاع
                   </button>
-                  <button onClick={handleProductsClick} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition">
+                  <button 
+                    onClick={handleProductsClick} 
+                    className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
+                  >
                     إعادة الطلب
                   </button>
                 </>
               )}
               {order.status === "pending" && (
-                <button className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 transition">
-                  إلغاء الطلب
+                <button 
+                  onClick={handleCancelOrder}
+                  disabled={isCancelling}
+                  className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isCancelling ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                      جاري الإلغاء...
+                    </>
+                  ) : (
+                    "إلغاء الطلب"
+                  )}
                 </button>
               )}
             </div>

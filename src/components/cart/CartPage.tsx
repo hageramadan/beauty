@@ -10,12 +10,17 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+export interface Ibrand {
+  id: number;
+  name: string;
+}
+
 // واجهة بيانات المنتج في السلة للعرض
 export interface CartItemDisplay {
   id: string;
   productId: string;
   name: string;
-  brand: string;
+  brand: Ibrand;
   price: number;
   originalPrice?: number;
   image: string;
@@ -54,20 +59,34 @@ export function CartPage() {
     return { color, size };
   };
 
+  // الحصول على brand object
+  const getBrandObject = (product: any): Ibrand => {
+    // إذا كان brand موجود كـ object كامل
+    if (product.brand && typeof product.brand === 'object' && product.brand.id && product.brand.name) {
+      return {
+        id: product.brand.id,
+        name: product.brand.name
+      };
+    }
+    // إذا كان brand مجرد اسم (string)
+    if (product.brand && typeof product.brand === 'string') {
+      return {
+        id: 0,
+        name: product.brand
+      };
+    }
+    // القيمة الافتراضية
+    return {
+      id: 0,
+      name: "ماركة"
+    };
+  };
+
   // تحويل بيانات السلة من الـ API إلى الشكل المطلوب للعرض
   useEffect(() => {
     if (cart && cart.items && cart.items.length > 0) {
       const transformedItems: CartItemDisplay[] = cart.items.map((item) => {
         const { color, size } = extractColorAndSize(item.variant);
-        
-        let brandName = "ماركة";
-        if (item.product.brand) {
-          if (typeof item.product.brand === 'string') {
-            brandName = item.product.brand;
-          } else if (typeof item.product.brand === 'object' && item.product.brand) {
-            brandName = item.product.brand;
-          }
-        }
         
         const cleanImageUrl = (url: string) => {
           if (!url) return "/images/placeholder.jpg";
@@ -81,7 +100,7 @@ export function CartPage() {
           id: item.id.toString(),
           productId: item.product.id.toString(),
           name: item.product.name,
-          brand: brandName,
+          brand: getBrandObject(item.product),
           price: item.final_price,
           originalPrice: item.product.pricing?.has_discount ? item.product.pricing.price : undefined,
           image: cleanImageUrl(item.product.images?.[0] || ""),
@@ -143,7 +162,6 @@ export function CartPage() {
   return (
     <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
       <div className="container page-with-padding">
-        {/* ✅ استخدام itemsCount بدلاً من total_quantity */}
         <PageHeader title="سلة التسوق" itemCount={itemsCount} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 md:gap-8 gap-4">

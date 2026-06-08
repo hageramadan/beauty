@@ -1263,7 +1263,7 @@ interface UpdateProfileRequest {
   email?: string;
   phone?: string;
   locale?: string;
-  image?: string; // يمكن أن تكون base64 string أو رابط الصورة
+  image?: File; // يمكن أن تكون base64 string أو رابط الصورة
 }
 
 interface UpdateProfileResponse {
@@ -1312,62 +1312,62 @@ interface GetProfileResponse {
  *   console.log("تم تحديث الملف الشخصي بنجاح");
  * }
  */
-export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
-  try {
-    const token = getToken();
+// export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+//   try {
+//     const token = getToken();
     
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+//     const headers: HeadersInit = {
+//       'Content-Type': 'application/json',
+//     };
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+//     if (token) {
+//       headers['Authorization'] = `Bearer ${token}`;
+//     }
     
-    // إضافة _method='put' كما هو مطلوب في الـ API
-    const bodyData = {
-      ...data,
-      _method: 'put'
-    };
+//     // إضافة _method='put' كما هو مطلوب في الـ API
+//     const bodyData = {
+//       ...data,
+//       _method: 'put'
+//     };
     
-    const response = await fetch(`${API_URL}/user/profile`, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(bodyData),
-    });
+//     const response = await fetch(`${API_URL}/user/profile`, {
+//       method: 'POST',
+//       headers: headers,
+//       body: JSON.stringify(bodyData),
+//     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! status: ${response.status}`);
+//     }
 
-    const result: UpdateProfileResponse = await response.json();
+//     const result: UpdateProfileResponse = await response.json();
     
-    if (result.result && result.errNum === 200 && result.data?.user) {
-      // تحديث بيانات المستخدم المخزنة محلياً
-      const currentUserData = getUserData();
-      if (currentUserData) {
-        const updatedUserData = {
-          ...currentUserData,
-          user: {
-            ...currentUserData.user,
-            ...result.data.user
-          }
-        };
-        saveUserData(updatedUserData);
-      }
-    }
+//     if (result.result && result.errNum === 200 && result.data?.user) {
+//       // تحديث بيانات المستخدم المخزنة محلياً
+//       const currentUserData = getUserData();
+//       if (currentUserData) {
+//         const updatedUserData = {
+//           ...currentUserData,
+//           user: {
+//             ...currentUserData.user,
+//             ...result.data.user
+//           }
+//         };
+//         saveUserData(updatedUserData);
+//       }
+//     }
     
-    return result;
-  } catch (error) {
-    console.error('Error in updateUserProfile:', error);
-    return {
-      result: false,
-      errNum: 500,
-      message: error instanceof Error ? error.message : 'فشل في تحديث الملف الشخصي',
-      data: null,
-    };
-  }
-}
+//     return result;
+//   } catch (error) {
+//     console.error('Error in updateUserProfile:', error);
+//     return {
+//       result: false,
+//       errNum: 500,
+//       message: error instanceof Error ? error.message : 'فشل في تحديث الملف الشخصي',
+//       data: null,
+//     };
+//   }
+// }
 
 /**
  * دالة جلب بيانات الملف الشخصي للمستخدم
@@ -1425,9 +1425,9 @@ export async function getUserProfile(): Promise<GetProfileResponse> {
  * @param imageBase64 الصورة بصيغة base64
  * @returns وعد (Promise) يحتوي على نتيجة العملية
  */
-export async function updateProfileImage(imageBase64: string): Promise<UpdateProfileResponse> {
-  return updateUserProfile({ image: imageBase64 });
-}
+// export async function updateProfileImage(imageBase64: string): Promise<UpdateProfileResponse> {
+//   return updateUserProfile({ image: imageBase64 });
+// }
 
 /**
  * دالة تحديث اللغة
@@ -1436,4 +1436,108 @@ export async function updateProfileImage(imageBase64: string): Promise<UpdatePro
  */
 export async function updateUserLocale(locale: string): Promise<UpdateProfileResponse> {
   return updateUserProfile({ locale });
+}
+
+// في ملف services/api.ts
+
+// في ملف services/api.ts
+
+export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
+  try {
+    const token = getToken();
+    
+    // التحقق: هل يوجد صورة من نوع File؟
+    const hasFile = data.image instanceof File;
+    
+    let response: Response;
+    
+    if (hasFile) {
+      // ========== حالة رفع ملف (صورة) ==========
+      const formData = new FormData();
+      
+      // إضافة الحقول النصية
+      if (data.name) formData.append('name', data.name);
+      if (data.locale) formData.append('locale', data.locale);
+      if (data.email) formData.append('email', data.email);
+      if (data.phone) formData.append('phone', data.phone);
+      
+      // إضافة الصورة كملف
+         if (data.image) {
+        formData.append('image', data.image);
+      }
+      
+      
+      // إضافة _method='put' كما هو مطلوب
+      formData.append('_method', 'put');
+      
+      // إرسال كـ FormData
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      response = await fetch(`${API_URL}/user/profile`, {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      });
+    } else {
+      // ========== حالة البيانات النصية فقط ==========
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const bodyData = {
+        ...data,
+        _method: 'put'
+      };
+      
+      response = await fetch(`${API_URL}/user/profile`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(bodyData),
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: UpdateProfileResponse = await response.json();
+    
+    if (result.result && result.errNum === 200 && result.data?.user) {
+      // تحديث بيانات المستخدم المخزنة محلياً
+      const currentUserData = getUserData();
+      if (currentUserData) {
+        const updatedUserData = {
+          ...currentUserData,
+          user: {
+            ...currentUserData.user,
+            ...result.data.user
+          }
+        };
+        saveUserData(updatedUserData);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في تحديث الملف الشخصي',
+      data: null,
+    };
+  }
+}
+
+// يمكنك حذف دالة updateProfileImage لأنها غير ضرورية الآن
+// أو تعديلها لتقبل File بدلاً من base64
+export async function updateProfileImage(imageFile: File): Promise<UpdateProfileResponse> {
+  return updateUserProfile({ image: imageFile });
 }

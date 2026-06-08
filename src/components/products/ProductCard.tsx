@@ -8,6 +8,9 @@ import { Heart } from "lucide-react";
 import { FaRegStar } from "react-icons/fa";
 import { FaStar, FaStarHalfAlt } from "react-icons/fa";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface ColorOption {
   color: string;
@@ -52,9 +55,11 @@ export function ProductCard({
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [currentImage, setCurrentImage] = useState(image);
-  const [isLocalMutating, setIsLocalMutating] = useState(false); // حالة محلية لكل منتج
+  const [isLocalMutating, setIsLocalMutating] = useState(false);
   
   const { isFavorite, toggleFavorite, isLoading } = useFavorites();
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
   
   // الحصول على الحالة الحالية من الـ Context
   const isProductFavorite = isFavorite(id);
@@ -67,40 +72,63 @@ export function ProductCard({
 
   const displayColors = colors && colors.length > 0 ? colors : DEFAULT_COLORS;
 
- // src/components/products/ProductCard.tsx (الجزء المعدل فقط)
-
-const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation();
-  
-  // منع الضغط المتكرر على نفس المنتج
-  if (isLocalMutating || isLoading) return;
-  
-  // تفعيل حالة التحميل لهذا المنتج فقط
-  setIsLocalMutating(true);
-  
-  // حفظ الحالة القديمة
-  const previousState = localFavorite;
-  
-  // تحديث الواجهة فوراً (لإعطاء استجابة سريعة للمستخدم)
-  setLocalFavorite(!previousState);
-  
-  console.log(`🖱️ تم الضغط على القلب للمنتج ${id} - الحالة السابقة: ${previousState ? "مفضل" : "غير مفضل"}`);
-  
-  // استدعاء API - تمرير الحالة الحالية
-  const success = await toggleFavorite(id, previousState);
-  
-  if (!success) {
-    // إذا فشلت العملية، نرجع الحالة القديمة
-    console.log(`❌ فشلت العملية للمنتج ${id} - الرجوع للحالة السابقة`);
-    setLocalFavorite(previousState);
-  } else {
-    console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
-  }
-  
-  // إلغاء حالة التحميل لهذا المنتج
-  setIsLocalMutating(false);
-}, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite]);
+  // معالج الضغط على القلب مع التحقق من تسجيل الدخول
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 🚨 التحقق من حالة المصادقة أولاً
+    if (!isAuthenticated) {
+      // عرض رسالة توست للمستخدم
+      toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى المفضلة", {
+        duration: 3000,
+        position: "top-center",
+        icon: "❤️",
+      });
+      
+      // حفظ الرابط الحالي للعودة إليه بعد تسجيل الدخول
+      const currentUrl = window.location.href;
+      // التوجيه إلى صفحة تسجيل الدخول مع معامل redirect
+      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
+    // ✅ باقي الكود - المستخدم مسجل دخول
+    // منع الضغط المتكرر على نفس المنتج
+    if (isLocalMutating || isLoading) return;
+    
+    // تفعيل حالة التحميل لهذا المنتج فقط
+    setIsLocalMutating(true);
+    
+    // حفظ الحالة القديمة
+    const previousState = localFavorite;
+    
+    // تحديث الواجهة فوراً (لإعطاء استجابة سريعة للمستخدم)
+    setLocalFavorite(!previousState);
+    
+    console.log(`🖱️ تم الضغط على القلب للمنتج ${id} - الحالة السابقة: ${previousState ? "مفضل" : "غير مفضل"}`);
+    
+    // استدعاء API - تمرير الحالة الحالية
+    const success = await toggleFavorite(id, previousState);
+    
+    if (!success) {
+      // إذا فشلت العملية، نرجع الحالة القديمة
+      console.log(`❌ فشلت العملية للمنتج ${id} - الرجوع للحالة السابقة`);
+      setLocalFavorite(previousState);
+      toast.error("حدث خطأ، يرجى المحاولة مرة أخرى");
+    } else {
+      console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
+      // عرض رسالة نجاح اختيارية
+      if (!previousState) {
+        toast.success("تمت إضافة المنتج إلى المفضلة");
+      } else {
+        toast.success("تمت إزالة المنتج من المفضلة");
+      }
+    }
+    
+    // إلغاء حالة التحميل لهذا المنتج
+    setIsLocalMutating(false);
+  }, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite, isAuthenticated, router]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
