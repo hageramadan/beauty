@@ -37,6 +37,85 @@ const getHeaders = (): HeadersInit => {
   };
 };
 
+// ✅ دالة التحقق من رقم الهاتف حسب الدولة
+const validatePhoneNumberByCountry = (phoneNumber: string, countryCode: string): { isValid: boolean; error: string } => {
+  // إزالة أي مسافات أو شرطات
+  const cleanNumber = phoneNumber.replace(/[\s\-]/g, "");
+  
+  if (!cleanNumber) {
+    return { isValid: false, error: "رقم الهاتف مطلوب" };
+  }
+  
+  // التحقق من أن الإدخال أرقام فقط
+  if (!/^\d+$/.test(cleanNumber)) {
+    return { isValid: false, error: "يجب أن يحتوي رقم الهاتف على أرقام فقط" };
+  }
+  
+  // قواعد التحقق حسب الدولة
+  const rules: Record<string, { minLength: number; maxLength: number; startsWith: string[]; pattern: RegExp; name: string }> = {
+    "+20": {
+      name: "مصر",
+      minLength: 11,
+      maxLength: 11,
+      startsWith: ["010", "011", "012", "015"],
+      pattern: /^01[0125][0-9]{8}$/
+    },
+    "+966": {
+      name: "السعودية",
+      minLength: 9,
+      maxLength: 9,
+      startsWith: ["05"],
+      pattern: /^05[0-9]{8}$/
+    },
+    "+964": {
+      name: "العراق",
+      minLength: 11,
+      maxLength: 11,
+      startsWith: ["07"],
+      pattern: /^07[0-9]{9}$/
+    },
+    "+971": {
+      name: "الإمارات",
+      minLength: 9,
+      maxLength: 9,
+      startsWith: ["05"],
+      pattern: /^05[0-9]{8}$/
+    }
+  };
+  
+  const rule = rules[countryCode];
+  if (!rule) {
+    return { isValid: false, error: "كود الدولة غير صالح" };
+  }
+  
+  // التحقق من الطول
+  if (cleanNumber.length !== rule.minLength) {
+    return { 
+      isValid: false, 
+      error: `رقم الهاتف في ${rule.name} يجب أن يكون ${rule.minLength} أرقام (الطول الحالي: ${cleanNumber.length})` 
+    };
+  }
+  
+  // التحقق من البداية
+  const startsWithValid = rule.startsWith.some(prefix => cleanNumber.startsWith(prefix));
+  if (!startsWithValid) {
+    return { 
+      isValid: false, 
+      error: `رقم الهاتف في ${rule.name} يجب أن يبدأ بـ (${rule.startsWith.join(" أو ")})` 
+    };
+  }
+  
+  // التحقق من النمط
+  if (!rule.pattern.test(cleanNumber)) {
+    return { 
+      isValid: false, 
+      error: `رقم الهاتف غير صحيح لدولة ${rule.name}` 
+    };
+  }
+  
+  return { isValid: true, error: "" };
+};
+
 // دالة إنشاء الطلب
 const createOrder = async (orderData: any): Promise<any> => {
   try {
@@ -121,6 +200,8 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: "",
     phone: "",
+    phoneNumber: "",        // ✅ أضف هذا
+    phoneCountryCode: "+20", // ✅ أضف هذا (القيمة الافتراضية لمصر)
     deliveryAddress: {
       street: "",
       city: "",
@@ -137,7 +218,7 @@ export default function CheckoutPage() {
   const cartSummary: CartSummary = useMemo(() => {
     const subtotal = cart?.subtotal || 0;
     const discount = cart?.discount_amount || 0;
-    const deliveryFee = formData.deliveryMethod === "delivery" ? (cart?.delivery_fee || 50) : 0;
+    const deliveryFee = formData.deliveryMethod === "delivery" ? (cart?.delivery_fee || 0) : 0;
     const total = (cart?.total_amount || 0) + deliveryFee;
     
     return { 
@@ -200,10 +281,10 @@ export default function CheckoutPage() {
         // ✅ استخدام address_id من العنوان المحفوظ أو المُنشأ
         orderData.address_id = selectedAddressId;
       } else {
-        // ❌ إذا لم يوجد address_id، نستخدم additional_data
+        // استخدام الرقم الكامل مع الكود
         orderData.additional_data = {
           name: formData.fullName,
-          phone: formData.phone,
+          phone: formData.phone,  // الرقم الكامل مع الكود
           city_id: 1,
           street: formData.deliveryAddress.street || "N/A",
           building: formData.deliveryAddress.buildingNo || "N/A",
@@ -223,7 +304,7 @@ export default function CheckoutPage() {
     return orderData;
   };
 
-  // ✅ إرسال الطلب
+  // ✅ إرسال الطلب مع التحقق من صحة رقم الهاتف
   const handleSubmit = async () => {
     if (isSubmitting) return;
     
@@ -233,8 +314,14 @@ export default function CheckoutPage() {
       return;
     }
     
-    if (!formData.phone.trim()) {
-      toast.error("الرجاء إدخال رقم الهاتف");
+    // ✅ التحقق من رقم الهاتف حسب الدولة
+    const phoneValidation = validatePhoneNumberByCountry(
+      formData.phoneNumber || formData.phone.replace(formData.phoneCountryCode || "", ""),
+      formData.phoneCountryCode || "+20"
+    );
+    
+    if (!phoneValidation.isValid) {
+      toast.error(phoneValidation.error);
       return;
     }
     

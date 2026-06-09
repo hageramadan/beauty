@@ -1,8 +1,7 @@
 // components/checkout/OrderSummary.tsx
 "use client";
 
-import Image from "next/image";
-import { AlertCircle } from "lucide-react";
+
 import { OrderSummaryProps } from "./types";
 
 export default function OrderSummary({ 
@@ -48,7 +47,7 @@ export default function OrderSummary({
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">رسوم التوصيل</span>
           <span className="text-gray-800">
-            {deliveryMethod === "delivery" ? `EGP ${deliveryFee.toFixed(2)}` : "مجاني"}
+            {deliveryMethod === "delivery" ? ` ${deliveryFee > 0 ? `EGP ${deliveryFee.toFixed(2)}` : 'مجاني'}` : "مجاني"}
           </span>
         </div>
         

@@ -44,6 +44,7 @@ interface ProductVariant {
 interface ProductDetailsProps {
   product: {
     id: number;
+    avg_rating: number;
     name: string;
     description: string;
     price: number;
@@ -368,10 +369,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <span> {product.reviewsCount} </span>
               <p>تقييم</p>
             </div>
-            <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-sm rounded-full px-3 py-1.5 justify-center gap-1">
-              <FaRegStar className="w-[14px] h-[14px]" />
-              <span> {product.rating}</span>
-            </div>
+            {product.avg_rating > 0 && (
+              <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-sm rounded-full px-3 py-1.5 justify-center gap-1">
+                <FaRegStar className="w-[14px] h-[14px]" />
+                <span> {product.avg_rating}</span>
+              </div>
+            )}
           </div>
 
           {/* ===== اختيار اللون ===== */}

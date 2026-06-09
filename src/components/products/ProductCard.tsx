@@ -120,9 +120,9 @@ export function ProductCard({
       console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
       // عرض رسالة نجاح اختيارية
       if (!previousState) {
-        toast.success("تمت إضافة المنتج إلى المفضلة");
+        // toast.success("تمت إضافة المنتج إلى المفضلة");
       } else {
-        toast.success("تمت إزالة المنتج من المفضلة");
+        // toast.success("تمت إزالة المنتج من المفضلة");
       }
     }
     

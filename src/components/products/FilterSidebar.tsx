@@ -39,9 +39,9 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
 export default function ProductFilters({ onFilterChange, isMobile = false, onClose }: ProductFiltersProps) {
   // ========== State variables ==========
   // السعر - قيم مؤقتة للـ UI وقيم مطبقة
-  const [tempMinPrice, setTempMinPrice] = useState<number>(300);
-  const [tempMaxPrice, setTempMaxPrice] = useState<number>(700);
-  const [tempPriceRange, setTempPriceRange] = useState<number[]>([300, 700]);
+  const [tempMinPrice, setTempMinPrice] = useState<number>(3000);
+  const [tempMaxPrice, setTempMaxPrice] = useState<number>(10000);
+  const [tempPriceRange, setTempPriceRange] = useState<number[]>([3000, 10000]);
   const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number] | undefined>(undefined);
   
   // بيانات ديناميكية من الـ API
@@ -57,7 +57,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
   const [selectedBrands, setSelectedBrands] = useState<number[]>([]);
   
   const MIN_PRICE = 0;
-  const MAX_PRICE = 1000;
+  const MAX_PRICE = 100000;
 
   // ========== تطبيق الفلاتر الفورية (بدون السعر) ==========
   useEffect(() => {
@@ -115,13 +115,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
       setColors(colorsData);
       setSizes(sizesData);
       setBrands(brandsData);
-      
-      console.log('✅ Filters data loaded:', { 
-        categories: categoriesData.length, 
-        colors: colorsData.length, 
-        sizes: sizesData.length,
-        brands: brandsData.length
-      });
+     
     } catch (error) {
       console.error('Error loading filters data:', error);
     }
@@ -170,9 +164,9 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
 
   // ========== إعادة تعيين جميع الفلاتر ==========
   const resetFilters = () => {
-    setTempMinPrice(300);
-    setTempMaxPrice(700);
-    setTempPriceRange([300, 700]);
+    setTempMinPrice(3000);
+    setTempMaxPrice(10000);
+    setTempPriceRange([3000, 10000]);
     setAppliedPriceRange(undefined);
     
     setSelectedCategories([]);
@@ -242,7 +236,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                     setTempPriceRange([tempMinPrice, value]);
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="flex-1">
@@ -257,7 +251,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                     setTempPriceRange([value, tempMaxPrice]);
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className='mt-4'>

@@ -8,11 +8,11 @@ import { FaFacebookF } from "react-icons/fa";
 import { IoLogoTiktok } from "react-icons/io5";
 import { FaSnapchatGhost } from "react-icons/fa";
 const socialLinks = [
-  { icon: FaXTwitter, href: "#", label: "XTwitter" },
-  { icon: FaFacebookF, href: "#", label: "Facebook" },
-  { icon: IoLogoTiktok, href: "#", label: "Tiktok" },
-  { icon: BsInstagram, href: "#", label: "Instagram" },
-  { icon: FaSnapchatGhost, href: "#", label: "Snapchat" },
+  { icon: FaXTwitter, href: "https://x.com/tcartsofficial", label: "XTwitter" },
+  { icon: FaFacebookF, href: "https://www.facebook.com/tcarstofficial/", label: "Facebook" },
+  { icon: IoLogoTiktok, href: "https://www.tiktok.com/@tcartofficial", label: "Tiktok" },
+  { icon: BsInstagram, href: "https://www.instagram.com/tcarstofficial/", label: "Instagram" },
+  { icon: FaSnapchatGhost, href: "https://www.snapchat.com/@tcartofficial", label: "Snapchat" },
 ];
 
 export default function SocialLinks() {

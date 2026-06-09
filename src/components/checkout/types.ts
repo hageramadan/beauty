@@ -15,8 +15,10 @@ export interface CartItem {
 
 export interface CheckoutFormData {
   fullName: string;
-  phone: string;
-   deliveryAddress: {
+  phone: string;                    // الرقم الكامل مع كود الدولة (مثال: +201012345678)
+  phoneNumber?: string;             // الرقم فقط بدون كود الدولة
+  phoneCountryCode?: string;        // كود الدولة (مثال: +20)
+  deliveryAddress: {
     street: string;
     city: string;
     governorate: string;

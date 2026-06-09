@@ -1,16 +1,68 @@
 // components/checkout/ContactInfoForm.tsx
 "use client";
 
+import { useState } from "react";
 import { ContactInfoFormProps } from "./types";
+import PhoneInput from "@/components/contact/PhoneInput";
+
+// دالة التحقق من الاسم الكامل
+const validateFullName = (name: string): string | null => {
+  if (!name.trim()) {
+    return "الاسم الكامل مطلوب";
+  }
+  if (name.trim().length < 3) {
+    return "الاسم الكامل يجب أن يكون على الأقل 3 أحرف";
+  }
+  if (name.trim().length > 100) {
+    return "الاسم الكامل طويل جداً";
+  }
+  return null;
+};
 
 export default function ContactInfoForm({ formData, onFormChange }: ContactInfoFormProps) {
+  // حالة لتخزين رسالة الخطأ للاسم
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [isNameTouched, setIsNameTouched] = useState(false);
+
+  // معالج تغيير الاسم
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    onFormChange({ fullName: value });
+    
+    if (isNameTouched) {
+      const error = validateFullName(value);
+      setNameError(error);
+    }
+  };
+
+  // معالج ترك حقل الاسم
+  const handleNameBlur = () => {
+    setIsNameTouched(true);
+    const error = validateFullName(formData.fullName);
+    setNameError(error);
+  };
+
+  // معالج تغيير رقم الهاتف (من مكون PhoneInput)
+  const handlePhoneChange = (phoneNumber: string, countryCode: string) => {
+    // بناء الرقم الكامل مع كود الدولة
+    const fullPhone = `${countryCode}${phoneNumber}`;
+    
+    // تحديث الفورم بالبيانات الجديدة
+    onFormChange({ 
+      phone: fullPhone,
+      phoneNumber: phoneNumber,     // الرقم فقط بدون كود
+      phoneCountryCode: countryCode // كود الدولة
+    });
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-       
-        معلومات الاتصال
+         معلومات الاتصال
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        {/* حقل الاسم الكامل */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             الاسم الكامل <span className="text-red-500">*</span>
@@ -18,28 +70,31 @@ export default function ContactInfoForm({ formData, onFormChange }: ContactInfoF
           <input
             type="text"
             value={formData.fullName}
-            onChange={(e) => onFormChange({ fullName: e.target.value })}
+            onChange={handleNameChange}
+            onBlur={handleNameBlur}
             placeholder="أدخل اسمك الكامل"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition"
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition ${
+              nameError && isNameTouched
+                ? "border-red-500 focus:ring-red-500"
+                : "border-gray-200"
+            }`}
           />
+          {nameError && isNameTouched && (
+            <p className="text-red-500 text-sm mt-1">{nameError}</p>
+          )}
         </div>
         
+        {/* حقل رقم الجوال باستخدام PhoneInput المتطور */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            رقم الجوال <span className="text-red-500">*</span>
-          </label>
-          <input
-          dir="rtl"
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => onFormChange({ phone: e.target.value })}
-            placeholder="رقم الجوال"
-            className="w-full px-4 py-3 text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition"
+          <PhoneInput
+            value={formData.phone || ""}
+            onChange={handlePhoneChange}
+            required={true}
           />
         </div>
-        
-      
       </div>
+      
+      
     </div>
   );
 }
