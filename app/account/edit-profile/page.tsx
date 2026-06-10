@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react"; // أضف useCallback
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaUser, FaCamera, FaArrowRight, FaEye, FaEyeSlash } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { changePassword, updateUserProfile, getUserProfile } from "@/services/api";
+import { Loader } from "lucide-react";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading, logoutUser } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logoutUser, updateUserData } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true); // ✅ حالة تحميل الصفحة
   
   const [formData, setFormData] = useState({
     name: "",
@@ -37,10 +39,11 @@ export default function EditProfilePage() {
     confirmPassword?: string;
   }>({});
 
-  // دالة لجلب بيانات المستخدم (يمكن استدعاؤها مرة أخرى بعد التحديث)
+  // دالة لجلب بيانات المستخدم
   const fetchUserProfile = useCallback(async () => {
-    if (!loading && isAuthenticated) {
-      try {
+    setIsPageLoading(true); // ✅ بدء التحميل
+    try {
+      if (!authLoading && isAuthenticated) {
         const result = await getUserProfile();
         if (result.result && result.data?.user) {
           setFormData({
@@ -53,6 +56,8 @@ export default function EditProfilePage() {
           });
           if (result.data.user.image) {
             setExistingAvatar(`https://dukanah.admin.t-carts.com${result.data.user.image}`);
+          } else {
+            setExistingAvatar(null);
           }
         } else if (user) {
           setFormData({
@@ -63,31 +68,38 @@ export default function EditProfilePage() {
             newPassword: "",
             confirmPassword: "",
           });
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        if (user) {
-          setFormData({
-            name: user.name || "",
-            email: user.email || "",
-            phone: user.phone || "",
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: "",
-          });
+          if (user.image) {
+            setExistingAvatar(`https://dukanah.admin.t-carts.com${user.image}`);
+          } else {
+            setExistingAvatar(null);
+          }
         }
       }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      if (user) {
+        setFormData({
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      }
+    } finally {
+      setIsPageLoading(false); // ✅ انتهاء التحميل
     }
-  }, [user, loading, isAuthenticated]);
+  }, [user, authLoading, isAuthenticated]);
 
-  // تحميل بيانات المستخدم من الـ API مباشرة
+  // تحميل بيانات المستخدم
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
 
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       toast.error("الرجاء تسجيل الدخول أولاً", {
         duration: 2000,
         position: "top-center",
@@ -96,9 +108,9 @@ export default function EditProfilePage() {
         router.push("/auth/login");
       }, 1500);
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, authLoading, router]);
 
-  // تنظيف معاينة الصورة عند مغادرة الصفحة
+  // تنظيف معاينة الصورة
   useEffect(() => {
     return () => {
       if (avatarPreview) {
@@ -129,12 +141,14 @@ export default function EditProfilePage() {
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
+    // التحقق من الاسم
     if (!formData.name.trim()) {
       newErrors.name = "الاسم الكامل مطلوب";
     } else if (formData.name.trim().length < 3) {
       newErrors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
     }
 
+    // التحقق من البريد الإلكتروني
     if (formData.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
@@ -142,6 +156,7 @@ export default function EditProfilePage() {
       }
     }
 
+    // التحقق من رقم الهاتف
     if (formData.phone) {
       const phoneRegex = /^\+?[0-9]{10,15}$/;
       if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
@@ -149,15 +164,28 @@ export default function EditProfilePage() {
       }
     }
 
-    if (formData.newPassword) {
-      if (formData.newPassword.length < 6) {
-        newErrors.newPassword = "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل";
-      }
-      if (!formData.currentPassword) {
+    // التحقق من كلمة المرور
+    const hasCurrentPassword = formData.currentPassword.trim() !== "";
+    const hasNewPassword = formData.newPassword.trim() !== "";
+    const hasConfirmPassword = formData.confirmPassword.trim() !== "";
+
+    if (hasCurrentPassword || hasNewPassword || hasConfirmPassword) {
+      if (!hasCurrentPassword) {
         newErrors.currentPassword = "الرجاء إدخال كلمة المرور الحالية";
       }
-      if (formData.newPassword !== formData.confirmPassword) {
-        newErrors.confirmPassword = "كلمة المرور الجديدة غير متطابقة";
+      if (!hasNewPassword) {
+        newErrors.newPassword = "الرجاء إدخال كلمة المرور الجديدة";
+      }
+      if (!hasConfirmPassword) {
+        newErrors.confirmPassword = "الرجاء تأكيد كلمة المرور الجديدة";
+      }
+      if (hasCurrentPassword && hasNewPassword && hasConfirmPassword) {
+        if (formData.newPassword.length < 6) {
+          newErrors.newPassword = "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل";
+        }
+        if (formData.newPassword !== formData.confirmPassword) {
+          newErrors.confirmPassword = "كلمة المرور الجديدة غير متطابقة";
+        }
       }
     }
 
@@ -165,8 +193,28 @@ export default function EditProfilePage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // دالة للتحقق مما إذا كانت هناك تغييرات حقيقية
+  const hasChanges = useCallback((): boolean => {
+    if (formData.name !== user?.name) return true;
+    if (formData.email !== user?.email) return true;
+    if (formData.phone !== user?.phone) return true;
+    if (avatar !== null) return true;
+    
+    const hasPasswordChange = formData.currentPassword || formData.newPassword || formData.confirmPassword;
+    if (hasPasswordChange) return true;
+    
+    return false;
+  }, [formData, user, avatar]);
+
   const handleChangePassword = async () => {
-    if (!formData.newPassword) return true;
+    if (!formData.currentPassword && !formData.newPassword && !formData.confirmPassword) {
+      return true;
+    }
+    
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      toast.error("الرجاء ملء جميع حقول كلمة المرور");
+      return false;
+    }
     
     try {
       const result = await changePassword({
@@ -190,6 +238,16 @@ export default function EditProfilePage() {
   };
 
   const handleUpdateProfile = async () => {
+    const hasProfileChanges = 
+      formData.name !== user?.name ||
+      formData.email !== user?.email ||
+      formData.phone !== user?.phone ||
+      avatar !== null;
+    
+    if (!hasProfileChanges) {
+      return true;
+    }
+    
     const profileData: any = {
       name: formData.name,
       locale: "ar",
@@ -211,7 +269,6 @@ export default function EditProfilePage() {
       const result = await updateUserProfile(profileData);
       
       if (result.result) {
-        // ✅ بعد نجاح التحديث، أعد جلب بيانات المستخدم للحصول على الصورة الجديدة
         await fetchUserProfile();
         return true;
       } else {
@@ -235,12 +292,22 @@ export default function EditProfilePage() {
       }
       return;
     }
+    
+    if (!hasChanges()) {
+      toast.error("لا توجد تغييرات لحفظها", {
+        duration: 2000,
+        position: "top-center",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
       let passwordChanged = true;
-      if (formData.newPassword) {
+      const hasPasswordChange = formData.currentPassword || formData.newPassword || formData.confirmPassword;
+      
+      if (hasPasswordChange) {
         passwordChanged = await handleChangePassword();
       }
 
@@ -256,21 +323,28 @@ export default function EditProfilePage() {
         return;
       }
       
-      toast.success("تم تحديث الملف الشخصي بنجاح ✅", {
-        duration: 3000,
-        position: "top-center",
-      });
+      await updateUserData();
       
-      // تنظيف معاينة الصورة المؤقتة
+      // toast.success("تم تحديث الملف الشخصي بنجاح ✅", {
+      //   duration: 3000,
+      //   position: "top-center",
+      // });
+      
       if (avatarPreview) {
         URL.revokeObjectURL(avatarPreview);
       }
       setAvatar(null);
       setAvatarPreview(null);
       
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }));
+      
       setTimeout(() => {
         router.push("/account");
-        router.refresh();
       }, 1500);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -289,12 +363,16 @@ export default function EditProfilePage() {
     }
   };
 
-  if (loading) {
+  // ✅ عرض شاشة تحميل كاملة أثناء تحميل الصفحة أو المصادقة
+  if (authLoading || isPageLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#ff3c27] rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل بيانات الحساب...</p>
+          
+           <div className="relative">
+            <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-gray-200 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-8 h-8 md:w-12 md:h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -316,6 +394,7 @@ export default function EditProfilePage() {
       <Toaster
         position="top-center"
         toastOptions={{
+          duration: 3000,
           style: {
             fontSize: '14px',
             padding: '12px 16px',
@@ -327,6 +406,7 @@ export default function EditProfilePage() {
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto py-6">
+          {/* سهم الرجوع */}
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => router.back()}
@@ -338,6 +418,7 @@ export default function EditProfilePage() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* بطاقة الصورة الشخصية */}
             <div className="bg-white rounded-2xl shadow-sm p-3 md:p-6 mb-5 flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center">
                 <div className="relative">
@@ -375,16 +456,11 @@ export default function EditProfilePage() {
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <span>{formData.email || "البريد الإلكتروني غير مضاف"}</span>
                   </div>
-                  {formData.phone && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {formData.phone}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* باقي الـ JSX كما هو دون تغيير */}
+            {/* نموذج المعلومات */}
             <div className="bg-white rounded-2xl shadow-sm p-6 mt-3">
               {/* المعلومات الشخصية */}
               <div className="mb-6">
@@ -458,9 +534,6 @@ export default function EditProfilePage() {
                   {errors.email && (
                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    ملاحظة: تغيير البريد الإلكتروني قد يتطلب إعادة التحقق
-                  </p>
                 </div>
               </div>
 
@@ -565,8 +638,11 @@ export default function EditProfilePage() {
                     <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
                   )}
                 </div>
+
+            
               </div>
 
+              {/* أزرار الإجراءات */}
               <div className="flex gap-3">
                 <button
                   type="button"

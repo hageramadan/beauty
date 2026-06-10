@@ -1,13 +1,29 @@
 // app/account/wishlist/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Heart, Trash2, ArrowRight, X } from "lucide-react";
 import Pagination from "@/components/products/Pagination";
 import { ProductCard } from "@/components/products/ProductCard";
 import { useFavorites, transformFavoriteToProductCard } from "@/hooks/useFavorites";
 import toast, { Toaster } from "react-hot-toast";
+
+// تعريف نوع المنتج المحول
+interface TransformedProduct {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  hoverImage: string;
+  href: string;
+  originalPrice?: number;
+  discount?: number;
+  colors?: Array<{ color: string; name: string }>;
+  rating?: number;
+  reviewsCount?: number;
+  isBestSeller?: boolean;
+}
 
 // عدد المنتجات في كل صفحة
 const ITEMS_PER_PAGE = 8;
@@ -24,63 +40,88 @@ export default function WishlistPage() {
   
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // ✅ استخدام useRef لمنع التحديثات المتكررة
+  const hasFetched = useRef(false);
 
-  // استخدام useMemo لتحديث المنتجات فقط عندما تتغير المفضلة
-  const allProductCardItems = useMemo(() => {
+  // ✅ استخدام useMemo مع dependency محدد لتجنب إعادة الحساب غير الضرورية
+  const allProductCardItems = useMemo((): TransformedProduct[] => {
+    if (!favorites || favorites.length === 0) return [];
+    
     console.log("🔄 إعادة حساب productCardItems, عدد المفضلة:", favorites.length);
     
-    const items = favorites
-      .map(transformFavoriteToProductCard)
-      .filter(item => item && item.id && item.id !== '0');
+    const items: TransformedProduct[] = [];
     
+    favorites.forEach((favorite) => {
+      const transformed = transformFavoriteToProductCard(favorite);
+      if (transformed && transformed.id && transformed.id !== '0') {
+        items.push(transformed);
+      }
+    });
+    
+    // إزالة التكرارات
     const uniqueItems = Array.from(
       new Map(items.map(item => [item.id, item])).values()
     );
     
-    console.log("📦 إجمالي المنتجات:", uniqueItems.length);
     return uniqueItems;
-  }, [favorites]);
+  }, [favorites]); // ✅ فقط عندما تتغير favorites
 
-  // حساب عدد الصفحات
-  const totalPages = Math.ceil(allProductCardItems.length / ITEMS_PER_PAGE);
-  
-  // الحصول على منتجات الصفحة الحالية
+  // ✅ استخدام useMemo منفصل للصفحات
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return allProductCardItems.slice(startIndex, endIndex);
   }, [allProductCardItems, currentPage]);
 
-  // إعادة تعيين الصفحة إلى 1 عندما تتغير قائمة المفضلة
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [total]);
+  const totalPages = Math.ceil(allProductCardItems.length / ITEMS_PER_PAGE);
 
-  // تحديث يدوي عند تحميل الصفحة
+  // ✅ تحسين: تحديث الصفحة فقط عندما يتغير العدد الكلي
   useEffect(() => {
-    console.log("🔄 صفحة المفضلة تم تحميلها، عدد المفضلة:", favorites.length);
-    refetch();
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // ✅ منع الـ refetch المتكرر عند تحميل الصفحة
+  useEffect(() => {
+    if (!hasFetched.current && favorites.length === 0 && !isLoading) {
+      hasFetched.current = true;
+      refetch();
+    }
+  }, [refetch, isLoading, favorites.length]);
+
+  // ✅ استخدام useCallback لمنع إعادة إنشاء الدوال
+  const handleClearAll = useCallback(() => {
+    setShowClearConfirm(true);
   }, []);
 
-  const handleClearAll = () => {
-    setShowClearConfirm(true);
-  };
-
-  const confirmClearAll = async () => {
+  const confirmClearAll = useCallback(async () => {
     await clearAllFavorites();
     setShowClearConfirm(false);
-  };
+    setCurrentPage(1);
+  }, [clearAllFavorites]);
 
-  const cancelClearAll = () => {
+  const cancelClearAll = useCallback(() => {
     setShowClearConfirm(false);
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  if (isLoading) {
+  const cleanImageUrl = useCallback((url: string) => {
+    if (!url) return "/images/placeholder.jpg";
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/storage')) {
+      return `https://dukanah.admin.t-carts.com${url}`;
+    }
+    return url;
+  }, []);
+
+  // عرض حالة التحميل
+  if (isLoading && favorites.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
@@ -125,7 +166,16 @@ export default function WishlistPage() {
               )}
             </div>
             
-          
+            {allProductCardItems.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                disabled={isMutating}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 transition disabled:opacity-50"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>حذف الكل</span>
+              </button>
+            )}
           </div>
 
           {allProductCardItems.length === 0 ? (
@@ -155,8 +205,8 @@ export default function WishlistPage() {
                       id={item.id}
                       name={item.name}
                       price={item.price}
-                      image={item.image.startsWith('http') ? item.image : `https://dukanah.admin.t-carts.com${item.image}`}
-                      hoverImage={item.hoverImage.startsWith('http') ? item.hoverImage : `https://dukanah.admin.t-carts.com${item.hoverImage}`}
+                      image={cleanImageUrl(item.image)}
+                      hoverImage={cleanImageUrl(item.hoverImage)}
                       href={item.href}
                       originalPrice={item.originalPrice}
                       discount={item.discount}
@@ -170,11 +220,13 @@ export default function WishlistPage() {
               </div>
 
               {/* استخدام مكون Pagination الموجود */}
-              <Pagination
-                currentPage={currentPage}
-                lastPage={totalPages}
-                onPageChange={handlePageChange}
-              />
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  lastPage={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </>
           )}
         </div>

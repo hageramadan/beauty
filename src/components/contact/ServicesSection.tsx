@@ -16,20 +16,20 @@ const servicesData: ServiceItem[] = [
   {
     id: 1,
     icon: FaRegEnvelope,
-    title: "خدمات متاحة 24/7",
-    description: "Lorem ipsum dolor sit amet consectetur. Feugiat facilisi semper sed nascetur commodo cursus"
+    title: `لدعم عبر البريد الإلكتروني`,
+    description: `راسلنا عبر البريد الإلكتروني لأي استفسار بخصوص الطلبات أو الشراكة والتسويق، وسيقوم فريقنا بالرد عليك في أسرع وقت: support@domain.com. `
   },
   {
     id: 2,
     icon: RiCustomerService2Line,
-    title: "خدمات متاحة 24/7",
-    description: "Lorem ipsum dolor sit amet consectetur. Feugiat facilisi semper sed nascetur commodo cursus"
+    title: "اتصل بنا هاتفياً",
+    description: `فريق خدمة العملاء جاهز للرد على اتصالاتكم واستفساراتكم ومساعدتكم في تتبع الشحنات وعمليات الاسترجاع عبر رقمنا الموحد: 0123456790`
   },
   {
     id: 3,
     icon: IoChatbubbleEllipsesOutline,
-    title: "خدمات متاحة 24/7",
-    description: "Lorem ipsum dolor sit amet consectetur. Feugiat facilisi semper sed nascetur commodo cursus"
+    title: `المحادثة الفورية المباشرة`,
+    description: ` يمكنك بدء محادثة فورية ومباشرة الآن مع أحد ممثلي خدمة العملاء عبر الموقع أو تطبيق الواتساب للحصول على دعم فوري وحل مشكلتك بلحظات.`
   }
 ];
 
@@ -51,9 +51,9 @@ export default function ServicesSection() {
               
               <div>
                 {/* العنوان */}
-              <h4 className="text-lg font-bold text-white mb-2">
+              <h2 className="text-lg font-bold text-white mb-2">
                 {service.title}
-              </h4>
+              </h2>
               
               {/* الوصف */}
               <p className="text-gray-100 text-sm leading-relaxed">

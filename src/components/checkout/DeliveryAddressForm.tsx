@@ -1,4 +1,3 @@
-// components/checkout/DeliveryAddressForm.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -39,7 +38,7 @@ interface DeliveryAddressFormProps {
   };
   onAddressChange: (data: any) => void;
   onAddressSaved?: (address: any) => void;
-  onAddressSelected?: (addressId: number) => void; // ✅ جديد
+  onAddressSelected?: (addressId: number) => void;
 }
 
 // قائمة المحافظات المصرية (احتياطي في حال فشل الـ API)
@@ -51,12 +50,25 @@ const EGYPT_GOVERNORATES = [
   "مطروح", "شمال سيناء", "جنوب سيناء", "البحر الأحمر", "الوادي الجديد",
 ];
 
+interface Governorate {
+  id: string;
+  name: string;
+  provider: string;
+}
+
+interface City {
+  id: string;
+  name: string;
+  provider: string;
+  delivery_fee: number;
+}
+
 export default function DeliveryAddressForm({
   show,
   addressData,
   onAddressChange,
   onAddressSaved,
-  onAddressSelected, // ✅ جديد
+  onAddressSelected,
 }: DeliveryAddressFormProps) {
   const [useSavedAddress, setUseSavedAddress] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -66,9 +78,10 @@ export default function DeliveryAddressForm({
   const [addressSaved, setAddressSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   
-  const [governoratesFromAPI, setGovernoratesFromAPI] = useState<any[]>([]);
-  const [citiesFromAPI, setCitiesFromAPI] = useState<any[]>([]);
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
   
   const hasAutoSavedRef = useRef(false);
   const API_URL = 'https://dukanah.admin.t-carts.com/api';
@@ -94,7 +107,7 @@ export default function DeliveryAddressForm({
           id: addr.id,
           street: addr.street,
           city: addr.city.name,
-          governorate: "",
+          governorate: addr.city.governate?.name || "",
           building: addr.building,
           floor: addr.floor,
           apartment: addr.apartment,
@@ -110,6 +123,7 @@ export default function DeliveryAddressForm({
     }
   };
 
+  // ✅ جلب المحافظات فقط
   const fetchGovernorates = async () => {
     setIsLoadingGovernorates(true);
     try {
@@ -123,29 +137,73 @@ export default function DeliveryAddressForm({
       const result = await response.json();
       
       if (result.result === true && result.data && Array.isArray(result.data.governates)) {
-        setGovernoratesFromAPI(result.data.governates);
-        const allCities: any[] = [];
-        result.data.governates.forEach((gov: any) => {
-          if (gov.cities && Array.isArray(gov.cities)) {
-            gov.cities.forEach((city: any) => {
-              allCities.push({
-                id: city.id,
-                name: city.name,
-                delivery_fee: city.delivery_fee,
-                governorateId: gov.id,
-                governorateName: gov.name,
-              });
-            });
-          }
-        });
-        setCitiesFromAPI(allCities);
+        setGovernorates(result.data.governates);
+        console.log("✅ تم تحميل المحافظات:", result.data.governates);
+      } else {
+        console.log("⚠️ استخدام المحافظات الاحتياطية");
+        // تحويل المحافظات الاحتياطية إلى نفس الهيكل
+        setGovernorates(EGYPT_GOVERNORATES.map((name, index) => ({
+          id: String(index + 1),
+          name,
+          provider: "local"
+        })));
       }
     } catch (error) {
       console.error("❌ خطأ في جلب المحافظات:", error);
+      // استخدام المحافظات الاحتياطية
+      setGovernorates(EGYPT_GOVERNORATES.map((name, index) => ({
+        id: String(index + 1),
+        name,
+        provider: "local"
+      })));
     } finally {
       setIsLoadingGovernorates(false);
     }
   };
+
+  // ✅ جلب المدن عند اختيار المحافظة باستخدام الـ endpoint الجديد
+  const fetchCitiesByGovernorate = async (governorateId: string) => {
+    if (!governorateId) {
+      setCities([]);
+      return;
+    }
+
+    setIsLoadingCities(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_URL}/governates/${governorateId}/cities`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      const result = await response.json();
+      
+      if (result.result === true && Array.isArray(result.data)) {
+        setCities(result.data);
+        console.log("✅ تم تحميل المدن:", result.data);
+      } else {
+        setCities([]);
+      }
+    } catch (error) {
+      console.error("❌ خطأ في جلب المدن:", error);
+      setCities([]);
+    } finally {
+      setIsLoadingCities(false);
+    }
+  };
+
+  // ✅ عند تغيير المحافظة، جلب المدن
+  useEffect(() => {
+    if (addressData.governorate) {
+      const selectedGov = governorates.find(gov => gov.name === addressData.governorate);
+      if (selectedGov) {
+        fetchCitiesByGovernorate(selectedGov.id);
+      }
+    } else {
+      setCities([]);
+    }
+  }, [addressData.governorate, governorates]);
 
   useEffect(() => {
     if (show) {
@@ -168,6 +226,16 @@ export default function DeliveryAddressForm({
     );
   };
 
+  // ✅ الحصول على city_id من اسم المدينة والمحافظة
+  const getCityIdByName = (cityName: string, governorateName: string): string | null => {
+    const selectedGov = governorates.find(gov => gov.name === governorateName);
+    if (!selectedGov) return null;
+    
+    // نبحث في المدن التي تم تحميلها لهذه المحافظة
+    const city = cities.find(c => c.name === cityName);
+    return city?.id || null;
+  };
+
   const saveAddressToAPI = async () => {
     setSaveError(null);
     
@@ -184,18 +252,17 @@ export default function DeliveryAddressForm({
     setIsSavingAddress(true);
     
     try {
-      const foundCity = citiesFromAPI.find(
-        (c) => c.name === addressData.city && c.governorateName === addressData.governorate
-      );
+      // ✅ الحصول على city_id من الـ API
+      const cityId = getCityIdByName(addressData.city, addressData.governorate);
       
-      if (!foundCity) {
+      if (!cityId) {
         setSaveError("لم يتم العثور على المدينة في النظام");
         return null;
       }
       
       const token = localStorage.getItem('auth_token');
       const addressToSave = {
-        city_id: foundCity.id,
+        city_id: cityId, // ✅ إرسال city_id كـ string
         street: getFieldValue(addressData.street),
         building: getFieldValue(addressData.buildingNo),
         floor: getFieldValue(addressData.floorNo),
@@ -204,6 +271,8 @@ export default function DeliveryAddressForm({
         longitude: null,
         type: 'home',
       };
+      
+      console.log("📦 حفظ العنوان:", addressToSave);
       
       const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
@@ -215,6 +284,7 @@ export default function DeliveryAddressForm({
       });
       
       const result = await response.json();
+      console.log("📦 الرد من API:", result);
       
       if (result.result === true) {
         await fetchSavedAddresses();
@@ -224,7 +294,6 @@ export default function DeliveryAddressForm({
           onAddressSaved(result.data);
         }
         
-        // ✅ إرسال address_id إلى parent
         if (onAddressSelected && result.data && result.data.id) {
           onAddressSelected(result.data.id);
         }
@@ -256,7 +325,6 @@ export default function DeliveryAddressForm({
     
     const savedAddress = await saveAddressToAPI();
     
-    // ✅ إذا تم الحفظ بنجاح، أرسلي الـ ID
     if (savedAddress && savedAddress.id && onAddressSelected) {
       onAddressSelected(savedAddress.id);
     }
@@ -285,19 +353,11 @@ export default function DeliveryAddressForm({
   if (!show) return null;
 
   const getGovernoratesList = () => {
-    if (governoratesFromAPI.length > 0) {
-      return governoratesFromAPI.map((gov: any) => gov.name);
-    }
-    return EGYPT_GOVERNORATES;
+    return governorates.map(gov => gov.name);
   };
 
-  const getCitiesListByGovernorate = (governorateName: string) => {
-    if (citiesFromAPI.length > 0 && governorateName) {
-      return citiesFromAPI
-        .filter((city: any) => city.governorateName === governorateName)
-        .map((city: any) => city.name);
-    }
-    return [];
+  const getCitiesList = () => {
+    return cities.map(city => city.name);
   };
 
   const updateAddress = (field: string, value: string | null) => {
@@ -313,13 +373,10 @@ export default function DeliveryAddressForm({
     setSelectedSavedAddressId(addressId);
     const address = savedAddresses.find((a) => a.id === addressId);
     if (address) {
-      const foundCity = citiesFromAPI.find((c) => c.name === address.city);
-      const governorateName = foundCity?.governorateName || "";
-      
       onAddressChange({
         street: address.street,
         city: address.city,
-        governorate: governorateName,
+        governorate: address.governorate,
         buildingNo: address.building,
         floorNo: address.floor,
         apartmentNo: address.apartment,
@@ -328,14 +385,11 @@ export default function DeliveryAddressForm({
       setAddressSaved(true);
       setSaveError(null);
       
-      // ✅ إرسال address_id إلى parent عند اختيار عنوان محفوظ
       if (onAddressSelected) {
         onAddressSelected(addressId);
       }
     }
   };
-
-  const availableCities = getCitiesListByGovernorate(addressData.governorate);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
@@ -371,15 +425,33 @@ export default function DeliveryAddressForm({
               <Select
                 value={addressData.city}
                 onValueChange={(value) => updateAddress("city", value)}
-                disabled={!addressData.governorate || isLoadingGovernorates}
+                disabled={!addressData.governorate || isLoadingCities}
               >
                 <SelectTrigger className="w-full bg-white rounded-[8px]">
-                  <SelectValue placeholder={!addressData.governorate ? "اختر المحافظة أولاً" : "اختر المدينة"} />
+                  <SelectValue 
+                    placeholder={
+                      !addressData.governorate 
+                        ? "اختر المحافظة أولاً" 
+                        : isLoadingCities 
+                        ? "جاري تحميل المدن..." 
+                        : "اختر المدينة"
+                    } 
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCities.map((city) => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
+                  {isLoadingCities ? (
+                    <div className="p-4 text-center text-gray-500">
+                      جاري تحميل المدن...
+                    </div>
+                  ) : getCitiesList().length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      لا توجد مدن متاحة
+                    </div>
+                  ) : (
+                    getCitiesList().map((city) => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -508,10 +580,8 @@ export default function DeliveryAddressForm({
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
                   </div>
-                ) : savedAddresses.map((address) => {
-                  const foundCity = citiesFromAPI.find((c) => c.name === address.city);
-                  const governorateName = foundCity?.governorateName || "";
-                  return (
+                ) : (
+                  savedAddresses.map((address) => (
                     <label
                       key={address.id}
                       className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
@@ -535,11 +605,11 @@ export default function DeliveryAddressForm({
                           {address.floor && `دور ${address.floor} `}
                           {address.apartment && `شقة ${address.apartment}`}
                         </p>
-                        <p className="text-sm text-gray-500">{address.city}، {governorateName}</p>
+                        <p className="text-sm text-gray-500">{address.city}، {address.governorate}</p>
                       </div>
                     </label>
-                  );
-                })}
+                  ))
+                )}
               </div>
             )}
           </div>

@@ -381,11 +381,13 @@ export default function OrdersPage() {
                             href={`/account/orders/${order.id}`}
                             className="text-[#EC221F] text-sm sm:text-base font-medium hover:underline"
                           >
-                            عرض تفاصيل الطلب كامل →
+                            عرض تفاصيل الطلب  
                           </Link>
                           <div className="text-right">
                             <p className="text-xs sm:text-sm text-gray-500">إجمالي الطلب</p>
-                            <p className="text-lg sm:text-xl font-bold text-[#EC221F]">EGP {order.total_amount.toFixed(2)}</p>
+                            <p className="text-base sm:text-xl font-bold text-[#EC221F]">
+                              <span className="text-xs md:text-base font-bold text-[#EC221F]">EGP</span> 
+                              {order.total_amount.toFixed(2)}</p>
                           </div>
                         </div>
                       </div>

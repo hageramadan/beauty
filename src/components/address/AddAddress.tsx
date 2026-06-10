@@ -1,4 +1,3 @@
-// components/address/AddAddress.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -26,6 +25,19 @@ interface AddAddressProps {
   isEditing?: boolean;
 }
 
+interface Governorate {
+  id: string;
+  name: string;
+  provider: string;
+}
+
+interface City {
+  id: string;
+  name: string;
+  provider: string;
+  delivery_fee: number;
+}
+
 export default function AddAddress({
   onClose,
   onSave,
@@ -49,7 +61,8 @@ export default function AddAddress({
         street: initialData.street || "",
         city: initialData.city?.name || "",
         cityId: initialData.city?.id?.toString() || "",
-        governorate: initialData.city?.governate?.name || "", // محاولة جلب المحافظة من البيانات
+        governorateId: initialData.city?.governate?.id?.toString() || "",
+        governorate: initialData.city?.governate?.name || "",
         building: initialData.building || "",
         apartmentNumber: initialData.apartment || "",
         floor: initialData.floor || "",
@@ -63,6 +76,7 @@ export default function AddAddress({
       street: "",
       city: "",
       cityId: "",
+      governorateId: "",
       governorate: "",
       building: "",
       apartmentNumber: "",
@@ -98,7 +112,7 @@ export default function AddAddress({
           lng: parseFloat(initialData.longitude),
           address: initialData.street || "",
           city: initialData.city?.name,
-          governorate: "",
+          governorate: initialData.city?.governate?.name,
         }
       : null,
   );
@@ -107,9 +121,10 @@ export default function AddAddress({
 
   // --- حالات جديدة للـ API ---
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [governoratesFromAPI, setGovernoratesFromAPI] = useState<any[]>([]);
-  const [citiesFromAPI, setCitiesFromAPI] = useState<any[]>([]);
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
 
   const API_URL = "https://dukanah.admin.t-carts.com/api";
 
@@ -138,86 +153,98 @@ export default function AddAddress({
           result.data &&
           Array.isArray(result.data.governates)
         ) {
-          setGovernoratesFromAPI(result.data.governates);
-
-          // استخراج جميع المدن من المحافظات
-          const allCities: any[] = [];
-          result.data.governates.forEach((gov: any) => {
-            if (gov.cities && Array.isArray(gov.cities)) {
-              allCities.push(
-                ...gov.cities.map((city: any) => ({
-                  ...city,
-                  governorateId: gov.id,
-                  governorateName: gov.name,
-                })),
-              );
-            }
-          });
-          setCitiesFromAPI(allCities);
-
-          // إذا كان في وضع التعديل، قم بتعيين المحافظة الصحيحة
-          if (isEditing && initialData?.city?.name) {
-            // البحث عن المحافظة التي تحتوي على هذه المدينة
-            const foundGovernorate = result.data.governates.find((gov: any) =>
-              gov.cities.some(
-                (city: any) => city.name === initialData.city.name,
-              ),
-            );
-            if (foundGovernorate) {
-              setFormData((prev) => ({
-                ...prev,
-                governorate: foundGovernorate.name,
-                cityId: initialData.city?.id?.toString() || "",
-                city: initialData.city?.name || "",
-              }));
-            }
-          }
-
+          setGovernorates(result.data.governates);
           console.log("✅ تم تحميل المحافظات من API:", result.data.governates);
         } else {
-          console.log("⚠️ استخدام المحافظات المحلية بدلاً من API");
+          console.log("⚠️ لم يتم العثور على محافظات في API");
+          setGovernorates([]);
         }
       } catch (error) {
         console.error("❌ خطأ في جلب المحافظات:", error);
-        toast.error("فشل في تحميل المحافظات، سيتم استخدام القائمة المحلية");
+        toast.error("فشل في تحميل المحافظات");
       } finally {
         setIsLoadingGovernorates(false);
       }
     };
 
     fetchGovernorates();
-  }, [isEditing, initialData]);
+  }, []);
 
-  // دالة للحصول على قائمة المحافظات (من API أو المحلية)
-  const getGovernoratesList = () => {
-    if (governoratesFromAPI.length > 0) {
-      return governoratesFromAPI.map((gov: any) => gov.name);
-    }
-    return governorates;
-  };
-
-  // دالة للحصول على قائمة المدن بناءً على المحافظة المختارة
-  const getCitiesListByGovernorate = (governorateName: string) => {
-    if (citiesFromAPI.length > 0 && governorateName) {
-      const governorate = governoratesFromAPI.find(
-        (gov: any) => gov.name === governorateName,
-      );
-      if (governorate && governorate.cities) {
-        return governorate.cities;
+  // --- جلب المدن عند اختيار المحافظة ---
+  useEffect(() => {
+    const fetchCities = async () => {
+      if (!formData.governorateId) {
+        setCities([]);
+        return;
       }
-    }
-    return [];
-  };
 
-  // دالة للحصول على city_id من المدينة المختارة
-  const getCityIdFromName = (
-    cityName: string,
-    governorateName: string,
-  ): string => {
-    const cities = getCitiesListByGovernorate(governorateName);
-    const city = cities.find((c: any) => c.name === cityName);
-    return city?.id?.toString() || "";
-  };
+      setIsLoadingCities(true);
+      try {
+        const token = localStorage.getItem("auth_token");
+
+        const response = await fetch(`${API_URL}/governates/${formData.governorateId}/cities`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.result === true && Array.isArray(result.data)) {
+          setCities(result.data);
+          console.log("✅ تم تحميل المدن من API:", result.data);
+        } else {
+          setCities([]);
+        }
+      } catch (error) {
+        console.error("❌ خطأ في جلب المدن:", error);
+        toast.error("فشل في تحميل المدن");
+        setCities([]);
+      } finally {
+        setIsLoadingCities(false);
+      }
+    };
+
+    fetchCities();
+  }, [formData.governorateId]);
+
+  // ✅ عند التعديل، تعيين المحافظة والمدينة المناسبة (مع التحقق من وجود governate)
+  useEffect(() => {
+    if (isEditing && initialData?.city) {
+      const updates: any = {};
+      
+      // تعيين بيانات المدينة إذا وجدت
+      if (initialData.city.id) {
+        updates.cityId = initialData.city.id.toString();
+        updates.city = initialData.city.name || "";
+      }
+      
+      // تعيين بيانات المحافظة إذا وجدت (قد لا تكون موجودة في الـ API)
+      if (initialData.city.governate) {
+        updates.governorateId = initialData.city.governate.id?.toString() || "";
+        updates.governorate = initialData.city.governate.name || "";
+      }
+      
+      // تعيين باقي البيانات
+      updates.street = initialData.street || "";
+      updates.building = initialData.building || "";
+      updates.apartmentNumber = initialData.apartment || "";
+      updates.floor = initialData.floor || "";
+      updates.addressType = getInitialAddressType(initialData.type);
+      updates.latitude = initialData.latitude;
+      updates.longitude = initialData.longitude;
+      
+      setFormData(prev => ({
+        ...prev,
+        ...updates,
+      }));
+    }
+  }, [isEditing, initialData]);
 
   // دالة لعرض النص العربي للمستخدم
   const getAddressTypeDisplay = (type: AddressTypeValue): string => {
@@ -247,37 +274,7 @@ export default function AddAddress({
     }
   };
 
-  // قائمة المحافظات المصرية (احتياطي)
-  const governorates = [
-    "القاهرة",
-    "الجيزة",
-    "الإسكندرية",
-    "الدقهلية",
-    "الشرقية",
-    "المنوفية",
-    "القليوبية",
-    "البحيرة",
-    "كفر الشيخ",
-    "الغربية",
-    "الأقصر",
-    "أسوان",
-    "سوهاج",
-    "قنا",
-    "المنيا",
-    "بني سويف",
-    "الفيوم",
-    "دمياط",
-    "بورسعيد",
-    "السويس",
-    "الإسماعيلية",
-    "مطروح",
-    "شمال سيناء",
-    "جنوب سيناء",
-    "البحر الأحمر",
-    "الوادي الجديد",
-  ];
-
-  // دالة التحقق من صحة الحقول (جميع الحقول مطلوبة ما عدا الخريطة)
+  // دالة التحقق من صحة الحقول
   const validateForm = (): boolean => {
     const newErrors: {
       street?: string;
@@ -289,39 +286,32 @@ export default function AddAddress({
       addressType?: string;
     } = {};
 
-    // التحقق من عنوان الشارع (مطلوب)
     if (!formData.street.trim()) {
       newErrors.street = "عنوان التوصيل المفصل مطلوب";
     } else if (formData.street.trim().length < 5) {
       newErrors.street = "عنوان التوصيل قصير جداً (على الأقل 5 حروف)";
     }
 
-    // التحقق من المحافظة (مطلوب)
-    if (!formData.governorate) {
+    if (!formData.governorateId) {
       newErrors.governorate = "الرجاء اختيار المحافظة";
     }
 
-    // التحقق من المدينة (مطلوب)
-    if (!formData.city) {
+    if (!formData.cityId) {
       newErrors.city = "الرجاء اختيار المدينة";
     }
 
-    // التحقق من اسم المبنى (مطلوب)
     if (!formData.building.trim()) {
       newErrors.building = "اسم المبنى مطلوب";
     }
 
-    // التحقق من رقم الشقة (مطلوب)
     if (!formData.apartmentNumber.trim()) {
       newErrors.apartment = "رقم الشقة مطلوب";
     }
 
-    // التحقق من رقم الدور (مطلوب)
     if (!formData.floor.trim()) {
       newErrors.floor = "رقم الدور مطلوب";
     }
 
-    // التحقق من نوع العنوان (مطلوب)
     if (!formData.addressType) {
       newErrors.addressType = "الرجاء اختيار تصنيف العنوان";
     }
@@ -349,6 +339,15 @@ export default function AddAddress({
     );
     setIsExtracting(false);
 
+    // البحث عن المحافظة (id من النوع string)
+    const foundGovernorate = governorates.find(
+      (gov) => gov.name === governorate
+    );
+    // البحث عن المدينة (id من النوع string)
+    const foundCity = cities.find(
+      (c) => c.name === city
+    );
+
     setSelectedLocation({
       ...location,
       city,
@@ -361,8 +360,9 @@ export default function AddAddress({
       latitude: location.lat.toString(),
       longitude: location.lng.toString(),
       city: city || prev.city,
+      cityId: foundCity?.id?.toString() || prev.cityId,
       governorate: governorate || prev.governorate,
-      cityId: getCityIdFromName(city, governorate),
+      governorateId: foundGovernorate?.id?.toString() || prev.governorateId,
     }));
   };
 
@@ -412,18 +412,9 @@ export default function AddAddress({
     setIsSubmitting(true);
 
     try {
-      const cityId =
-        formData.cityId ||
-        getCityIdFromName(formData.city, formData.governorate);
-
-      if (!cityId) {
-        toast.error("لم يتم العثور على المدينة في النظام");
-        setIsSubmitting(false);
-        return;
-      }
-
+      // ✅ إرسال city_id كـ string كما يطلبه الـ API
       const addressData = {
-        city_id: parseInt(cityId),
+        city_id: formData.cityId,
         street: formData.street,
         building: formData.building,
         floor: formData.floor,
@@ -432,6 +423,8 @@ export default function AddAddress({
         longitude: formData.longitude || null,
         type: formData.addressType,
       };
+
+      console.log("📦 البيانات المرسلة:", addressData);
 
       const token = localStorage.getItem("auth_token");
 
@@ -455,6 +448,8 @@ export default function AddAddress({
 
       const result = await response.json();
 
+      console.log("📦 الرد من API:", result);
+
       if (result.result === true) {
         toast.success(
           isEditing ? "تم تحديث العنوان بنجاح" : "تم إضافة العنوان بنجاح",
@@ -462,6 +457,10 @@ export default function AddAddress({
         onSave(result.data);
         onClose();
       } else {
+        if (result.errNum === 422 && result.data) {
+          const errorMessages = Object.values(result.data).flat();
+          throw new Error(errorMessages.join(", "));
+        }
         throw new Error(result.message || "حدث خطأ في حفظ العنوان");
       }
     } catch (error) {
@@ -479,7 +478,7 @@ export default function AddAddress({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">جاري تحميل البيانات...</p>
+          <p className="mt-4 text-gray-600">جاري تحميل المحافظات...</p>
         </div>
       </div>
     );
@@ -518,7 +517,7 @@ export default function AddAddress({
           <form onSubmit={handleSubmit} className="p-6">
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="lg:w-1/2 space-y-5 order-2 md:order-1">
-                {/* عنوان التوصيل - Required */}
+                {/* عنوان التوصيل */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     عنوان التوصيل المفصل <span className="text-red-500">*</span>
@@ -540,97 +539,117 @@ export default function AddAddress({
                   )}
                 </div>
 
-                {/* المحافظة والمدينة - Required */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      المحافظة <span className="text-red-500">*</span>
-                    </label>
-                    <Select
-                      value={formData.governorate || ""}
-                      onValueChange={(value) => {
-                        // معالجة القيمة null
-                        const selectedValue = value || "";
-                        setFormData({
-                          ...formData,
-                          governorate: selectedValue,
-                          city: "",
-                          cityId: "",
-                        });
-                        clearFieldError("governorate");
-                      }}
-                    >
-                      <SelectTrigger
-                        className={`w-full ${errors.governorate ? "border-red-500" : ""}`}
-                      >
-                        <SelectValue placeholder="اختر المحافظة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getGovernoratesList().map((gov) => (
-                          <SelectItem key={gov} value={gov}>
-                            {gov}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.governorate && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.governorate}
-                      </p>
-                    )}
-                  </div>
+               {/* المحافظة والمدينة */}
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-gray-700 font-medium mb-2">
+      المحافظة <span className="text-red-500">*</span>
+    </label>
+    <Select
+      value={formData.governorateId || ""}
+      onValueChange={(value) => {
+        // ✅ التأكد من أن value ليس null
+        const selectedValue = value || "";
+        const selectedGov = governorates.find(
+          (gov) => gov.id.toString() === selectedValue
+        );
+        setFormData({
+          ...formData,
+          governorateId: selectedValue,
+          governorate: selectedGov?.name || "",
+          cityId: "",
+          city: "",
+        });
+        clearFieldError("governorate");
+      }}
+    >
+      <SelectTrigger
+        className={`w-full ${errors.governorate ? "border-red-500" : ""}`}
+      >
+        <SelectValue>
+          {formData.governorate || "اختر المحافظة"}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {governorates.map((gov) => (
+          <SelectItem key={gov.id} value={gov.id.toString()}>
+            {gov.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {errors.governorate && (
+      <p className="text-red-500 text-xs mt-1">
+        {errors.governorate}
+      </p>
+    )}
+  </div>
 
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      المدينة <span className="text-red-500">*</span>
-                    </label>
-                    {/* المدينة */}
-                    <Select
-                      value={formData.city || ""}
-                      onValueChange={(value) => {
-                        // معالجة القيمة null
-                        const selectedValue = value || "";
-                        const cityId = getCityIdFromName(
-                          selectedValue,
-                          formData.governorate,
-                        );
-                        setFormData({
-                          ...formData,
-                          city: selectedValue,
-                          cityId,
-                        });
-                        clearFieldError("city");
-                      }}
-                      disabled={!formData.governorate}
-                    >
-                      <SelectTrigger
-                        className={`w-full ${errors.city ? "border-red-500" : ""}`}
-                      >
-                        <SelectValue
-                          placeholder={
-                            !formData.governorate
-                              ? "اختر المحافظة أولاً"
-                              : "اختر المدينة"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getCitiesListByGovernorate(formData.governorate).map(
-                          (city: any) => (
-                            <SelectItem key={city.id} value={city.name}>
-                              {city.name}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {errors.city && (
-                      <p className="text-red-500 text-xs mt-1">{errors.city}</p>
-                    )}
-                  </div>
-                </div>
+  <div>
+  <label className="block text-gray-700 font-medium mb-2">
+    المدينة <span className="text-red-500">*</span>
+  </label>
+  <Select
+    value={formData.cityId || ""}
+    onValueChange={(value) => {
+      // ✅ التأكد من أن value ليس null
+      const selectedValue = value || "";
+      const selectedCity = cities.find(
+        (city) => city.id.toString() === selectedValue
+      );
+      setFormData({
+        ...formData,
+        cityId: selectedValue,
+        city: selectedCity?.name || "",
+      });
+      clearFieldError("city");
+    }}
+    disabled={!formData.governorateId || isLoadingCities}
+  >
+    <SelectTrigger
+      className={`w-full ${errors.city ? "border-red-500" : ""}`}
+    >
+      {/* ✅ عرض اسم المدينة هنا بدلاً من الـ ID */}
+      <SelectValue>
+        {formData.city || (
+          !formData.governorateId
+            ? "اختر المحافظة أولاً"
+            : isLoadingCities
+            ? "جاري التحميل..."
+            : "اختر المدينة"
+        )}
+      </SelectValue>
+    </SelectTrigger>
+    <SelectContent>
+      {isLoadingCities ? (
+        <div className="p-4 text-center text-gray-500">
+          جاري تحميل المدن...
+        </div>
+      ) : cities.length === 0 ? (
+        <div className="p-4 text-center text-gray-500">
+          لا توجد مدن متاحة
+        </div>
+      ) : (
+        cities.map((city) => (
+          <SelectItem key={city.id} value={city.id.toString()}>
+            <div className="flex justify-between items-center w-full">
+              <span>{city.name}</span>
+              <span className="text-xs text-gray-400 mr-2">
+                رسوم التوصيل: {city.delivery_fee} ج.م
+              </span>
+            </div>
+          </SelectItem>
+        ))
+      )}
+    </SelectContent>
+  </Select>
+  {errors.city && (
+    <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+  )}
+</div>
+</div>
 
-                {/* اسم المبنى - Required */}
+                {/* اسم المبنى */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     اسم المبنى <span className="text-red-500">*</span>
@@ -654,7 +673,7 @@ export default function AddAddress({
                   )}
                 </div>
 
-                {/* رقم الشقة ورقم الدور - Required */}
+                {/* رقم الشقة ورقم الدور */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
@@ -705,7 +724,7 @@ export default function AddAddress({
                   </div>
                 </div>
 
-                {/* تصنيف العنوان - Required */}
+                {/* تصنيف العنوان */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
                     تصنيف العنوان <span className="text-red-500">*</span>
@@ -750,7 +769,7 @@ export default function AddAddress({
                   )}
                 </div>
 
-                {/* Save for future - Optional */}
+                {/* Save for future */}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -792,7 +811,7 @@ export default function AddAddress({
                 </div>
               </div>
 
-              {/* الخريطة - Optional (بدون علامة نجمة) */}
+              {/* الخريطة */}
               <div className="lg:w-1/2 order-1 md:order-2">
                 <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                   <FaLocationDot className="text-red-500" />
@@ -822,6 +841,16 @@ export default function AddAddress({
                     <p className="text-sm text-gray-700 mt-1">
                       {selectedLocation.address}
                     </p>
+                    {selectedLocation.city && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        المدينة: {selectedLocation.city}
+                      </p>
+                    )}
+                    {selectedLocation.governorate && (
+                      <p className="text-xs text-gray-500">
+                        المحافظة: {selectedLocation.governorate}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

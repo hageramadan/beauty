@@ -1,56 +1,275 @@
 // app/account/orders/[id]/return/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronRight, Package } from "lucide-react";
+import { ChevronRight, Package, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoCopyOutline } from "react-icons/io5";
-import SuccessPopup from "@/components/checkout/SuccessPopup";
-import PaymentMethodForm from "@/components/checkout/PaymentMethodForm";
+import toast from "react-hot-toast";
 
-// نفس البيانات المؤقتة
-const mockOrderDetails = {
-  id: 1,
-  orderNumber: "#12345",
-  date: "Delivered Sep 28, 2024",
-  status: "delivered",
-  items: [
-    {
-      id: 1,
-      name: "قميص",
-      brand: "Defacto",
-      color: "ابيض",
-      size: "L",
-      price: 371.56,
-      originalPrice: 471.56,
-      quantity: 1,
-      image: "/images/products/product2.png",
-    },
-  ],
+// ========== إعدادات API ==========
+const API_URL = 'https://dukanah.admin.t-carts.com/api';
+
+const getToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+};
+
+const getHeaders = (): HeadersInit => {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+};
+
+// ========== أنواع البيانات ==========
+interface OrderItem {
+  id: number;
+  title: string;
+  name?: string;
+  brand?: string;
+  color?: string;
+  size?: string;
+  quantity: number;
+  unit_price: number;
+  price?: number;
+  total_price: number;
+  originalPrice?: number;
+  images: string[];
+  image?: string;
+}
+
+interface OrderDetails {
+  id: number;
+  order_number: string;
+  orderNumber?: string;
+  date: string;
+  created_at?: string;
+  status: string;
+  status_label?: string;
+  total_amount: number;
+  items: OrderItem[];
+}
+
+// ========== خيارات طريقة استرداد المبلغ ==========
+const refundMethods = [
+  { 
+    id: "wallet", 
+    name: "المحفظة الإلكترونية", 
+    description: "سيتم إضافة المبلغ إلى محفظتك"
+  },
+  { 
+    id: "bank", 
+    name: "تحويل بنكي", 
+    description: "سيتم تحويل المبلغ إلى حسابك البنكي"
+  },
+  { 
+    id: "card", 
+    name: "نفس بطاقة الدفع", 
+    description: "سيتم رد المبلغ إلى نفس البطاقة"
+  },
+];
+
+// ========== دالة جلب تفاصيل الطلب ==========
+const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> => {
+  try {
+    const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Order details for return:", data);
+    
+    if (data.result === true && data.data) {
+      const order = data.data;
+      return {
+        id: order.id,
+        order_number: order.order_number,
+        orderNumber: order.order_number,
+        date: new Date(order.created_at).toLocaleDateString("ar-EG", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        created_at: order.created_at,
+        status: order.status_label,
+        total_amount: order.total_amount,
+        items: (order.items || []).map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          name: item.title,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          price: item.unit_price,
+          total_price: item.total_price,
+          images: item.images || [],
+          image: item.images && item.images[0] ? cleanImageUrl(item.images[0]) : "/images/placeholder-product.png",
+        })),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error fetching order details:", error);
+    toast.error("حدث خطأ في جلب تفاصيل الطلب");
+    return null;
+  }
+};
+
+// ========== دالة تقديم طلب إرجاع ==========
+const submitReturnRequest = async (
+  orderId: number,
+  refundMethod: string,
+  notes: string
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await fetch(`${API_URL}/returns`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        order_id: orderId,
+        refund_method: refundMethod,
+        notes: notes || null,
+      }),
+    });
+    
+    const data = await response.json();
+    console.log("📦 Return request response:", data);
+    
+    if (data.result === true && data.errNum === 200) {
+      return { 
+        success: true, 
+        message: data.message || "تم تقديم طلب الإرجاع بنجاح",
+        data: data.data
+      };
+    } else {
+      return { 
+        success: false, 
+        message: data.message || "حدث خطأ أثناء تقديم طلب الإرجاع" 
+      };
+    }
+  } catch (error) {
+    console.error("❌ Error submitting return request:", error);
+    return { 
+      success: false, 
+      message: "حدث خطأ في الاتصال بالخادم" 
+    };
+  }
+};
+
+// ========== تنظيف رابط الصورة ==========
+const cleanImageUrl = (url: string): string => {
+  if (!url) return "/images/placeholder-product.png";
+  if (url.startsWith("/storage")) {
+    return `https://dukanah.admin.t-carts.com${url}`;
+  }
+  return url;
+};
+
+// ========== تنسيق التاريخ ==========
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 };
 
 export default function ReturnRequestPage() {
   const params = useParams();
   const router = useRouter();
-  const order = mockOrderDetails;
+  const orderId = params.id as string;
+
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [refundMethod, setRefundMethod] = useState("");
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSubmit = () => {
-    console.log({
-      orderId: order.id,
-      notes,
-      refundMethod,
-    });
-    setShowSuccessPopup(true);
+  // جلب تفاصيل الطلب عند تحميل الصفحة
+  useEffect(() => {
+    const loadOrder = async () => {
+      setLoading(true);
+      const orderData = await fetchOrderDetails(orderId);
+      setOrder(orderData);
+      setLoading(false);
+    };
+    
+    if (orderId) {
+      loadOrder();
+    }
+  }, [orderId]);
+
+  // دالة تقديم طلب الإرجاع
+  const handleSubmit = async () => {
+    // التحقق من اختيار طريقة استرداد المبلغ
+    if (!refundMethod) {
+      toast.error("الرجاء اختيار طريقة استرداد المبلغ", {
+        duration: 3000,
+        position: "top-center",
+      });
+      return;
+    }
+
+    if (!order) return;
+
+    setIsSubmitting(true);
+    
+    const result = await submitReturnRequest(order.id, refundMethod, notes);
+    
+    if (result.success) {
+      setShowSuccess(true);
+      
+      // عرض رسالة نجاح إضافية
+      toast.success(result.message, {
+        duration: 4000,
+        position: "top-center",
+        icon: "✅",
+      });
+    } else {
+      toast.error(result.message, {
+        duration: 4000,
+        position: "top-center",
+      });
+    }
+    
+    setIsSubmitting(false);
   };
 
-  const handleClosePopup = () => {
-    setShowSuccessPopup(false); // فقط يقفل البوب اب ويبقى في نفس الصفحة
+  // إغلاق رسالة النجاح والعودة للطلبات
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    router.push("/account/orders");
   };
+
+  // نسخ رقم الطلب
+  const copyOrderNumber = () => {
+    if (order) {
+      navigator.clipboard.writeText(order.order_number);
+      toast.success("تم نسخ رقم الطلب", {
+        duration: 2000,
+        position: "top-center",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC221F] mx-auto"></div>
+          <p className="text-gray-500 mt-4">جاري تحميل بيانات الطلب...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -60,6 +279,7 @@ export default function ReturnRequestPage() {
           <h2 className="text-xl font-bold text-gray-800 mb-2">
             الطلب غير موجود
           </h2>
+          <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
           <Link
             href="/account/orders"
             className="inline-block bg-[#EC221F] text-white px-6 py-2 rounded-lg"
@@ -73,10 +293,17 @@ export default function ReturnRequestPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <div className="container mx-auto mb-3">
-       
+      <div className="container mx-auto mb-3 px-4 md:px-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+          <Link href="/account" className="hover:text-[#EC221F] transition">حسابي</Link>
+          <ChevronRight className="w-4 h-4" />
+          <Link href="/account/orders" className="hover:text-[#EC221F] transition">طلباتي</Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-[#EC221F] font-medium">طلب إرجاع</span>
+        </div>
 
-        <div >
+        <div>
           <h1 className="text-2xl font-bold text-gray-800 mb-6 text-right">
             طلب إرجاع
           </h1>
@@ -85,13 +312,16 @@ export default function ReturnRequestPage() {
             {/* رقم الطلب والتاريخ */}
             <div>
               <div className="flex items-center gap-3 text-xl text-[#180100] font-bold">
-                <p className="">رقم الطلب</p>
+                <p>رقم الطلب</p>
                 <div className="flex items-center gap-1">
-                  <p className="">{order.orderNumber}</p>
-                  <IoCopyOutline className="cursor-pointer" />
+                  <p>{order.order_number}</p>
+                  <IoCopyOutline 
+                    className="cursor-pointer hover:text-[#EC221F] transition"
+                    onClick={copyOrderNumber}
+                  />
                 </div>
               </div>
-              <div className="">
+              <div>
                 <p className="text-[#333333] text-lg my-3">{order.date}</p>
               </div>
             </div>
@@ -101,66 +331,50 @@ export default function ReturnRequestPage() {
               <p className="text-gray-600 mb-3">
                 المنتجات ({order.items.length})
               </p>
-              {order.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-4 border border-gray-200 rounded-xl p-3 mb-3"
-                >
-                  <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden">
-                    {item.image ? (
+              {order.items.map((item, idx) => {
+                const productImage = item.image || (item.images && item.images[0] ? cleanImageUrl(item.images[0]) : "/images/placeholder-product.png");
+                
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-4 border border-gray-200 rounded-xl p-3 mb-3"
+                  >
+                    <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden">
                       <Image
-                        src={item.image}
-                        alt={item.name}
+                        src={productImage}
+                        alt={item.title || item.name || "منتج"}
                         width={80}
                         height={80}
                         className="object-cover w-full h-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/placeholder-product.png";
+                        }}
                       />
-                    ) : (
-                      <Package className="w-8 h-8 text-gray-400 m-auto mt-6" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-gray-800">{item.name}</p>
-                        <p className="text-sm text-gray-500">{item.brand}</p>
-                        <p className="text-xs text-gray-600 mt-1 flex gap-1">
-                          <span className="hidden md:flex font-bold text-black">
-                            اللون :
-                          </span>
-                          <span>{item.color}</span>
-                          <span className="hidden md:flex font-bold text-black">
-                            المقاس :
-                          </span>
-                          <span>{item.size}</span>
-                        </p>
-                        <span className="text-gray-500 text-sm">
-                          x{item.quantity}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-800 md:text-base text-xs flex gap-1">
-                          {item.price.toFixed(2)}{" "}
-                          <span className="hidden md:flex">EGP</span>
-                        </p>
-                        {item.originalPrice && (
-                          <p className="text-sm text-gray-400 line-through hidden md:flex">
-                            EGP {item.originalPrice.toFixed(2)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-gray-800">{item.title || item.name}</p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            الكمية: x{item.quantity}
                           </p>
-                        )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-800 md:text-base text-xs flex gap-1">
+                            {(item.unit_price || item.price || 0).toFixed(2)} EGP
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* ملاحظات */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 md:p-6 space-y-6 my-4">
-            
-            <label className="block text-[#252525] text-lg md:text-2xl font-bold ">
-                 
+            <label className="block text-[#252525] text-lg md:text-2xl font-bold">
               ملاحظات
             </label>
             <textarea
@@ -172,35 +386,84 @@ export default function ReturnRequestPage() {
             />
           </div>
 
-          {/* طريقة استرداد المبلغ - استخدام الـ Component الجديد */}
-          <PaymentMethodForm
-            paymentMethod={refundMethod}
-            onPaymentMethodChange={setRefundMethod}
-          />
+          {/* طريقة استرداد المبلغ */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 md:p-6 space-y-6 my-4">
+            <label className="block text-[#252525] text-lg md:text-2xl font-bold">
+              طريقة استرداد المبلغ
+            </label>
+            <div className="space-y-3">
+              {refundMethods.map((method) => (
+                <label
+                  key={method.id}
+                  className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition ${
+                    refundMethod === method.id
+                      ? "border-[#EC221F] bg-red-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="refundMethod"
+                    value={method.id}
+                    checked={refundMethod === method.id}
+                    onChange={(e) => setRefundMethod(e.target.value)}
+                    className="mt-1 w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+                  />
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800">{method.name}</p>
+                    <p className="text-sm text-gray-500">{method.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
 
           {/* زر تأكيد الطلب */}
           <button
             onClick={handleSubmit}
-            className="w-full bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition mt-4"
+            disabled={isSubmitting || !refundMethod}
+            className={`w-full py-3 rounded-xl font-medium transition mt-4 ${
+              isSubmitting || !refundMethod
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#000000] text-white hover:bg-gray-800"
+            }`}
           >
-            تأكيد الطلب
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                جاري تقديم الطلب...
+              </div>
+            ) : (
+              "تأكيد طلب الإرجاع"
+            )}
           </button>
         </div>
       </div>
 
-      {/* Popup النجاح - باقي في نفس الصفحة عند الإغلاق */}
-      <SuccessPopup
-        isOpen={showSuccessPopup}
-        onClose={handleClosePopup}
-        orderNumber={order.orderNumber}
-        orderDetails={{
-          itemsCount: order.items.length,
-          total: order.items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-          ),
-        }}
-      />
+      {/* نافذة النجاح */}
+      {showSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">تم تقديم طلب الإرجاع بنجاح</h3>
+            <p className="text-gray-500 mb-6">
+              رقم الطلب: <span className="font-bold text-[#EC221F]">{order.order_number}</span>
+              <br />
+              سيتم معالجة طلبك والتواصل معك قريباً
+            </p>
+            <button
+              onClick={handleCloseSuccess}
+              className="w-full bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
+            >
+              العودة إلى الطلبات
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

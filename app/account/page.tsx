@@ -22,6 +22,61 @@ export default function AccountPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading, logoutUser } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  
+  // حالات الرصيد
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [walletCurrency, setWalletCurrency] = useState<string>("EGP");
+  const [loadingWallet, setLoadingWallet] = useState<boolean>(true);
+
+  // دالة لجلب رصيد المحفظة من الـ API (نفس الطريقة في WalletPage)
+  const fetchWalletBalance = async () => {
+    setLoadingWallet(true);
+    
+    try {
+      // استرجاع التوكن من localStorage بنفس المفتاح
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        console.warn("لم يتم العثور على توكن المصادقة");
+        setLoadingWallet(false);
+        return;
+      }
+
+      const apiUrl = "https://dukanah.admin.t-carts.com/api";
+      const response = await fetch(`${apiUrl}/wallet`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.result === true && data.errNum === 200) {
+        const balanceString = data.data.balance; // مثال: "EGP 371.56"
+        const [currencyPart, balancePart] = balanceString.split(" ");
+        
+        setWalletCurrency(currencyPart || "EGP");
+        setWalletBalance(parseFloat(balancePart) || 0);
+      } else {
+        console.error("Error fetching wallet:", data.message);
+        setWalletBalance(0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch wallet balance:", error);
+      setWalletBalance(0);
+    } finally {
+      setLoadingWallet(false);
+    }
+  };
+
+  // جلب الرصيد عند تحميل الصفحة
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWalletBalance();
+    }
+  }, [isAuthenticated]);
 
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
@@ -109,6 +164,21 @@ export default function AccountPage() {
     return user.name.charAt(0).toUpperCase();
   };
 
+  // تنسيق عرض الرصيد
+  const displayBalance = () => {
+    if (loadingWallet) {
+      return <span className="text-[#0A0500] text-base md:text-xl font-extrabold">جاري التحميل...</span>;
+    }
+    if (walletBalance !== null) {
+      return (
+        <span className="text-[#0A0500] text-base md:text-xl font-extrabold">
+          {walletCurrency} {walletBalance.toFixed(2)}
+        </span>
+      );
+    }
+    return <span className="text-[#0A0500] text-base md:text-xl font-extrabold">{walletCurrency} 0.00</span>;
+  };
+
   return (
     <>
       <Toaster
@@ -163,11 +233,7 @@ export default function AccountPage() {
                   {user.email && (
                     <span>{user.email}</span>
                   )}
-                  {user.phone && (
-                    <span className="mr-2">{user.phone}</span>
-                  )}
                 </div>
-              
               </div>
             </div>
             
@@ -189,27 +255,27 @@ export default function AccountPage() {
               </button>
             </div>
           </div>
-          {/* wallet */}
+
+          {/* Wallet Section - الرصيد من الـ API */}
           <div className="space-y-3 bg-wallet rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
             <h2 className="text-lg font-bold text-gray-800">المحفظة</h2>
-              <Link
-             
-                href="/account/wallet"
-                className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-200"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-gray-100 p-2 rounded-full">
-                    <div className="text-gray-600">
-                      <Image src="/images/wallet.png" alt="Wallet" width={20} height={20} />
-                    </div>
+            <Link
+              href="/account/wallet"
+              className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-gray-100 p-2 rounded-full">
+                  <div className="text-gray-600">
+                    <Image src="/images/wallet.png" alt="Wallet" width={20} height={20} />
                   </div>
-                  <span className="text-gray-700 text-base md:text-xl font-bold">الرصيد الحالي</span>
                 </div>
-                {/* <FaChevronLeft className="w-4 h-4 text-gray-400" /> */}
-                <span className="text-[#0A0500] text-base md:text-xl font-extrabold"> EGP 371.56</span>
-              </Link>
-     
+                <span className="text-gray-700 text-base md:text-xl font-bold">الرصيد الحالي</span>
+              </div>
+              {/* عرض الرصيد من الـ API */}
+              {displayBalance()}
+            </Link>
           </div>
+
           {/* Menu Items */}
           <div className="space-y-3 bg-white rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
             {menuItems.map((item) => (
@@ -228,8 +294,6 @@ export default function AccountPage() {
               </Link>
             ))}
           </div>
-
-        
         </div>
       </div>
 

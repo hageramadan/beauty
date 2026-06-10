@@ -89,7 +89,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await addToCart(payload);
       
       if (response.result === true && response.data) {
-        toast.success(response.message || 'تم إضافة المنتج إلى السلة');
+        // toast.success(response.message || 'تم إضافة المنتج إلى السلة');
         await fetchCartData(false);
         return true;
       } else {

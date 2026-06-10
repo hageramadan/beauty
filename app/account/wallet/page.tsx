@@ -1,49 +1,108 @@
 "use client";
 
 import Link from "next/link";
-import { FaChevronLeft, FaArrowRight, FaChevronRight } from "react-icons/fa";
-import { MdHistory, MdAddCircleOutline } from "react-icons/md";
-import { RiWalletFill } from "react-icons/ri";
-import { TbTruckReturn } from "react-icons/tb";
+import { FaChevronRight } from "react-icons/fa";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function WalletPage() {
-  // بيانات الرصيد
-  const balance = 371.56;
-  const currency = "EGP";
+  // حالات البيانات
+  const [balance, setBalance] = useState<number | null>(null);
+  const [currency, setCurrency] = useState<string>("EGP");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // قائمة المعاملات (مثال)
-  const transactions = [
-    {
-      id: 1,
-      title: "شحن المحفظة",
-      date: "2024-05-20",
-      amount: "+ 200.00",
-      isPositive: true,
-    },
-    {
-      id: 2,
-      title: "شراء منتج - هاتف Samsung",
-      date: "2024-05-18",
-      amount: "- 150.00",
-      isPositive: false,
-    },
-    {
-      id: 3,
-      title: "استرداد من مرتجع",
-      date: "2024-05-15",
-      amount: "+ 321.56",
-      isPositive: true,
-    },
-    {
-      id: 4,
-      title: "شراء منتج - سماعات",
-      date: "2024-05-10",
-      amount: "- 99.00",
-      isPositive: false,
-    },
-  ];
+  // دالة لجلب الرصيد من الـ API
+  const fetchWalletBalance = async () => {
+    setLoading(true);
+    setError(null);
 
+    try {
+      // 1. استرجاع التوكن من localStorage (أو من أي مكان آخر تخزنه فيه)
+      const token = localStorage.getItem("auth_token"); // غير "authToken" إلى الاسم الذي تستخدمه
+
+      if (!token) {
+        throw new Error("لم يتم العثور على توكن المصادقة. الرجاء تسجيل الدخول مرة أخرى.");
+      }
+
+      // 2. عنوان الـ API - استبدل YOUR_API_URL بالعنوان الحقيقي
+      const apiUrl ="https://dukanah.admin.t-carts.com/api";
+      const response = await fetch(`${apiUrl}/wallet`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // إرسال التوكن في الـ Header
+        },
+      });
+
+      // 3. معالجة الاستجابة
+      const data = await response.json();
+
+      if (data.result === true && data.errNum === 200) {
+        // استخراج الرصيد من البيانات
+        // البيانات تأتي بصيغة "EGP 0.00" - نحتاج لفصل الرقم والعملة
+        const balanceString = data.data.balance; // مثال: "EGP 371.56"
+        const [currencyPart, balancePart] = balanceString.split(" ");
+        
+        setCurrency(currencyPart || "EGP");
+        setBalance(parseFloat(balancePart) || 0);
+      } else {
+        throw new Error(data.message || "حدث خطأ أثناء جلب الرصيد");
+      }
+    } catch (err: any) {
+      console.error("Error fetching wallet balance:", err);
+      setError(err.message || "فشل في الاتصال بالخادم");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // جلب الرصيد عند تحميل الصفحة
+  useEffect(() => {
+    fetchWalletBalance();
+  }, []);
+
+  // عرض حالة التحميل
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff3c27] mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل رصيد المحفظة...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // عرض حالة الخطأ
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto pb-4">
+          <div className="mb-6">
+            <Link
+              href="/account"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#ff3c27] transition mb-4"
+            >
+              <FaChevronRight className="w-4 h-4" />
+              <span>رجوع إلى حسابي</span>
+            </Link>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchWalletBalance}
+              className="px-4 py-2 bg-[#ff3c27] text-white rounded-lg hover:bg-[#e63520] transition"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // عرض الصفحة مع الرصيد الحقيقي
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
       <div className="container mx-auto pb-4">
@@ -73,122 +132,25 @@ export default function WalletPage() {
                     className="brightness-0 invert opacity-90"
                   />
                 </div>
-                <p className="text-white text-lg md:text-3xl font-medium ">
+                <p className="text-white text-lg md:text-3xl font-medium">
                   المحفظة
                 </p>
               </div>
               <div className="flex flex-col items-center gap-3">
-                <span className="text-white text-xl font-medium ">
+                <span className="text-white text-xl font-medium">
                   الرصيد الحالي
                 </span>
 
-                {/* المبلغ */}
+                {/* المبلغ - يعرض الرصيد من الـ API */}
                 <div className="mb-6">
                   <span className="text-white text-2xl md:text-3xl font-black tracking-tight">
-                    {currency} {balance.toFixed(2)}
+                    {currency} {balance !== null ? balance.toFixed(2) : "0.00"}
                   </span>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* أزرار الإجراءات السريعة */}
-          {/* <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition border border-gray-200">
-              <MdAddCircleOutline className="w-5 h-5 text-[#ff3c27]" />
-              <span className="text-gray-700 font-medium">شحن المحفظة</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 bg-white rounded-xl p-3 shadow-sm hover:shadow-md transition border border-gray-200">
-              <FaArrowRight className="w-4 h-4 text-[#ff3c27]" />
-              <span className="text-gray-700 font-medium">تحويل</span>
-            </button>
-          </div> */}
         </div>
-
-        {/* قسم المعاملات الأخيرة */}
-        {/* <div className="bg-white rounded-[8px] p-2 md:p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <div className="flex items-center gap-2">
-              <MdHistory className="w-5 h-5 text-[#ff3c27]" />
-              <h2 className="text-lg font-bold text-gray-800">آخر المعاملات</h2>
-            </div>
-            <button className="text-sm text-[#ff3c27] hover:underline">
-              عرض الكل
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {transactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition"
-              >
-                <div className="flex flex-col">
-                  <span className="text-gray-800 font-medium">{transaction.title}</span>
-                  <span className="text-gray-400 text-xs">{transaction.date}</span>
-                </div>
-                <span
-                  className={`text-base font-bold ${
-                    transaction.isPositive ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {transaction.amount} {currency}
-                </span>
-              </div>
-            ))}
-          </div>
-
-        
-          {transactions.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-400">لا توجد معاملات حتى الآن</p>
-            </div>
-          )}
-        </div> */}
-
-        {/* روابط إضافية مشابهة للقائمة الأصلية */}
-        {/* <div className="space-y-3 bg-white rounded-[8px] p-2 md:p-4 shadow-sm mt-6">
-          <h2 className="text-lg font-bold text-gray-800 px-2">خدمات المحفظة</h2>
-          
-          <Link
-            href="/account/wallet/transactions"
-            className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-border border border-gray-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-gray-100 p-2 rounded-full">
-                <MdHistory className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-gray-700 text-base md:text-xl font-medium">جميع المعاملات</span>
-            </div>
-            <FaChevronLeft className="w-4 h-4 text-gray-400" />
-          </Link>
-
-          <Link
-            href="/account/wallet/recharge"
-            className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-border border border-gray-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-gray-100 p-2 rounded-full">
-                <MdAddCircleOutline className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-gray-700 text-base md:text-xl font-medium">شحن المحفظة</span>
-            </div>
-            <FaChevronLeft className="w-4 h-4 text-gray-400" />
-          </Link>
-
-          <Link
-            href="/account/wallet/transfer"
-            className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-border border border-gray-200"
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-gray-100 p-2 rounded-full">
-                <FaArrowRight className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-gray-700 text-base md:text-xl font-medium">تحويل الرصيد</span>
-            </div>
-            <FaChevronLeft className="w-4 h-4 text-gray-400" />
-          </Link>
-        </div> */}
       </div>
     </div>
   );

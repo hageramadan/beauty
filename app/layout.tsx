@@ -15,8 +15,8 @@ const almarai = Almarai({
 });
 
 export const metadata: Metadata = {
-  title: "clothes - منتجات مميزة",
-  description: "أفضل المنتجات في مكان واحد",
+  title: "متجر فاشون | أحدث صيحات الموضة والأزياء العصرية أونلاين",
+  description:`تسوقي وتسوّق أحدث تشكيلات الملابس والأزياء العصرية بجودة عالية وأفضل الأسعار. شحن سريع، عروض متجددة، وتجربة تسوق مرنة تناسب إطلالتك اليومية.`,
 };
 
 export default function RootLayout({

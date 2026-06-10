@@ -14,7 +14,7 @@ interface CartItemCardProps {
   item: CartItemDisplay;
   onUpdateQuantity: (id: string, newQuantity: number) => void;
   onRemove: (id: string) => void;
-  onSaveForLater?: (id: string) => void; // اختياري الآن
+  onSaveForLater?: (id: string) => void;
 }
 
 // دالة للحصول على اسم العلامة التجارية (سواء كانت string أو object)
@@ -23,6 +23,21 @@ const getBrandName = (brand: string | { name: string } | null | undefined): stri
   if (typeof brand === "string") return brand;
   if (typeof brand === "object" && "name" in brand) return brand.name;
   return "";
+};
+
+// ✅ إضافة دالة لتحويل اسم اللون إلى اللون المناسب للعرض (اختياري)
+const getColorCode = (colorName: string): string => {
+  const colorMap: Record<string, string> = {
+    'ازرق فاتح': '#1e91eb',
+    'بيج': '#bdae8c',
+    'احمر': '#EC221F',
+    'زيتوني': '#a4bfa8',
+    'رمادي': '#454545',
+    'بينك': '#d959c6',
+    'اسود': '#000000',
+    'ابيض': '#ffffff',
+  };
+  return colorMap[colorName] || '#cccccc';
 };
 
 export function CartItemCard({
@@ -41,6 +56,9 @@ export function CartItemCard({
   // الحصول على اسم العلامة التجارية بشكل صحيح
   const brandName = getBrandName(brand);
 
+  // ✅ الحصول على لون الخلفية لعرضه بجانب اسم اللون (اختياري)
+  const colorCode = getColorCode(color);
+
   // ✅ دالة إضافة/إزالة من المفضلة
   const handleToggleFavorite = async () => {
     if (isMutating) return;
@@ -48,20 +66,12 @@ export function CartItemCard({
     if (isProductFavorite) {
       const success = await removeFavorite(productId);
       if (success) {
-        // toast.success(`تم إزالة "${name}" من المفضلة`, {
-        //   icon: '💔',
-        //   style: { background: '#ef4444', color: '#fff', borderRadius: '12px' },
-        //   duration: 3000,
-        // });
+        // toast.success(`تم إزالة "${name}" من المفضلة`);
       }
     } else {
       const success = await addFavorite(productId);
       // if (success) {
-      //   toast.success(`تم إضافة "${name}" إلى المفضلة`, {
-      //     icon: '❤️',
-      //     style: { background: '#22c55e', color: '#fff', borderRadius: '12px' },
-      //     duration: 3000,
-      //   });
+      //   toast.success(`تم إضافة "${name}" إلى المفضلة`);
       // }
     }
   };
@@ -78,11 +88,6 @@ export function CartItemCard({
             onClick={() => {
               toast.dismiss(t.id);
               onRemove(id);
-              // toast.success(`تم حذف "${name}" من السلة`, {
-              //   icon: '✅',
-              //   style: { background: '#22c55e', color: '#fff', borderRadius: '12px' },
-              //   duration: 1000,
-              // });
             }}
             className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition font-medium"
           >
@@ -115,6 +120,7 @@ export function CartItemCard({
                 name={name}
                 brand={brandName}
                 color={color}
+                colorCode={colorCode}
                 size={size}
               />
               <ActionButtonsLarge
@@ -147,6 +153,7 @@ export function CartItemCard({
                 name={name}
                 brand={brandName}
                 color={color}
+                colorCode={colorCode}
                 size={size}
               />
               <ActionButtonsMobile
@@ -202,12 +209,14 @@ const ProductDetailsLarge = ({
   name,
   brand,
   color,
+  colorCode,
   size,
 }: {
   id: number;
   name: string;
   brand: string;
   color: string;
+  colorCode: string;
   size: string;
 }) => (
   <div>
@@ -219,8 +228,12 @@ const ProductDetailsLarge = ({
     {brand && <p className="text-sm text-gray-500 mt-1">{brand}</p>}
     <div className="flex flex-col gap-3 mt-2 text-sm">
       {color && (
-        <span className="font-extrabold">
-          اللون: <span className="text-gray-800 font-normal">{color}</span>
+        <span className="font-extrabold flex items-center gap-2">
+          اللون: 
+          <span className="text-gray-800 font-normal flex items-center gap-2">
+            
+            {color}
+          </span>
         </span>
       )}
       {size && (
@@ -346,12 +359,14 @@ const ProductDetailsMobile = ({
   name,
   brand,
   color,
+  colorCode,
   size,
 }: {
   id: number;
   name: string;
   brand: string;
   color: string;
+  colorCode: string;
   size: string;
 }) => (
   <div className="flex-1">
@@ -361,8 +376,16 @@ const ProductDetailsMobile = ({
       </h1>
     </Link>
     {brand && <p className="text-xs text-gray-500">{brand}</p>}
-    <div className="flex gap-2 mt-0.5 text-xs text-gray-600">
-      {color && <span>{color}</span>}
+    <div className="flex gap-2 mt-0.5 text-xs text-gray-600 items-center">
+      {color && (
+        <div className="flex items-center gap-1">
+          <span 
+            className="w-2.5 h-2.5 rounded-full border border-gray-300" 
+            style={{ backgroundColor: colorCode }}
+          />
+          <span>{color}</span>
+        </div>
+      )}
       {color && size && <span>|</span>}
       {size && <span>{size}</span>}
     </div>

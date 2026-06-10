@@ -23,7 +23,9 @@ export interface CartItemDisplay {
   brand: Ibrand;
   price: number;
   originalPrice?: number;
-  image: string;
+  image: string; // ستكون هذه صورة الـ variant أو الصورة الرئيسية
+  variantImage?: string | null; // صورة الـ variant المختارة
+  productImage?: string; // الصورة الرئيسية للمنتج
   color: string;
   size: string;
   quantity: number;
@@ -82,19 +84,26 @@ export function CartPage() {
     };
   };
 
+  const cleanImageUrl = (url: string | null | undefined) => {
+    if (!url) return "/images/placeholder.jpg";
+    if (url.startsWith("/storage")) {
+      return `https://dukanah.admin.t-carts.com${url}`;
+    }
+    return url;
+  };
+
   // تحويل بيانات السلة من الـ API إلى الشكل المطلوب للعرض
   useEffect(() => {
     if (cart && cart.items && cart.items.length > 0) {
       const transformedItems: CartItemDisplay[] = cart.items.map((item) => {
         const { color, size } = extractColorAndSize(item.variant);
         
-        const cleanImageUrl = (url: string) => {
-          if (!url) return "/images/placeholder.jpg";
-          if (url.startsWith("/storage")) {
-            return `https://dukanah.admin.t-carts.com${url}`;
-          }
-          return url;
-        };
+        // ✅ الأولوية: صورة الـ variant إذا وجدت، وإلا استخدم الصورة الرئيسية للمنتج
+        const variantImage = item.variant?.variant_image || null;
+        const productMainImage = item.product.images?.[0] || "";
+        
+        // ✅ نختار الصورة التي نعرضها (الأولوية لصورة الـ variant)
+        const displayImage = variantImage || productMainImage;
         
         return {
           id: item.id.toString(),
@@ -103,7 +112,9 @@ export function CartPage() {
           brand: getBrandObject(item.product),
           price: item.final_price,
           originalPrice: item.product.pricing?.has_discount ? item.product.pricing.price : undefined,
-          image: cleanImageUrl(item.product.images?.[0] || ""),
+          image: cleanImageUrl(displayImage), // الصورة المعروضة (صورة اللون المختار أو الرئيسية)
+          variantImage: variantImage ? cleanImageUrl(variantImage) : null, // صورة الـ variant بشكل منفصل
+          productImage: cleanImageUrl(productMainImage), // الصورة الرئيسية للمنتج
           color: color,
           size: size,
           quantity: item.quantity,

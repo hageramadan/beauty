@@ -13,7 +13,14 @@ export interface FavoriteProduct {
     name: string;
     image: string;
   };
-  brand: string | null;
+  subcategory?: {
+    id: number;
+    name: string;
+  } | null;
+  brand: {
+    id: number;
+    name: string;
+  } | null;
   has_production_date: boolean;
   pricing: {
     price: number;
@@ -24,39 +31,152 @@ export interface FavoriteProduct {
     final_price: number;
   };
   has_variants: boolean;
-  variants: any | null;
-  quantity: number;
+  variants: any[] | null;
+  quantity: number | null;
   images: string[];
 }
 
-interface PaginationData {
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
-  next_page: number | null;
-  previous_page: number | null;
-}
-
-interface FavoritesResponse {
-  result: boolean;
-  errNum: number;
-  message: string;
-  data: {
-    favorites: FavoriteProduct[];
-    pagination: PaginationData;
+// ✅ واجهات الـ variants
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
   };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
 }
 
-interface SingleFavoriteResponse {
-  result: boolean;
-  errNum: number;
-  message: string;
-  data: FavoriteProduct;
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  variant_image: string | null;
+  attributes: VariantAttribute[];
 }
 
+// ✅ دالة استخراج الألوان من جميع الـ variants
+const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
+  const colorMap = new Map<string, string>();
+  
+  if (!variants || variants.length === 0) return [];
+  
+  variants.forEach((variant) => {
+    if (variant.attributes && Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr: VariantAttribute) => {
+        // إذا كان الـ attribute من نوع "اللون"
+        if (attr.attribute_type?.name === "اللون" && attr.value && attr.meta?.color) {
+          if (!colorMap.has(attr.value)) {
+            colorMap.set(attr.value, attr.meta.color);
+          }
+        }
+      });
+    }
+  });
+  
+  console.log("🎨 الألوان المستخرجة:", Array.from(colorMap.entries()));
+  
+  return Array.from(colorMap.entries()).map(([name, color]) => ({
+    name: name,
+    color: color
+  }));
+};
+
+// ✅ دالة تنظيف رابط الصورة
+const cleanImageUrl = (url: string): string => {
+  if (!url) return '/images/placeholder.jpg';
+  if (url.startsWith('/storage')) {
+    return `https://dukanah.admin.t-carts.com${url}`;
+  }
+  return url;
+};
+
+// ✅ دالة تحويل المنتج من المفضلة إلى شكل ProductCard
+export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null | undefined) => {
+  // التحقق من وجود favorite و id
+  if (!favorite || !favorite.id) {
+    console.warn('⚠️ تحويل منتج غير صالح:', favorite);
+    return {
+      id: '0',
+      name: 'منتج غير معروف',
+      price: 0,
+      originalPrice: undefined,
+      discount: undefined,
+      image: '/images/placeholder.jpg',
+      hoverImage: '/images/placeholder.jpg',
+      href: '/',
+      rating: 0,
+      reviewsCount: 0,
+      isBestSeller: false,
+      colors: [],
+      addedDate: new Date().toISOString(),
+    };
+  }
+
+  console.log(`📦 تحويل المنتج: ${favorite.name}`);
+  console.log(`📊 has_variants: ${favorite.has_variants}`);
+  console.log(`📊 عدد الـ variants: ${favorite.variants?.length || 0}`);
+
+  // ✅ استخراج الألوان من الـ variants
+  let colors: Array<{ color: string; name: string }> = [];
+  
+  if (favorite.has_variants && favorite.variants && Array.isArray(favorite.variants) && favorite.variants.length > 0) {
+    colors = extractColorsFromVariants(favorite.variants as ProductVariant[]);
+    console.log(`🎨 ألوان منتج ${favorite.name}:`, colors);
+  } else {
+    console.log(`⚠️ لا توجد variants للمنتج ${favorite.name}`);
+  }
+
+  // معالجة الصور
+  const mainImage = favorite.images && favorite.images.length > 0 
+    ? cleanImageUrl(favorite.images[0])
+    : '/images/placeholder.jpg';
+    
+  const hoverImage = favorite.images && favorite.images.length > 1 
+    ? cleanImageUrl(favorite.images[1])
+    : mainImage;
+
+  // حساب الخصم
+  let discount: number | undefined;
+  let originalPrice: number | undefined;
+  
+  if (favorite.pricing?.has_discount && favorite.pricing?.price_after_discount) {
+    const original = favorite.pricing.price;
+    const afterDiscount = favorite.pricing.price_after_discount;
+    discount = Math.round(((original - afterDiscount) / original) * 100);
+    originalPrice = original;
+  }
+
+  const result = {
+    id: favorite.id.toString(),
+    name: favorite.name,
+    price: favorite.pricing?.final_price || favorite.pricing?.price || 0,
+    originalPrice: originalPrice,
+    discount: discount,
+    image: mainImage,
+    hoverImage: hoverImage,
+    href: `/product/${favorite.id}`,
+    rating: favorite.avg_rating || 0,
+    reviewsCount: favorite.total_reviews || 0,
+    isBestSeller: (favorite.avg_rating || 0) >= 4.5,
+    colors: colors,
+    addedDate: new Date().toISOString(),
+  };
+  
+  console.log(`✅ تم تحويل ${result.name} بنجاح، عدد الألوان: ${result.colors.length}`);
+  
+  return result;
+};
+
+// باقي الكود كما هو...
 const API_URL = 'https://dukanah.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
@@ -74,7 +194,7 @@ const getHeaders = (): HeadersInit => {
   };
 };
 
-export const fetchFavorites = async (page: number = 1, perPage: number = 10): Promise<FavoritesResponse> => {
+export const fetchFavorites = async (page: number = 1, perPage: number = 10): Promise<any> => {
   try {
     const response = await fetch(`${API_URL}/user-favorites?page=${page}&per_page=${perPage}`, {
       method: 'GET',
@@ -82,6 +202,7 @@ export const fetchFavorites = async (page: number = 1, perPage: number = 10): Pr
     });
     
     const data = await response.json();
+    console.log("📡 fetchFavorites response:", data);
     return data;
   } catch (error) {
     console.error('❌ خطأ في جلب المفضلة:', error);
@@ -89,7 +210,7 @@ export const fetchFavorites = async (page: number = 1, perPage: number = 10): Pr
   }
 };
 
-export const addToFavorites = async (productId: string | number): Promise<SingleFavoriteResponse> => {
+export const addToFavorites = async (productId: string | number): Promise<any> => {
   try {
     const response = await fetch(`${API_URL}/user-favorites`, {
       method: 'POST',
@@ -105,7 +226,7 @@ export const addToFavorites = async (productId: string | number): Promise<Single
   }
 };
 
-export const removeFromFavorites = async (productId: string | number): Promise<{ result: boolean; message: string }> => {
+export const removeFromFavorites = async (productId: string | number): Promise<any> => {
   try {
     const response = await fetch(`${API_URL}/user-favorites/${productId}/delete`, {
       method: 'DELETE',
@@ -130,7 +251,7 @@ export const clearAllFavorites = async (): Promise<boolean> => {
     do {
       const response = await fetchFavorites(currentPage, 50);
       if (response.result && response.data && response.data.favorites) {
-        const validFavorites = response.data.favorites.filter(item => item && item.id);
+        const validFavorites = response.data.favorites.filter((item: FavoriteProduct) => item && item.id);
         allFavorites = [...allFavorites, ...validFavorites];
         lastPage = response.data.pagination?.last_page || 1;
         currentPage++;
@@ -147,50 +268,4 @@ export const clearAllFavorites = async (): Promise<boolean> => {
     console.error('❌ خطأ في حذف جميع المفضلة:', error);
     return false;
   }
-};
-
-export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null | undefined) => {
-  // التحقق من وجود favorite و id
-  if (!favorite || !favorite.id) {
-    console.warn('⚠️ تحويل منتج غير صالح:', favorite);
-    return {
-      id: '0',
-      name: 'منتج غير معروف',
-      price: 0,
-      originalPrice: undefined,
-      discount: undefined,
-      image: '/images/placeholder.png',
-      hoverImage: '/images/placeholder.png',
-      href: '/',
-      rating: 0,
-      reviewsCount: 0,
-      isBestSeller: false,
-      colors: [
-        { color: "#252B42", name: "أزرق داكن" },
-        { color: "#E77C40", name: "برتقالي" },
-        { color: "#23856D", name: "أخضر" },
-      ],
-      addedDate: new Date().toISOString(),
-    };
-  }
-
-  return {
-    id: favorite.id.toString(),
-    name: favorite.name || 'منتج بدون اسم',
-    price: favorite.pricing?.final_price || 0,
-    originalPrice: favorite.pricing?.has_discount ? favorite.pricing.price : undefined,
-    discount: favorite.pricing?.discount_value || undefined,
-    image: (favorite.images && favorite.images[0]) ? favorite.images[0] : '/images/placeholder.png',
-    hoverImage: (favorite.images && favorite.images[1]) ? favorite.images[1] : (favorite.images && favorite.images[0]) ? favorite.images[0] : '/images/placeholder.png',
-    href: `/product/${favorite.id}`,
-    rating: favorite.avg_rating || 0,
-    reviewsCount: favorite.total_reviews || 0,
-    isBestSeller: false,
-    colors: [
-      { color: "#252B42", name: "أزرق داكن" },
-      { color: "#E77C40", name: "برتقالي" },
-      { color: "#23856D", name: "أخضر" },
-    ],
-    addedDate: new Date().toISOString(),
-  };
 };

@@ -1,7 +1,7 @@
 // components/products/ProductDetails.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Heart, Truck, RefreshCw, Ruler, Info } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
@@ -38,6 +38,7 @@ interface ProductVariant {
   price_after_discount: number;
   quantity: number | null;
   is_active: boolean;
+  variant_image: string | null;
   attributes: VariantAttribute[];
 }
 
@@ -75,107 +76,214 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
+  // حالات الـ Zoom داخل نفس الصندوق
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+
   const { addItem, getItemQuantity, isLoading: cartLoading } = useCartContext();
   const { toggleFavorite, isFavorite, isMutating } = useFavorites();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // ✅ Debug: طباعة كل البيانات
-  useEffect(() => {
-    if (product.variants && product.variants.length > 0) {
-    }
-  }, [product]);
-
-  // ✅ استخراج الألوان من الـ variants
-  const getAvailableColorsFromVariants = (): { name: string; code: string }[] => {
+  // ✅ استخراج الألوان من الـ variants (مع الاحتفاظ بجميع الـ variants لكل لون)
+  const getAvailableColorsFromVariants = (): { name: string; code: string; variants: ProductVariant[] }[] => {
     if (!product.variants || product.variants.length === 0) {
-      return product.colors;
+      return product.colors.map(c => ({ ...c, variants: [] }));
     }
     
-    const colorSet = new Map<string, string>();
+    const colorMap = new Map<string, { name: string; code: string; variants: ProductVariant[] }>();
     
-    product.variants.forEach((variant, index) => {
-      if (!variant.attributes) {
-        return;
-      }
+    product.variants.forEach((variant) => {
+      if (!variant.attributes) return;
       
-      const colorAttrs = variant.attributes.filter(attr => {
-        const isColor = attr.attribute_type?.name === "اللون";
-        return isColor;
-      });
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "اللون"
+      );
       
-      colorAttrs.forEach(colorAttr => {
-        if (colorAttr && colorAttr.value && !colorSet.has(colorAttr.value)) {
-          colorSet.set(colorAttr.value, colorAttr.meta?.color || "#000000");
+      if (colorAttr && colorAttr.value) {
+        const colorName = colorAttr.value;
+        const colorCode = colorAttr.meta?.color || "#000000";
+        
+        if (!colorMap.has(colorName)) {
+          colorMap.set(colorName, {
+            name: colorName,
+            code: colorCode,
+            variants: []
+          });
         }
-      });
+        
+        colorMap.get(colorName)!.variants.push(variant);
+      }
     });
     
-    const colors = Array.from(colorSet.entries()).map(([name, code]) => ({ name, code }));
-    return colors;
+    return Array.from(colorMap.values());
   };
 
-  // ✅ استخراج المقاسات من الـ variants
-  const getAvailableSizesFromVariants = (): string[] => {
+  // ✅ الحصول على المقاسات المتاحة للون المحدد
+  const getAvailableSizesForColor = (colorName: string): string[] => {
     if (!product.variants || product.variants.length === 0) {
       return product.sizes;
     }
     
-    const sizeSet = new Set<string>();
+    const sizes = new Set<string>();
     
-    product.variants.forEach((variant, index) => {
+    product.variants.forEach((variant) => {
       if (!variant.attributes) return;
       
-      const sizeAttrs = variant.attributes.filter(attr => 
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "اللون"
+      );
+      
+      const sizeAttr = variant.attributes.find(attr => 
         attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس"
       );
       
-      sizeAttrs.forEach(sizeAttr => {
-        if (sizeAttr && sizeAttr.value) {
-          sizeSet.add(sizeAttr.value);
-        }
-      });
+      if (colorAttr?.value === colorName && sizeAttr?.value) {
+        sizes.add(sizeAttr.value);
+      }
     });
     
-    const sizes = Array.from(sizeSet);
-    return sizes;
+    return Array.from(sizes);
   };
 
-  // ✅ الحصول على الـ variant المناسب للون
-  const getVariantForColor = (colorName: string): ProductVariant | null => {
+  // ✅ الحصول على الـ variant المناسب للون والمقاس المختارين
+  const getSelectedVariant = (colorName: string, sizeName: string): ProductVariant | null => {
     if (!product.variants || product.variants.length === 0) return null;
     
-    const variant = product.variants.find(variant =>
-      variant.attributes?.some(attr => attr.attribute_type?.name === "اللون" && attr.value === colorName)
-    );
+    const variant = product.variants.find(variant => {
+      if (!variant.attributes) return false;
+      
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "اللون"
+      );
+      
+      const sizeAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس"
+      );
+      
+      return colorAttr?.value === colorName && sizeAttr?.value === sizeName;
+    });
     
     return variant || null;
   };
 
-  const displayColors = product.has_variants ? getAvailableColorsFromVariants() : product.colors;
-  const displaySizes = product.has_variants ? getAvailableSizesFromVariants() : product.sizes;
+  // ✅ استخراج جميع الصور المتاحة للعرض (صورة الـ variant + الصور العادية)
+  const getAllImages = (): string[] => {
+    const images: string[] = [];
+    
+    // أضف صورة الـ variant إذا وجدت
+    if (selectedVariant && selectedVariant.variant_image) {
+      images.push(selectedVariant.variant_image);
+    }
+    
+    // أضف الصور العادية للمنتج
+    if (product.images && product.images.length > 0) {
+      images.push(...product.images);
+    }
+    
+    // إزالة التكرارات
+    return [...new Map(images.map(img => [img, img])).values()];
+  };
+
+  // ✅ الحصول على الصورة الرئيسية بناءً على الصورة المحددة من المعرض
+  const getMainImage = (): string => {
+    const allImagesList = getAllImages();
+    
+    // إذا كانت هناك صور متاحة وتم تحديد صورة
+    if (allImagesList.length > 0 && selectedImage < allImagesList.length) {
+      return allImagesList[selectedImage];
+    }
+    
+    // fallback: إذا لم تكن هناك صور
+    return "/images/placeholder.jpg";
+  };
+
+  // ✅ دالة التعامل مع حركة الماوس للـ Zoom (داخل نفس الصندوق)
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+
+    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
+    
+    // حساب موقع الماوس داخل الصورة (نسبة من 0 إلى 1)
+    let x = (e.clientX - left) / width;
+    let y = (e.clientY - top) / height;
+    
+    // منع الخروج عن الحدود
+    x = Math.min(Math.max(x, 0), 1);
+    y = Math.min(Math.max(y, 0), 1);
+    
+    setZoomPosition({ x, y });
+  };
+
+  // ✅ دالة التعامل مع اللمس للجوال
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsZoomed(true);
+    handleTouchMove(e);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!imageContainerRef.current) return;
+    
+    const touch = e.touches[0];
+    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
+    
+    let x = (touch.clientX - left) / width;
+    let y = (touch.clientY - top) / height;
+    
+    x = Math.min(Math.max(x, 0), 1);
+    y = Math.min(Math.max(y, 0), 1);
+    
+    setZoomPosition({ x, y });
+  };
+
+  const handleTouchEnd = () => {
+    setIsZoomed(false);
+  };
+
+  const availableColors = product.has_variants ? getAvailableColorsFromVariants() : [];
+  const availableSizes = selectedColor ? getAvailableSizesForColor(selectedColor) : [];
 
   // ✅ تعيين أول لون متاح
   useEffect(() => {
-    if (displayColors.length > 0 && !selectedColor) {
-      setSelectedColor(displayColors[0].name);
+    if (availableColors.length > 0 && !selectedColor) {
+      setSelectedColor(availableColors[0].name);
     }
-  }, [displayColors.length]);
+  }, [availableColors.length]);
 
-  // ✅ تعيين أول مقاس متاح
-  useEffect(() => {
-    if (displaySizes.length > 0 && !selectedSize) {
-      setSelectedSize(displaySizes[0]);
-    }
-  }, [displaySizes.length]);
-
-  // ✅ تحديث الـ variant المختار
+  // ✅ عند تغيير اللون، إعادة تعيين المقاس المختار وتعيين أول مقاس متاح
   useEffect(() => {
     if (selectedColor) {
-      const variant = getVariantForColor(selectedColor);
-      setSelectedVariant(variant);
+      const sizes = getAvailableSizesForColor(selectedColor);
+      if (sizes.length > 0) {
+        // إذا كان المقاس المختار موجود في المقاسات الجديدة، احتفظ به
+        if (selectedSize && sizes.includes(selectedSize)) {
+          // ابق على نفس المقاس
+        } else {
+          // وإلا اختر أول مقاس
+          setSelectedSize(sizes[0]);
+        }
+      } else {
+        setSelectedSize("");
+      }
     }
   }, [selectedColor]);
+
+  // ✅ تحديث الـ variant عند تغيير اللون أو المقاس
+  useEffect(() => {
+    if (selectedColor && selectedSize) {
+      const variant = getSelectedVariant(selectedColor, selectedSize);
+      setSelectedVariant(variant);
+      
+      // ✅ إعادة تعيين الصورة المحددة إلى 0 عند تغيير اللون
+      setSelectedImage(0);
+    } else if (selectedColor && !selectedSize) {
+      setSelectedVariant(null);
+    }
+  }, [selectedColor, selectedSize]);
+
+  const displayColors = product.has_variants ? availableColors : product.colors;
+  const displaySizes = product.has_variants ? availableSizes : product.sizes;
 
   // ✅ السعر الحالي
   const currentPrice = selectedVariant 
@@ -189,29 +297,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   // ✅ إضافة إلى السلة (مع التحقق من تسجيل الدخول)
   const handleAddToCart = async () => {
-    // 🚨 التحقق من حالة المصادقة
     if (!isAuthenticated) {
-      // عرض رسالة توست
       toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى السلة", {
         duration: 3000,
         position: "top-center",
         icon: "🔐",
       });
       
-      // حفظ الرابط الحالي للعودة إليه بعد تسجيل الدخول
-      const currentUrl = window.location.href;
-      // التوجيه إلى صفحة تسجيل الدخول مع معامل redirect
       router.push(`/auth/login`);
-      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
-
       return;
     }
 
-    // ✅ باقي الكود - المستخدم مسجل دخول
     if (isAddingToCart) return;
     
     if (product.has_variants && !selectedVariant) {
-      toast.error("الرجاء اختيار اللون أولاً");
+      toast.error("الرجاء اختيار اللون والمقاس أولاً");
       return;
     }
     
@@ -219,12 +319,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     
     try {
       const variantId = selectedVariant?.id || null;
-     
-      
       const success = await addItem(product.id, quantity, variantId);
       
       if (success) {
-        // toast.success("تمت إضافة المنتج إلى السلة بنجاح");
         setQuantity(1);
       }
     } catch (error) {
@@ -236,14 +333,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   };
 
   const handleToggleFavorite = async () => {
-    // ✅ للمفضلة أيضاً يمكن إضافة نفس المنطق
     if (!isAuthenticated) {
       toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى المفضلة", {
         duration: 3000,
         position: "top-center",
       });
-      const currentUrl = window.location.href;
-      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
       return;
     }
     
@@ -271,7 +365,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     ? Math.round((discountAmount / originalPrice) * 100)
     : 0;
 
-  // عرض مؤقت أثناء التحقق من حالة المصادقة (اختياري)
+  const allImages = getAllImages();
+  const mainImage = getMainImage();
+
   if (authLoading) {
     return (
       <div className="container-custom py-8">
@@ -297,48 +393,68 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-        {/* الصور */}
+        {/* ===== قسم الصور مع خاصية الـ Zoom داخل نفس الصندوق ===== */}
         <div className="space-y-4">
-          <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
-            <Image
-              src={cleanImageUrl(product.images[selectedImage])}
-              alt={product.name}
-              fill
-              className="object-cover hover:scale-105 transition-transform duration-500"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
+          {/* الحاوية الرئيسية للصورة مع الزوم الداخلي */}
+          <div
+            ref={imageContainerRef}
+            className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden cursor-zoom-in"
+            onMouseEnter={() => setIsZoomed(true)}
+            onMouseLeave={() => setIsZoomed(false)}
+            onMouseMove={handleMouseMove}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* الصورة مع خاصية التكبير الداخلي */}
+            <div
+              className="absolute inset-0 w-full h-full transition-transform duration-200"
+              style={{
+                backgroundImage: `url(${cleanImageUrl(mainImage)})`,
+                backgroundPosition: isZoomed ? `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%` : 'center',
+                backgroundSize: isZoomed ? '200%' : 'cover',
+                backgroundRepeat: 'no-repeat',
+              }}
             />
+            
+            {/* طبقة شفافة للتحكم في التكبير على الأجهزة التي لا تدعم hover */}
+            <div className="absolute inset-0 z-10" />
+
+            {/* الخصم */}
             {discountPercentage > 0 && (
-              <span className="absolute top-4 right-4 bg-[#EC221F] text-white text-xs font-bold px-2 py-1 rounded-full">
+              <span className="absolute top-4 right-4 bg-[#EC221F] text-white text-xs font-bold px-2 py-1 rounded-full z-20">
                 {discountPercentage}% خصم
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            {product.images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImage(index)}
-                className={`
-                  relative aspect-square bg-gray-100 rounded-xl overflow-hidden
-                  border-2 transition-all duration-200
-                  ${selectedImage === index ? "border-[#EC221F]" : "border-transparent hover:border-gray-300"}
-                `}
-              >
-                <Image
-                  src={cleanImageUrl(image)}
-                  alt={`${product.name} - صورة ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 33vw, 20vw"
-                />
-              </button>
-            ))}
-          </div>
+          {/* الصور المصغرة */}
+          {allImages.length > 1 && (
+            <div className="grid grid-cols-3 gap-4">
+              {allImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`
+                    relative aspect-square bg-gray-100 rounded-xl overflow-hidden
+                    border-2 transition-all duration-200
+                    ${selectedImage === index ? "border-[#EC221F]" : "border-transparent hover:border-gray-300"}
+                  `}
+                >
+                  <Image
+                    src={cleanImageUrl(image)}
+                    alt={`${product.name} - صورة ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 33vw, 20vw"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* المعلومات */}
+        {/* ===== بقية الكود (المعلومات) كما هو بدون تغيير ===== */}
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
@@ -435,13 +551,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
-          {/* في حالة عدم وجود ألوان أو مقاسات */}
-          {(!product.has_variants || (displayColors.length === 0 && displaySizes.length === 0)) && (
-            <div className="text-center py-4 text-gray-500">
-              لا توجد خيارات متاحة لهذا المنتج
-            </div>
-          )}
-
           {/* ===== الكمية ===== */}
           <div>
             <div className="flex items-center gap-4 my-4">
@@ -462,11 +571,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   <FaPlus className="w-4 h-4 font-bold" />
                 </button>
               </div>
-              {itemInCartQuantity > 0 && (
-                <span className="text-sm text-green-600">
-                  ✅ {itemInCartQuantity} في السلة
-                </span>
-              )}
               {selectedVariant && selectedVariant.quantity !== null && selectedVariant.quantity < 5 && selectedVariant.quantity > 0 && (
                 <span className="text-sm text-orange-600">
                   ⚠️ متبقي {selectedVariant.quantity} فقط
@@ -497,7 +601,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 onClick={handleToggleFavorite}
                 disabled={isMutating}
                 className={`
-                  flex-1 px-6 py-3 rounded-[8px] font-bold transition-all duration-300 flex items-center justify-center gap-2
+                  flex-1 md:px-6 py-3 rounded-[8px] font-bold transition-all duration-300 flex items-center justify-center gap-2
                   ${isProductFavorite 
                     ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" 
                     : "border border-[#0A0500] hover:bg-[#f3f1f1]"

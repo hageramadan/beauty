@@ -42,10 +42,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       console.log("📦 fetchData response:", response);
       
       if (response.result === true && response.data && Array.isArray(response.data.favorites)) {
-        const validFavorites = response.data.favorites.filter(item => item && item.id);
+        const validFavorites = response.data.favorites.filter((item: FavoriteProduct) => item && item.id);
         
         if (isMountedRef.current) {
-          console.log("✅ تحديث القائمة:", validFavorites.length, "منتج");
+         
           setFavorites([...validFavorites]); // استخدام spread لإنشاء مصفوفة جديدة
           setTotal(validFavorites.length);
           
@@ -85,7 +85,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       console.log("➕ addFavorite response:", response);
       
       if (response.result === true && response.data) {
-        toast.success('تم إضافة المنتج إلى المفضلة');
+        // toast.success('تم إضافة المنتج إلى المفضلة');
         
         // إعادة جلب البيانات بالكامل للتأكد من التزامن
         await fetchData(false);

@@ -1,3 +1,4 @@
+// src/components/home/BestProducts.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -6,6 +7,33 @@ import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getMostSellingProducts, ProductData } from "@/services/api";
+
+// ✅ إضافة الواجهات المطلوبة
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
+  };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
+}
+
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  variant_image: string | null;
+  attributes: VariantAttribute[];
+}
 
 interface Product {
   id: string;
@@ -21,6 +49,31 @@ interface Product {
   reviewsCount?: number;
   isBestSeller?: boolean;
 }
+
+// ✅ دالة استخراج الألوان من الـ variants
+const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
+  const colorMap = new Map<string, string>();
+  
+  if (!variants || variants.length === 0) return [];
+  
+  variants.forEach((variant) => {
+    if (variant.attributes && Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr: VariantAttribute) => {
+        // إذا كان الـ attribute من نوع "اللون"
+        if (attr.attribute_type?.name === "اللون" && attr.value && attr.meta?.color) {
+          if (!colorMap.has(attr.value)) {
+            colorMap.set(attr.value, attr.meta.color);
+          }
+        }
+      });
+    }
+  });
+  
+  return Array.from(colorMap.entries()).map(([name, color]) => ({
+    name: name,
+    color: color
+  }));
+};
 
 // تحويل البيانات من API إلى شكل المنتج المطلوب - ديناميكي بالكامل
 const transformProduct = (product: ProductData): Product => {
@@ -50,19 +103,11 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
-  // استخراج الألوان من الـ variants ديناميكياً
+  // ✅ استخراج الألوان من جميع الـ variants باستخدام الدالة الجديدة
   let colors: Array<{ color: string; name: string }> = [];
   
   if (product.has_variants && product.variants && product.variants.length > 0) {
-    const firstVariant = product.variants[0];
-    if (firstVariant.attributes) {
-      colors = firstVariant.attributes
-        .filter((attr: any) => attr.attribute_type?.name === "اللون")
-        .map((attr: any) => ({
-          color: attr.meta?.color || '#000000',
-          name: attr.value
-        }));
-    }
+    colors = extractColorsFromVariants(product.variants as ProductVariant[]);
   }
 
   return {
@@ -71,13 +116,13 @@ const transformProduct = (product: ProductData): Product => {
     price: product.pricing.final_price,
     image: mainImage,
     hoverImage: hoverImage,
-    href: `/product/${product.id}`, // تعديل المسار ليتوافق مع صفحة المنتج
+    href: `/product/${product.id}`,
     originalPrice: originalPrice,
     discount: discount,
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: true, // هذه المنتجات هي الأكثر طلباً بالفعل
+    isBestSeller: true,
   };
 };
 
@@ -132,7 +177,7 @@ export function BestProducts() {
       console.error('Error fetching most selling products:', err);
       if (!isMounted.current) return;
       setError('فشل في تحميل المنتجات');
-      setProducts([]); // عدم استخدام بيانات افتراضية
+      setProducts([]);
     } finally {
       if (!isMounted.current) return;
       setIsInitialLoading(false);
@@ -206,53 +251,64 @@ export function BestProducts() {
     );
   }
 
-return (
-  <section className="py-6 md:py-12 bg-white">
-    <div className="container-custom">
-      {/* Header */}
-      <div className="mb-2 md:mb-5 flex justify-between items-center">
-        <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
-          الاكثر طلبا
-        </h2>
-        <Link 
-          href="/products" 
-          className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
-        >
-          عرض المزيد
-        </Link>
-      </div>
-
-      {/* Products Grid - معدل لضمان أحجام متساوية */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
-        {visibleProducts.map((product, index) => (
-          <div
-            key={product.id}
-            className="animate-in fade-in zoom-in duration-500 flex justify-center w-full"
-            style={{ 
-              animationFillMode: 'both',
-              animationDelay: `${index * 100}ms`
-            }}
+  return (
+    <section className="py-6 md:py-12 bg-white">
+      <div className="container-custom">
+        {/* Header */}
+        <div className="mb-2 md:mb-5 flex justify-between items-center">
+          <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
+            الاكثر طلبا
+          </h2>
+          <Link 
+            href="/products" 
+            className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
           >
-            <ProductCard 
-              id={product.id}
-              name={product.name}
-              price={product.price}
-              image={product.image}
-              hoverImage={product.hoverImage}
-              href={product.href}
-              originalPrice={product.originalPrice}
-              discount={product.discount}
-              colors={product.colors}
-              rating={product.rating}
-              reviewsCount={product.reviewsCount}
-              isBestSeller={product.isBestSeller}
-            />
-          </div>
-        ))}
-      </div>
+            عرض المزيد
+          </Link>
+        </div>
 
-      {/* باقي الكود كما هو... */}
-    </div>
-  </section>
-);
+        {/* Products Grid - معدل لضمان أحجام متساوية */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
+          {visibleProducts.map((product, index) => (
+            <div
+              key={product.id}
+              className="animate-in fade-in zoom-in duration-500 flex justify-center w-full"
+              style={{ 
+                animationFillMode: 'both',
+                animationDelay: `${index * 100}ms`
+              }}
+            >
+              <ProductCard 
+                id={product.id}
+                name={product.name}
+                price={product.price}
+                image={product.image}
+                hoverImage={product.hoverImage}
+                href={product.href}
+                originalPrice={product.originalPrice}
+                discount={product.discount}
+                colors={product.colors}
+                rating={product.rating}
+                reviewsCount={product.reviewsCount}
+                isBestSeller={product.isBestSeller}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Load More Button - يظهر فقط عند وجود المزيد من المنتجات */}
+        {showLoadMoreButton && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="px-6 py-2 border border-[#EC221F] text-[#EC221F] rounded-lg hover:bg-[#EC221F] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }

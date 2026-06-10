@@ -1,15 +1,23 @@
 // types/address.ts
+
+export interface Governorate {
+  id: string; // ملاحظة: id من النوع string
+  name: string;
+  provider: string;
+}
+
+export interface City {
+  id: string; // ملاحظة: id من النوع string
+  name: string;
+  provider: string;
+  delivery_fee: number;
+  governate?: Governorate; // اختياري، قد لا يكون موجوداً دائماً
+}
+
 export interface Address {
   id: number;
-  city: {
-    id: number;
-    name: string;
-    delivery_fee: string;
-     governate?: {      // جعل governate اختيارياً
-      id: number;
-      name: string;
-    };
-  };
+  city_id?: string; // قد يكون موجوداً أو لا حسب الـ API
+  city: City;
   street: string;
   building: string;
   floor: string;
@@ -18,7 +26,7 @@ export interface Address {
   apartment: string;
   latitude: string | null;
   longitude: string | null;
-  user: {
+  user?: {
     id: number;
     name: string;
     locale: string;
@@ -27,4 +35,43 @@ export interface Address {
     created_at: string;
     image: string;
   };
+  created_at?: string;
+  updated_at?: string;
+}
+
+// واجهة للرد من API عند إضافة أو تعديل عنوان
+export interface AddressResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: Address;
+}
+
+// واجهة لقائمة العناوين
+export interface AddressesResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    addresses: Address[];
+    default_address?: Address;
+  };
+}
+
+// واجهة للمحافظات
+export interface GovernoratesResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    governates: Governorate[];
+  };
+}
+
+// واجهة للمدن
+export interface CitiesResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: City[]; // array من المدن مباشرة
 }

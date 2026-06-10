@@ -32,12 +32,7 @@ interface ProductCardProps {
   isBestSeller?: boolean;
 }
 
-const DEFAULT_COLORS: ColorOption[] = [
-  { color: "#252B42", name: "أزرق داكن" },
-  { color: "#E77C40", name: "برتقالي" },
-  { color: "#23856D", name: "أخضر" },
-  { color: "#EC221F", name: "أحمر" },
-];
+// ❌ تم إزالة DEFAULT_COLORS تماماً
 
 export function ProductCard({ 
   id, 
@@ -70,7 +65,8 @@ export function ProductCard({
     setLocalFavorite(isProductFavorite);
   }, [isProductFavorite]);
 
-  const displayColors = colors && colors.length > 0 ? colors : DEFAULT_COLORS;
+  // ✅ استخدام ألوان المنتج فقط (بدون ألوان افتراضية)
+  const displayColors = colors && colors.length > 0 ? colors : [];
 
   // معالج الضغط على القلب مع التحقق من تسجيل الدخول
   const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
@@ -86,10 +82,6 @@ export function ProductCard({
         icon: "❤️",
       });
       
-      // حفظ الرابط الحالي للعودة إليه بعد تسجيل الدخول
-      const currentUrl = window.location.href;
-      // التوجيه إلى صفحة تسجيل الدخول مع معامل redirect
-      // router.push(`/auth/login?redirectTo=${encodeURIComponent(currentUrl)}`);
       return;
     }
     
@@ -118,17 +110,11 @@ export function ProductCard({
       toast.error("حدث خطأ، يرجى المحاولة مرة أخرى");
     } else {
       console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
-      // عرض رسالة نجاح اختيارية
-      if (!previousState) {
-        // toast.success("تمت إضافة المنتج إلى المفضلة");
-      } else {
-        // toast.success("تمت إزالة المنتج من المفضلة");
-      }
     }
     
     // إلغاء حالة التحميل لهذا المنتج
     setIsLocalMutating(false);
-  }, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite, isAuthenticated, router]);
+  }, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite, isAuthenticated]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -261,23 +247,26 @@ export function ProductCard({
             )}
           </div>
 
-          <div className="flex items-center justify-center gap-2">
-            {displayColors.map((circle, index) => (
-              <button
-                key={index}
-                className="w-4 h-4 rounded-full transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-offset-1"
-                style={{ 
-                  backgroundColor: circle.color,
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                }}
-                aria-label={`لون ${circle.name}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              />
-            ))}
-          </div>
+          {/* ✅ عرض الألوان فقط إذا كانت موجودة */}
+          {displayColors.length > 0 && (
+            <div className="flex items-center justify-center gap-2">
+              {displayColors.map((circle, index) => (
+                <button
+                  key={index}
+                  className="w-4 h-4 rounded-full transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-offset-1"
+                  style={{ 
+                    backgroundColor: circle.color,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                  }}
+                  aria-label={`لون ${circle.name}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </Link>
 

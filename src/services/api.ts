@@ -1,4 +1,3 @@
-// services/api.ts
 const API_URL = "https://dukanah.admin.t-carts.com/api";
 
 // ========== واجهات (Interfaces) السلايدر ==========
@@ -1023,6 +1022,7 @@ export async function logoutAndCleanup(redirectTo?: string): Promise<boolean> {
     return false;
   }
 }
+
 // ========== واجهات (Interfaces) خاصة بنسيت كلمة المرور ==========
 
 interface ForgotPasswordRequest {
@@ -1065,14 +1065,6 @@ interface ChangePasswordResponse {
 
 /**
  * دالة إرسال طلب إعادة تعيين كلمة المرور (نسيت كلمة المرور)
- * @param data البريد الإلكتروني
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await forgotPassword({ email: "user@example.com" });
- * if (result.result) {
- *   console.log("تم إرسال رمز التحقق");
- * }
  */
 export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
   try {
@@ -1099,14 +1091,6 @@ export async function forgotPassword(data: ForgotPasswordRequest): Promise<Forgo
 
 /**
  * دالة التحقق من رمز إعادة تعيين كلمة المرور
- * @param data رمز التحقق والبريد الإلكتروني
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await verifyForgotPassword({ otp: "123456", email: "user@example.com" });
- * if (result.result) {
- *   console.log("تم التحقق بنجاح");
- * }
  */
 export async function verifyForgotPassword(data: VerifyForgotPasswordRequest): Promise<VerifyForgotPasswordResponse> {
   try {
@@ -1133,18 +1117,6 @@ export async function verifyForgotPassword(data: VerifyForgotPasswordRequest): P
 
 /**
  * دالة تغيير كلمة المرور (للمستخدم المسجل دخول)
- * @param data كلمة المرور الحالية والجديدة
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await changePassword({
- *   current_password: "oldPassword123",
- *   new_password: "newPassword456",
- *   new_password_confirmation: "newPassword456"
- * });
- * if (result.result) {
- *   console.log("تم تغيير كلمة المرور بنجاح");
- * }
  */
 export async function changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
   try {
@@ -1179,15 +1151,6 @@ export async function changePassword(data: ChangePasswordRequest): Promise<Chang
 
 /**
  * دالة إعادة تعيين كلمة المرور بعد التحقق
- * @param data البريد الإلكتروني وكلمة المرور الجديدة وتأكيدها
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await resetPassword({
- *   email: "user@example.com",
- *   new_password: "newPassword123",
- *   new_password_confirmation: "newPassword123"
- * });
  */
 export async function resetPassword(data: {
   email: string;
@@ -1220,18 +1183,8 @@ export async function resetPassword(data: {
   }
 }
 
-// أضف هذه الدالة في نهاية ملف services/api.ts (في قسم دوال المصادقة)
-
 /**
  * دالة إعادة إرسال رمز التحقق (OTP)
- * @param email البريد الإلكتروني
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await resendOTP({ email: "user@example.com" });
- * if (result.result) {
- *   console.log("تم إرسال رمز جديد");
- * }
  */
 export async function resendOTP(email: string): Promise<ForgotPasswordResponse> {
   try {
@@ -1263,7 +1216,7 @@ interface UpdateProfileRequest {
   email?: string;
   phone?: string;
   locale?: string;
-  image?: File; // يمكن أن تكون base64 string أو رابط الصورة
+  image?: File | string;
 }
 
 interface UpdateProfileResponse {
@@ -1292,185 +1245,43 @@ interface GetProfileResponse {
       email?: string;
       phone?: string;
       image?: string;
+      [key: string]: any;
     };
   } | null;
 }
 
 /**
  * دالة تحديث الملف الشخصي للمستخدم
- * @param data بيانات الملف الشخصي المراد تحديثها
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- * 
- * @example
- * const result = await updateUserProfile({
- *   name: "أحمد محمد",
- *   email: "ahmed@example.com",
- *   locale: "ar",
- *   image: "data:image/png;base64,..."
- * });
- * if (result.result) {
- *   console.log("تم تحديث الملف الشخصي بنجاح");
- * }
+ * تدعم رفع الصور كـ File وكذلك تحديث البيانات النصية
  */
-// export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
-//   try {
-//     const token = getToken();
-    
-//     const headers: HeadersInit = {
-//       'Content-Type': 'application/json',
-//     };
-    
-//     if (token) {
-//       headers['Authorization'] = `Bearer ${token}`;
-//     }
-    
-//     // إضافة _method='put' كما هو مطلوب في الـ API
-//     const bodyData = {
-//       ...data,
-//       _method: 'put'
-//     };
-    
-//     const response = await fetch(`${API_URL}/user/profile`, {
-//       method: 'POST',
-//       headers: headers,
-//       body: JSON.stringify(bodyData),
-//     });
-
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-
-//     const result: UpdateProfileResponse = await response.json();
-    
-//     if (result.result && result.errNum === 200 && result.data?.user) {
-//       // تحديث بيانات المستخدم المخزنة محلياً
-//       const currentUserData = getUserData();
-//       if (currentUserData) {
-//         const updatedUserData = {
-//           ...currentUserData,
-//           user: {
-//             ...currentUserData.user,
-//             ...result.data.user
-//           }
-//         };
-//         saveUserData(updatedUserData);
-//       }
-//     }
-    
-//     return result;
-//   } catch (error) {
-//     console.error('Error in updateUserProfile:', error);
-//     return {
-//       result: false,
-//       errNum: 500,
-//       message: error instanceof Error ? error.message : 'فشل في تحديث الملف الشخصي',
-//       data: null,
-//     };
-//   }
-// }
-
-/**
- * دالة جلب بيانات الملف الشخصي للمستخدم
- * @returns وعد (Promise) يحتوي على بيانات المستخدم
- */
-export async function getUserProfile(): Promise<GetProfileResponse> {
-  try {
-    const token = getToken();
-    
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`${API_URL}/user/profile`, {
-      method: 'GET',
-      headers: headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result: GetProfileResponse = await response.json();
-    
-    if (result.result && result.errNum === 200 && result.data?.user) {
-      // تحديث بيانات المستخدم المخزنة محلياً
-      const currentUserData = getUserData();
-      if (currentUserData) {
-        const updatedUserData = {
-          ...currentUserData,
-          user: result.data.user
-        };
-        saveUserData(updatedUserData);
-      }
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error in getUserProfile:', error);
-    return {
-      result: false,
-      errNum: 500,
-      message: error instanceof Error ? error.message : 'فشل في جلب بيانات الملف الشخصي',
-      data: null,
-    };
-  }
-}
-
-/**
- * دالة رفع صورة الملف الشخصي
- * @param imageBase64 الصورة بصيغة base64
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- */
-// export async function updateProfileImage(imageBase64: string): Promise<UpdateProfileResponse> {
-//   return updateUserProfile({ image: imageBase64 });
-// }
-
-/**
- * دالة تحديث اللغة
- * @param locale اللغة ('ar' أو 'en')
- * @returns وعد (Promise) يحتوي على نتيجة العملية
- */
-export async function updateUserLocale(locale: string): Promise<UpdateProfileResponse> {
-  return updateUserProfile({ locale });
-}
-
-// في ملف services/api.ts
-
-// في ملف services/api.ts
-
 export async function updateUserProfile(data: UpdateProfileRequest): Promise<UpdateProfileResponse> {
   try {
     const token = getToken();
     
-    // التحقق: هل يوجد صورة من نوع File؟
+    if (!token) {
+      return {
+        result: false,
+        errNum: 401,
+        message: 'غير مصرح به. الرجاء تسجيل الدخول',
+        data: null,
+      };
+    }
+    
     const hasFile = data.image instanceof File;
     
     let response: Response;
     
     if (hasFile) {
-      // ========== حالة رفع ملف (صورة) ==========
       const formData = new FormData();
       
-      // إضافة الحقول النصية
       if (data.name) formData.append('name', data.name);
       if (data.locale) formData.append('locale', data.locale);
       if (data.email) formData.append('email', data.email);
       if (data.phone) formData.append('phone', data.phone);
+      if (data.image) formData.append('image', data.image);
       
-      // إضافة الصورة كملف
-         if (data.image) {
-        formData.append('image', data.image);
-      }
+      formData.append('_method', 'PUT');
       
-      
-      // إضافة _method='put' كما هو مطلوب
-      formData.append('_method', 'put');
-      
-      // إرسال كـ FormData
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -1482,7 +1293,6 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
         body: formData,
       });
     } else {
-      // ========== حالة البيانات النصية فقط ==========
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
@@ -1493,8 +1303,12 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
       
       const bodyData = {
         ...data,
-        _method: 'put'
+        _method: 'PUT'
       };
+      
+      if (bodyData.image && typeof bodyData.image === 'string') {
+        delete bodyData.image;
+      }
       
       response = await fetch(`${API_URL}/user/profile`, {
         method: 'POST',
@@ -1510,7 +1324,6 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
     const result: UpdateProfileResponse = await response.json();
     
     if (result.result && result.errNum === 200 && result.data?.user) {
-      // تحديث بيانات المستخدم المخزنة محلياً
       const currentUserData = getUserData();
       if (currentUserData) {
         const updatedUserData = {
@@ -1536,8 +1349,76 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
   }
 }
 
-// يمكنك حذف دالة updateProfileImage لأنها غير ضرورية الآن
-// أو تعديلها لتقبل File بدلاً من base64
+/**
+ * دالة جلب بيانات الملف الشخصي للمستخدم
+ */
+export async function getUserProfile(): Promise<GetProfileResponse> {
+  try {
+    const token = getToken();
+    
+    if (!token) {
+      return {
+        result: false,
+        errNum: 401,
+        message: 'غير مصرح به. الرجاء تسجيل الدخول',
+        data: null,
+      };
+    }
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}/user/profile`, {
+      method: 'GET',
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: GetProfileResponse = await response.json();
+    
+    if (result.result && result.errNum === 200 && result.data?.user) {
+      const currentUserData = getUserData();
+      if (currentUserData) {
+        const updatedUserData = {
+          ...currentUserData,
+          user: result.data.user
+        };
+        saveUserData(updatedUserData);
+      } else {
+        saveUserData({ user: result.data.user });
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
+    return {
+      result: false,
+      errNum: 500,
+      message: error instanceof Error ? error.message : 'فشل في جلب بيانات الملف الشخصي',
+      data: null,
+    };
+  }
+}
+
+/**
+ * دالة رفع/تحديث صورة الملف الشخصي فقط
+ */
 export async function updateProfileImage(imageFile: File): Promise<UpdateProfileResponse> {
   return updateUserProfile({ image: imageFile });
+}
+
+/**
+ * دالة تحديث اللغة فقط
+ */
+export async function updateUserLocale(locale: string): Promise<UpdateProfileResponse> {
+  return updateUserProfile({ locale });
 }

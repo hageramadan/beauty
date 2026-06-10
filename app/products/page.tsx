@@ -13,6 +13,33 @@ import { FilterIcon } from 'lucide-react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 
+// ✅ إضافة الواجهات المطلوبة
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
+  };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
+}
+
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  variant_image: string | null;
+  attributes: VariantAttribute[];
+}
+
 interface FiltersState {
   categoryIds?: number[];
   colors?: string[];
@@ -21,6 +48,32 @@ interface FiltersState {
   minPrice?: number;
   maxPrice?: number;
 }
+
+// ✅ دالة استخراج الألوان من جميع الـ variants
+const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
+  const colorMap = new Map<string, string>();
+  
+  if (!variants || variants.length === 0) return [];
+  
+  variants.forEach((variant) => {
+    if (variant.attributes && Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr: VariantAttribute) => {
+        // إذا كان الـ attribute من نوع "اللون"
+        if (attr.attribute_type?.name === "اللون" && attr.value && attr.meta?.color) {
+          if (!colorMap.has(attr.value)) {
+            colorMap.set(attr.value, attr.meta.color);
+          }
+        }
+      });
+    }
+  });
+  
+  return Array.from(colorMap.entries()).map(([name, color]) => ({
+    name: name,
+    color: color
+  }));
+};
+
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   
@@ -29,7 +82,7 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
-   const [filters, setFilters] = useState<FiltersState>({});
+  const [filters, setFilters] = useState<FiltersState>({});
   
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
  
@@ -132,19 +185,13 @@ export default function ProductsPage() {
     };
   }, [isMobileFilterOpen]);
 
+  // ✅ دالة تحويل المنتج مع استخراج الألوان من جميع الـ variants
   const transformProductForCard = (product: ProductData) => {
     let colors: Array<{ color: string; name: string }> = [];
     
+    // ✅ استخراج الألوان من جميع الـ variants وليس فقط الأول
     if (product.has_variants && product.variants && product.variants.length > 0) {
-      const firstVariant = product.variants[0];
-      if (firstVariant.attributes) {
-        colors = firstVariant.attributes
-          .filter((attr: any) => attr.attribute_type?.name === "اللون")
-          .map((attr: any) => ({
-            color: attr.meta?.color || '#000000',
-            name: attr.value
-          }));
-      }
+      colors = extractColorsFromVariants(product.variants as ProductVariant[]);
     }
 
     const cleanImageUrl = (url: string) => {
@@ -217,22 +264,6 @@ export default function ProductsPage() {
                   )}
                 </button>
               </div>
-              
-              {/* ✅ عرض الفلاتر النشطة (اختياري) */}
-              {activeFiltersCount > 0 && !categoryName && (
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-                  <span className="text-sm text-gray-500">الفلاتر النشطة:</span>
-                  {filters.categoryIds?.map((id: number) => (
-                    <span key={id} className="bg-gray-100 px-2 py-1 rounded-md text-sm">فئة: {id}</span>
-                  ))}
-                  {filters.colors?.map((color: string) => (
-                    <span key={color} className="bg-gray-100 px-2 py-1 rounded-md text-sm">لون</span>
-                  ))}
-                  {filters.sizes?.map((size: string) => (
-                    <span key={size} className="bg-gray-100 px-2 py-1 rounded-md text-sm">مقاس: {size}</span>
-                  ))}
-                </div>
-              )}
             </div>
             
             {loading ? (
