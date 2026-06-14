@@ -48,7 +48,6 @@ export default function WishlistPage() {
   const allProductCardItems = useMemo((): TransformedProduct[] => {
     if (!favorites || favorites.length === 0) return [];
     
-    console.log("🔄 إعادة حساب productCardItems, عدد المفضلة:", favorites.length);
     
     const items: TransformedProduct[] = [];
     

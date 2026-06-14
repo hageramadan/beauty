@@ -31,7 +31,6 @@ const searchProducts = async (query: string, page: number = 1) => {
     });
     
     const data = await response.json();
-    console.log("🔍 Search response:", data);
     return data;
   } catch (error) {
     console.error("Search error:", error);
@@ -254,7 +253,7 @@ function SearchContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ابحث عن منتجات..."
-              className="w-full px-5 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent"
+              className="w-full px-6 py-3 pr-12  border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent"
             />
             <button
               type="submit"
@@ -291,7 +290,7 @@ function SearchContent() {
         {/* قائمة المنتجات */}
         {products.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product) => {
                 const cardData = transformProductForCard(product);
                 return (

@@ -84,7 +84,6 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
     });
     
     const data = await response.json();
-    console.log("📦 Order details for return:", data);
     
     if (data.result === true && data.data) {
       const order = data.data;
@@ -139,7 +138,6 @@ const submitReturnRequest = async (
     });
     
     const data = await response.json();
-    console.log("📦 Return request response:", data);
     
     if (data.result === true && data.errNum === 200) {
       return { 

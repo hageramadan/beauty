@@ -55,7 +55,6 @@ export default function ContactForm() {
         message: formData.message,
       };
 
-      console.log("Sending data:", payload);
 
       const response = await fetch("https://dukanah.admin.t-carts.com/api/contact-us", {
         method: "POST",

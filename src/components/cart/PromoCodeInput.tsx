@@ -41,7 +41,6 @@ const applyCouponAPI = async (code: string): Promise<{ success: boolean; discoun
     });
     
     const data = await response.json();
-    console.log("📦 Coupon API response:", data);
     
     if (data.result === true && data.data) {
       // افترض أن الخصم في data.discount أو data.data.discount
@@ -77,7 +76,6 @@ const removeCouponAPI = async (): Promise<{ success: boolean; message: string }>
     });
     
     const data = await response.json();
-    console.log("📦 Remove coupon response:", data);
     
     if (data.result === true) {
       return {

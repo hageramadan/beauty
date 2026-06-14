@@ -382,14 +382,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   return (
     <div className="container-custom">
-      <div className="flex gap-2 mb-5">
-        <Link href="/" className="text-[#726C6C] text-[20px]">الرئيسية</Link>
+      <div className="flex gap-1 md:gap-2 mb-5">
+        <Link href="/" className="text-[#726C6C] text-base md:text-[20px]">الرئيسية</Link>
         <span className="text-[#333333] font-bold">/</span>
-        <Link href="/products" className="text-[#726C6C] font-bold text-[20px]">
+        <Link href="/products" className="text-[#726C6C] font-bold text-sm md:text-[20px] whitespace-nowrap">
           {product.brand || "المنتجات"}
         </Link>
         <span className="text-[#180100] font-bold text-[20px]">/</span>
-        <p className="text-[#180100] font-bold text-[20px]">{product.name}</p>
+        <p className="text-[#180100] font-bold text-sm md:text-[20px] whitespace-nowrap">{product.name}</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">

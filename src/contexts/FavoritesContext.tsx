@@ -39,7 +39,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     if (showLoading) setIsLoading(true);
     try {
       const response = await fetchFavorites(1, 100);
-      console.log("📦 fetchData response:", response);
       
       if (response.result === true && response.data && Array.isArray(response.data.favorites)) {
         const validFavorites = response.data.favorites.filter((item: FavoriteProduct) => item && item.id);
@@ -82,7 +81,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     
     try {
       const response = await addToFavorites(productId);
-      console.log("➕ addFavorite response:", response);
       
       if (response.result === true && response.data) {
         // toast.success('تم إضافة المنتج إلى المفضلة');
@@ -114,7 +112,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     
     try {
       const response = await removeFromFavorites(productId);
-      console.log("🗑️ removeFavorite response:", response);
       
       if (response.result === true) {
         toast.success('تم إزالة المنتج من المفضلة');

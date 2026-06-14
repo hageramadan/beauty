@@ -82,7 +82,6 @@ const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: s
     }
   });
   
-  console.log("🎨 الألوان المستخرجة:", Array.from(colorMap.entries()));
   
   return Array.from(colorMap.entries()).map(([name, color]) => ({
     name: name,
@@ -121,18 +120,14 @@ export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null 
     };
   }
 
-  console.log(`📦 تحويل المنتج: ${favorite.name}`);
-  console.log(`📊 has_variants: ${favorite.has_variants}`);
-  console.log(`📊 عدد الـ variants: ${favorite.variants?.length || 0}`);
+
 
   // ✅ استخراج الألوان من الـ variants
   let colors: Array<{ color: string; name: string }> = [];
   
   if (favorite.has_variants && favorite.variants && Array.isArray(favorite.variants) && favorite.variants.length > 0) {
     colors = extractColorsFromVariants(favorite.variants as ProductVariant[]);
-    console.log(`🎨 ألوان منتج ${favorite.name}:`, colors);
   } else {
-    console.log(`⚠️ لا توجد variants للمنتج ${favorite.name}`);
   }
 
   // معالجة الصور
@@ -171,7 +166,6 @@ export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null 
     addedDate: new Date().toISOString(),
   };
   
-  console.log(`✅ تم تحويل ${result.name} بنجاح، عدد الألوان: ${result.colors.length}`);
   
   return result;
 };
@@ -194,50 +188,86 @@ const getHeaders = (): HeadersInit => {
   };
 };
 
-export const fetchFavorites = async (page: number = 1, perPage: number = 10): Promise<any> => {
+export const fetchFavorites = async (
+  page: number = 1,
+  perPage: number = 10
+): Promise<any> => {
+  const token = getToken();
+
+  // ✅ لو مفيش توكن متعمليش API Call
+  if (!token) {
+    return {
+      result: false,
+      data: {
+        favorites: [],
+        pagination: null,
+      },
+    };
+  }
+
   try {
-    const response = await fetch(`${API_URL}/user-favorites?page=${page}&per_page=${perPage}`, {
-      method: 'GET',
-      headers: getHeaders(),
-    });
-    
+    const response = await fetch(
+      `${API_URL}/user-favorites?page=${page}&per_page=${perPage}`,
+      {
+        method: "GET",
+        headers: getHeaders(),
+      }
+    );
+
     const data = await response.json();
-    console.log("📡 fetchFavorites response:", data);
     return data;
   } catch (error) {
-    console.error('❌ خطأ في جلب المفضلة:', error);
+    console.error("❌ خطأ في جلب المفضلة:", error);
     throw error;
   }
 };
 
-export const addToFavorites = async (productId: string | number): Promise<any> => {
+export const addToFavorites = async (
+  productId: string | number
+): Promise<any> => {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("User is not authenticated");
+  }
+
   try {
     const response = await fetch(`${API_URL}/user-favorites`, {
-      method: 'POST',
+      method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ product_id: productId }),
     });
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('❌ خطأ في إضافة المنتج إلى المفضلة:', error);
+    console.error("❌ خطأ في إضافة المنتج إلى المفضلة:", error);
     throw error;
   }
 };
 
-export const removeFromFavorites = async (productId: string | number): Promise<any> => {
+export const removeFromFavorites = async (
+  productId: string | number
+): Promise<any> => {
+  const token = getToken();
+
+  if (!token) {
+    throw new Error("User is not authenticated");
+  }
+
   try {
-    const response = await fetch(`${API_URL}/user-favorites/${productId}/delete`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-      body: JSON.stringify({ product_id: productId }),
-    });
-    
+    const response = await fetch(
+      `${API_URL}/user-favorites/${productId}/delete`,
+      {
+        method: "DELETE",
+        headers: getHeaders(),
+      }
+    );
+
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('❌ خطأ في حذف المنتج من المفضلة:', error);
+    console.error("❌ خطأ في حذف المنتج من المفضلة:", error);
     throw error;
   }
 };

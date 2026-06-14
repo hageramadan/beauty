@@ -299,8 +299,11 @@ function buildFiltersQueryString(filters: ProductFilters): string {
   }
   
   if (filters.colors && filters.colors.length > 0) {
-    const formattedColors = filters.colors.map(c => `"${c}"`).join(',');
-    queryParts.push(`colors=[${formattedColors}]`);
+   const formattedColors = filters.colors
+  .map(c => `"${encodeURIComponent(c)}"`)
+  .join(',');
+
+queryParts.push(`colors=[${formattedColors}]`);
   }
   
   if (filters.categories && filters.categories.length > 0) {
@@ -321,7 +324,6 @@ export async function getAllProducts(
     const queryString = buildFiltersQueryString(filters);
     const url = `${API_URL}/products?${queryString}`;
     
-    console.log('Fetching products from URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',

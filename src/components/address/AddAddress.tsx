@@ -154,9 +154,7 @@ export default function AddAddress({
           Array.isArray(result.data.governates)
         ) {
           setGovernorates(result.data.governates);
-          console.log("✅ تم تحميل المحافظات من API:", result.data.governates);
         } else {
-          console.log("⚠️ لم يتم العثور على محافظات في API");
           setGovernorates([]);
         }
       } catch (error) {
@@ -197,7 +195,6 @@ export default function AddAddress({
 
         if (result.result === true && Array.isArray(result.data)) {
           setCities(result.data);
-          console.log("✅ تم تحميل المدن من API:", result.data);
         } else {
           setCities([]);
         }
@@ -424,7 +421,6 @@ export default function AddAddress({
         type: formData.addressType,
       };
 
-      console.log("📦 البيانات المرسلة:", addressData);
 
       const token = localStorage.getItem("auth_token");
 
@@ -448,7 +444,6 @@ export default function AddAddress({
 
       const result = await response.json();
 
-      console.log("📦 الرد من API:", result);
 
       if (result.result === true) {
         toast.success(

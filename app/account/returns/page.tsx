@@ -116,7 +116,6 @@ const fetchReturns = async (): Promise<Return[]> => {
     });
     
     const data: ReturnsResponse = await response.json();
-    console.log("📦 Returns API response:", data);
     
     if (data.result === true && data.errNum === 200 && data.data.returns) {
       return data.data.returns.map((returnItem) => ({

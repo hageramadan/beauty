@@ -70,7 +70,6 @@ export default function ResetPasswordPage() {
       new_password_confirmation: formData.new_password_confirmation,
     });
 
-    console.log("Reset password result:", result);
 
     if (result.result) {
       toast.success("تم إعادة تعيين كلمة المرور بنجاح! ✅", {

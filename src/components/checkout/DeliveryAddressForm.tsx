@@ -138,9 +138,7 @@ export default function DeliveryAddressForm({
       
       if (result.result === true && result.data && Array.isArray(result.data.governates)) {
         setGovernorates(result.data.governates);
-        console.log("✅ تم تحميل المحافظات:", result.data.governates);
       } else {
-        console.log("⚠️ استخدام المحافظات الاحتياطية");
         // تحويل المحافظات الاحتياطية إلى نفس الهيكل
         setGovernorates(EGYPT_GOVERNORATES.map((name, index) => ({
           id: String(index + 1),
@@ -181,7 +179,6 @@ export default function DeliveryAddressForm({
       
       if (result.result === true && Array.isArray(result.data)) {
         setCities(result.data);
-        console.log("✅ تم تحميل المدن:", result.data);
       } else {
         setCities([]);
       }
@@ -272,7 +269,6 @@ export default function DeliveryAddressForm({
         type: 'home',
       };
       
-      console.log("📦 حفظ العنوان:", addressToSave);
       
       const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
@@ -284,7 +280,6 @@ export default function DeliveryAddressForm({
       });
       
       const result = await response.json();
-      console.log("📦 الرد من API:", result);
       
       if (result.result === true) {
         await fetchSavedAddresses();

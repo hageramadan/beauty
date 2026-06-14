@@ -145,7 +145,6 @@ export function CartPage() {
   };
 
   const saveForLater = (id: string) => {
-    console.log("Save for later:", id);
   };
 
   const applyPromoCode = (code: string, discount: number) => {

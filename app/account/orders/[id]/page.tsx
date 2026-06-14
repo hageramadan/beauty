@@ -114,7 +114,6 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
     });
     
     const data = await response.json();
-    console.log("📦 Order details API response:", data);
     
     if (data.result === true && data.data) {
       return transformOrderDetails(data.data);
@@ -140,7 +139,6 @@ const cancelOrder = async (orderId: number): Promise<boolean> => {
     });
     
     const data = await response.json();
-    console.log("📦 Cancel order API response:", data);
     
     if (data.result === true && data.errNum === 200) {
       toast.success("تم إلغاء الطلب بنجاح", {

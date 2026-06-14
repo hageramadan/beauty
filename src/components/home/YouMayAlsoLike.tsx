@@ -8,6 +8,30 @@ import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getMostSellingProducts, getNewProducts, ProductData, getAllProducts } from "@/services/api";
 
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
+  };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
+}
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  variant_image: string | null;
+  attributes: VariantAttribute[];
+}
 interface Product {
   id: string;
   name: string;
@@ -23,7 +47,29 @@ interface Product {
   isBestSeller?: boolean;
 }
 
-// تحويل البيانات من API إلى شكل المنتج المطلوب - ديناميكي بالكامل
+const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
+  const colorMap = new Map<string, string>();
+  
+  if (!variants || variants.length === 0) return [];
+  
+  variants.forEach((variant) => {
+    if (variant.attributes && Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr: VariantAttribute) => {
+        // إذا كان الـ attribute من نوع "اللون"
+        if (attr.attribute_type?.name === "اللون" && attr.value && attr.meta?.color) {
+          if (!colorMap.has(attr.value)) {
+            colorMap.set(attr.value, attr.meta.color);
+          }
+        }
+      });
+    }
+  });
+  
+  return Array.from(colorMap.entries()).map(([name, color]) => ({
+    name: name,
+    color: color
+  }));
+};
 const transformProduct = (product: ProductData): Product => {
   // معالجة الصور بشكل صحيح
   const cleanImageUrl = (url: string) => {
@@ -51,19 +97,11 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
-  // استخراج الألوان من الـ variants ديناميكياً
+  // ✅ استخراج الألوان من جميع الـ variants باستخدام الدالة الجديدة
   let colors: Array<{ color: string; name: string }> = [];
   
   if (product.has_variants && product.variants && product.variants.length > 0) {
-    const firstVariant = product.variants[0];
-    if (firstVariant.attributes) {
-      colors = firstVariant.attributes
-        .filter((attr: any) => attr.attribute_type?.name === "اللون")
-        .map((attr: any) => ({
-          color: attr.meta?.color || '#000000',
-          name: attr.value
-        }));
-    }
+    colors = extractColorsFromVariants(product.variants as ProductVariant[]);
   }
 
   return {
@@ -78,9 +116,10 @@ const transformProduct = (product: ProductData): Product => {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: (product.avg_rating || 0) >= 4.5,
+    // isBestSeller:,
   };
 };
+
 
 // دالة لخلط المنتجات عشوائياً
 const shuffleProducts = (products: Product[]): Product[] => {

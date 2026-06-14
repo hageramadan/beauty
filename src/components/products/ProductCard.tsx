@@ -98,18 +98,15 @@ export function ProductCard({
     // تحديث الواجهة فوراً (لإعطاء استجابة سريعة للمستخدم)
     setLocalFavorite(!previousState);
     
-    console.log(`🖱️ تم الضغط على القلب للمنتج ${id} - الحالة السابقة: ${previousState ? "مفضل" : "غير مفضل"}`);
     
     // استدعاء API - تمرير الحالة الحالية
     const success = await toggleFavorite(id, previousState);
     
     if (!success) {
       // إذا فشلت العملية، نرجع الحالة القديمة
-      console.log(`❌ فشلت العملية للمنتج ${id} - الرجوع للحالة السابقة`);
       setLocalFavorite(previousState);
       toast.error("حدث خطأ، يرجى المحاولة مرة أخرى");
     } else {
-      console.log(`✅ نجحت العملية للمنتج ${id} - الحالة الجديدة: ${!previousState ? "مفضل" : "غير مفضل"}`);
     }
     
     // إلغاء حالة التحميل لهذا المنتج

@@ -30,7 +30,6 @@ export default function AddressPage() {
       });
       const result = await response.json();
       
-      console.log("📦 البيانات القادمة من API:", result);
       
       if (result.result === true && Array.isArray(result.data)) {
         setAddresses(result.data);
@@ -51,20 +50,17 @@ export default function AddressPage() {
   }, []);
 
   const handleAddAddress = async (newAddress: Address) => {
-    console.log("📦 إضافة عنوان جديد:", newAddress);
     await fetchAddresses();
     setShowAddAddress(false);
     setEditingAddress(null);
   };
 
   const handleEditAddress = (address: Address) => {
-    console.log("✏️ تعديل عنوان:", address);
     setEditingAddress(address);
     setShowAddAddress(true);
   };
 
   const handleUpdateAddress = async (updatedAddress: Address) => {
-    console.log("🔄 تحديث عنوان:", updatedAddress);
     await fetchAddresses();
     setShowAddAddress(false);
     setEditingAddress(null);

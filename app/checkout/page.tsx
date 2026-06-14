@@ -126,7 +126,6 @@ const createOrder = async (orderData: any): Promise<any> => {
     });
     
     const data = await response.json();
-    console.log("📦 Order API response:", data);
     return data;
   } catch (error) {
     console.error("❌ Error creating order:", error);
@@ -244,7 +243,6 @@ export default function CheckoutPage() {
   const handleAddressSaved = (address: any) => {
     if (address && address.id) {
       setSelectedAddressId(address.id);
-      console.log("✅ Address saved with ID:", address.id);
       toast.success("تم حفظ العنوان بنجاح");
     }
   };
@@ -252,7 +250,6 @@ export default function CheckoutPage() {
   // ✅ دالة لاستقبال address_id من عنوان محفوظ تم اختياره
   const handleAddressSelected = (addressId: number) => {
     setSelectedAddressId(addressId);
-    console.log("✅ Address selected with ID:", addressId);
   };
 
   // ✅ تحضير بيانات الطلب
@@ -300,7 +297,6 @@ export default function CheckoutPage() {
       };
     }
     
-    console.log("📦 Final order data:", JSON.stringify(orderData, null, 2));
     return orderData;
   };
 

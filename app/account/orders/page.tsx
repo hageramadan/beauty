@@ -90,7 +90,6 @@ const fetchOrders = async (): Promise<Order[]> => {
     });
     
     const data = await response.json();
-    console.log("📦 Orders API response:", data);
     
     if (data.result === true && data.data && data.data.orders) {
       return data.data.orders.map(transformOrder);
