@@ -101,7 +101,7 @@ export function AdsHome1() {
                  md:py-6 text-[8px] md:text-[18px] font-bold hover:scale-105 transition-all duration-300 shadow-lg"
                 style={{ backgroundColor: '#EC221F' }}
               >
-                <Link href="#" className="flex items-center justify-center gap-1 md:gap-2 text-white">
+                <Link href="/products" className="flex items-center justify-center gap-1 md:gap-2 text-white">
                   تسوق الان
                   <FaArrowLeft className="h-2 w-2 md:h-5 md:w-5" />
                 </Link>

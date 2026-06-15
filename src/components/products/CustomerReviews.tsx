@@ -252,7 +252,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      className="p-2 rounded-[8px]  border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -261,7 +261,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                       <button
                         key={i}
                         onClick={() => handlePageChange(i + 1)}
-                        className={`w-8 h-8 rounded-lg transition ${
+                        className={`w-8 h-8 rounded-[8px]  transition ${
                           currentPage === i + 1
                             ? "bg-[#EC221F] text-white"
                             : "border border-gray-200 hover:bg-gray-50"
@@ -274,7 +274,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      className="p-2 rounded-[8px]  border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>

@@ -278,7 +278,7 @@ function SearchContent() {
           <select
             value={sortBy}
             onChange={handleSortChange}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EC221F]"
+            className="px-4 py-2 border border-gray-200 rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#EC221F]"
           >
             <option value="newest">الأحدث</option>
             <option value="popular">الأكثر مبيعاً</option>
@@ -323,7 +323,7 @@ function SearchContent() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="p-2 border border-gray-200 rounded-[8px]  disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -345,7 +345,7 @@ function SearchContent() {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-10 h-10 rounded-lg transition ${
+                        className={`w-10 h-10 rounded-[8px]  transition ${
                           currentPage === pageNum
                             ? "bg-[#EC221F] text-white"
                             : "border border-gray-200 hover:bg-gray-50"
@@ -360,7 +360,7 @@ function SearchContent() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === lastPage}
-                  className="p-2 border border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="p-2 border border-gray-200 rounded-[8px]  disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>

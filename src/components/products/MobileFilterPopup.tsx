@@ -73,7 +73,7 @@ export default function MobileFilterPopup({
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-[8px]  hover:bg-blue-700 transition-colors"
           >
             إغلاق
           </button>

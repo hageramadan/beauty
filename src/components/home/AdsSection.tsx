@@ -199,25 +199,25 @@ export function AdsSection({ variant = 'dark' }: AdsSectionProps) {
               <p className="text-[6px] text-center md:text-right md:text-base text-gray-300 mb-1 md:mb-3">سينتهي الخصم خلال</p>
               <div className="flex justify-center md:justify-start gap-1.5 md:gap-5">
                 <div className="text-center">
-                  <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                  <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                     <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.days)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">أيام</p>
                 </div>
                 <div className="text-center">
-                  <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                  <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                     <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.hours)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ساعات</p>
                 </div>
                 <div className="text-center">
-                  <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                  <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                     <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.minutes)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">دقائق</p>
                 </div>
                 <div className="text-center">
-                  <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                  <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                     <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.seconds)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ثواني</p>
@@ -231,7 +231,7 @@ export function AdsSection({ variant = 'dark' }: AdsSectionProps) {
               className="w-full md:w-[180px] md:h-[60px] animate-in text-[8px] md:text-[16px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200 rounded-xl mt-1 md:mt-4"
               style={{ backgroundColor: '#EC221F' }}
             >
-              <Link href={currentAd?.link || "#"} className="flex items-center justify-center gap-1 md:gap-2 text-white">
+              <Link href={currentAd?.link || "/products"} className="flex items-center justify-center gap-1 md:gap-2 text-white">
                 تسوق الان
                 <FaArrowLeft className="h-2 w-2 md:h-4 md:w-4" />
               </Link>
@@ -306,7 +306,7 @@ export function AdsSection({ variant = 'dark' }: AdsSectionProps) {
                 className="rounded-xl mt-2 md:mt-8 w-full sm:w-auto px-3 md:px-10 mb-2 md:mb-0 py-1 md:py-6 text-[8px] md:text-[18px] font-bold hover:scale-105 transition-all duration-300 shadow-lg"
                 style={{ backgroundColor: '#EC221F' }}
               >
-                <Link href={currentAd?.link || "#"} className="flex items-center justify-center gap-1 md:gap-2 text-white">
+                <Link href={currentAd?.link || "/products"} className="flex items-center justify-center gap-1 md:gap-2 text-white">
                   تسوق الان
                   <FaArrowLeft className="h-2 w-2 md:h-5 md:w-5" />
                 </Link>

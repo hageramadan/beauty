@@ -241,7 +241,7 @@ export function BestProducts() {
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#EC221F] text-white rounded-lg hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#EC221F] text-white rounded-[8px]  hover:bg-[#d11d1a] transition"
             >
               إعادة المحاولة
             </button>
@@ -302,7 +302,7 @@ export function BestProducts() {
             <button
               onClick={handleLoadMore}
               disabled={isLoadingMore}
-              className="px-6 py-2 border border-[#EC221F] text-[#EC221F] rounded-lg hover:bg-[#EC221F] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 border border-[#EC221F] text-[#EC221F] rounded-[8px]  hover:bg-[#EC221F] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}
             </button>

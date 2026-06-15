@@ -280,7 +280,7 @@ export default function ReturnRequestPage() {
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
           <Link
             href="/account/orders"
-            className="inline-block bg-[#EC221F] text-white px-6 py-2 rounded-lg"
+            className="inline-block bg-[#EC221F] text-white px-6 py-2 rounded-[8px] "
           >
             العودة إلى الطلبات
           </Link>

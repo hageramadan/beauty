@@ -368,7 +368,7 @@ export default function ReturnsPage() {
                             <div key={idx} className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0">
                               {/* صورة المنتج */}
                               <div className="flex-shrink-0">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg sm:rounded-xl overflow-hidden">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px]  sm:rounded-xl overflow-hidden">
                                   <Image 
                                     src={productImage} 
                                     alt={item.title || item.name || "منتج"} 
@@ -423,7 +423,7 @@ export default function ReturnsPage() {
                           )}
 
                           {returnItem.notes && (
-                            <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                            <div className="mt-3 p-3 bg-gray-100 rounded-[8px] ">
                               <p className="text-xs text-gray-600">
                                 <span className="font-bold">ملاحظات:</span> {returnItem.notes}
                               </p>

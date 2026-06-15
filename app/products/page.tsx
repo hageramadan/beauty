@@ -265,7 +265,7 @@ export default function ProductsPage() {
       <div className="container mx-auto px-4 pb-16">
         <div className="flex gap-4">
           <div className="flex-1">
-            <div className="rounded-lg  mb-6">
+            <div className="rounded-[8px]   mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-end gap-1">
                   <Link href="/" className="text-[#726C6C] text-xl">
@@ -284,7 +284,7 @@ export default function ProductsPage() {
                   onClick={() => {
                     setIsMobileFilterOpen(true);
                   }}
-                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-[8px]  hover:bg-gray-200 transition-colors"
                 >
                   <FilterIcon className="w-5 h-5" />
                   <span>فلتر</span>

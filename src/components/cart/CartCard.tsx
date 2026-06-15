@@ -17,7 +17,7 @@ interface CartItemCardProps {
   onSaveForLater?: (id: string) => void;
 }
 
-// دالة للحصول على اسم العلامة التجارية (سواء كانت string أو object)
+// دالة للحصول على اسم العلامة التجارية
 const getBrandName = (brand: string | { name: string } | null | undefined): string => {
   if (!brand) return "";
   if (typeof brand === "string") return brand;
@@ -25,17 +25,21 @@ const getBrandName = (brand: string | { name: string } | null | undefined): stri
   return "";
 };
 
-// ✅ إضافة دالة لتحويل اسم اللون إلى اللون المناسب للعرض (اختياري)
+// دالة لتحويل اسم اللون إلى اللون المناسب للعرض
 const getColorCode = (colorName: string): string => {
   const colorMap: Record<string, string> = {
     'ازرق فاتح': '#1e91eb',
+    'ازرق داكن': '#252B42',
     'بيج': '#bdae8c',
     'احمر': '#EC221F',
     'زيتوني': '#a4bfa8',
     'رمادي': '#454545',
     'بينك': '#d959c6',
+    'بنكي': '#d959c6',
     'اسود': '#000000',
     'ابيض': '#ffffff',
+    'اخضر': '#23856D',
+    'برتقالي': '#E77C40',
   };
   return colorMap[colorName] || '#cccccc';
 };
@@ -45,34 +49,35 @@ export function CartItemCard({
   onUpdateQuantity,
   onRemove,
 }: CartItemCardProps) {
-  const { id, productId, name, brand, price, originalPrice, image, color, size, quantity } = item;
+  const { 
+    id, 
+    productId, 
+    name, 
+    brand, 
+    price, 
+    originalPrice, 
+    image, 
+    color, 
+    size, 
+    quantity,
+    totalPrice  // ✅ إضافة totalPrice من الـ item
+  } = item;
   
-  // ✅ استخدام الـ FavoritesContext
+  // استخدام الـ FavoritesContext
   const { addFavorite, removeFavorite, isFavorite, isMutating } = useFavoritesContext();
   
-  // ✅ التحقق إذا كان المنتج في المفضلة
   const isProductFavorite = isFavorite(productId);
-
-  // الحصول على اسم العلامة التجارية بشكل صحيح
   const brandName = getBrandName(brand);
-
-  // ✅ الحصول على لون الخلفية لعرضه بجانب اسم اللون (اختياري)
   const colorCode = getColorCode(color);
 
-  // ✅ دالة إضافة/إزالة من المفضلة
+  // دالة إضافة/إزالة من المفضلة
   const handleToggleFavorite = async () => {
     if (isMutating) return;
     
     if (isProductFavorite) {
-      const success = await removeFavorite(productId);
-      if (success) {
-        // toast.success(`تم إزالة "${name}" من المفضلة`);
-      }
+      await removeFavorite(productId);
     } else {
-      const success = await addFavorite(productId);
-      // if (success) {
-      //   toast.success(`تم إضافة "${name}" إلى المفضلة`);
-      // }
+      await addFavorite(productId);
     }
   };
 
@@ -89,13 +94,13 @@ export function CartItemCard({
               toast.dismiss(t.id);
               onRemove(id);
             }}
-            className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition font-medium"
+            className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
           >
             نعم، احذف
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition font-medium"
+            className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-[8px] hover:bg-gray-300 transition font-medium"
           >
             إلغاء
           </button>
@@ -131,7 +136,13 @@ export function CartItemCard({
               />
             </div>
             <div className="flex flex-wrap items-center justify-between mt-2 gap-3">
-              <ProductPriceLarge price={price} originalPrice={originalPrice} />
+              {/* ✅ عرض total_price بدلاً من price فقط */}
+              <ProductPriceLarge 
+                price={price} 
+                originalPrice={originalPrice}
+                totalPrice={totalPrice}
+                quantity={quantity}
+              />
               <QuantityControlLarge
                 id={id}
                 quantity={quantity}
@@ -164,7 +175,13 @@ export function CartItemCard({
               />
             </div>
             <div className="flex items-center justify-between mt-1">
-              <ProductPriceMobile price={price} originalPrice={originalPrice} />
+              {/* ✅ عرض total_price بدلاً من price فقط */}
+              <ProductPriceMobile 
+                price={price} 
+                originalPrice={originalPrice}
+                totalPrice={totalPrice}
+                quantity={quantity}
+              />
               <QuantityControlMobile
                 id={id}
                 quantity={quantity}
@@ -231,7 +248,10 @@ const ProductDetailsLarge = ({
         <span className="font-extrabold flex items-center gap-2">
           اللون: 
           <span className="text-gray-800 font-normal flex items-center gap-2">
-            
+            <span 
+              className="w-3 h-3 rounded-full border border-gray-300" 
+              style={{ backgroundColor: colorCode }}
+            />
             {color}
           </span>
         </span>
@@ -245,21 +265,36 @@ const ProductDetailsLarge = ({
   </div>
 );
 
+// ✅ تحديث مكون عرض السعر ليعرض total_price
 const ProductPriceLarge = ({
   price,
   originalPrice,
+  totalPrice,
+  quantity,
 }: {
   price: number;
   originalPrice?: number;
+  totalPrice: number;
+  quantity: number;
 }) => (
-  <div className="flex items-center gap-1">
-    {originalPrice && originalPrice !== price && (
-      <div className="text-sm text-gray-500 line-through">
-        EGP {originalPrice.toLocaleString()}
+  <div className="flex flex-col gap-1">
+    {/* سعر الوحدة (صغير) */}
+    <div className="flex items-center gap-1">
+      {originalPrice && originalPrice !== price && (
+        <div className="text-xs text-gray-400 line-through">
+          {originalPrice.toLocaleString()} EGP
+        </div>
+      )}
+      <div className="text-sm text-gray-500">
+        {price.toLocaleString()} EGP / قطعة
       </div>
-    )}
-    <div className="text-xl font-bold">
-      EGP {price.toLocaleString()}
+    </div>
+    {/* السعر الإجمالي (كبير وواضح) */}
+    <div className="flex items-center gap-1">
+      <span className="text-xl font-bold text-[#EC221F]">
+        {totalPrice.toLocaleString()} EGP
+      </span>
+      <span className="text-xs text-gray-400">(الإجمالي)</span>
     </div>
   </div>
 );
@@ -392,21 +427,33 @@ const ProductDetailsMobile = ({
   </div>
 );
 
+// ✅ تحديث مكون عرض السعر للموبايل
 const ProductPriceMobile = ({
   price,
   originalPrice,
+  totalPrice,
+  quantity,
 }: {
   price: number;
   originalPrice?: number;
+  totalPrice: number;
+  quantity: number;
 }) => (
-  <div className="flex items-center gap-1">
-    {originalPrice && originalPrice !== price && (
-      <div className="text-[10px] text-gray-400 line-through">
-        {originalPrice.toLocaleString()}
-      </div>
-    )}
+  <div className="flex flex-col">
+    {/* السعر الإجمالي (كبير) */}
     <div className="text-sm font-bold text-[#EC221F]">
-      {price.toLocaleString()} EGP
+      {totalPrice.toLocaleString()} EGP
+    </div>
+    {/* سعر الوحدة (صغير) */}
+    <div className="flex items-center gap-1">
+      {originalPrice && originalPrice !== price && (
+        <div className="text-[9px] text-gray-400 line-through">
+          {originalPrice.toLocaleString()}
+        </div>
+      )}
+      <div className="text-[9px] text-gray-400">
+        {price.toLocaleString()} / قطعة
+      </div>
     </div>
   </div>
 );

@@ -98,7 +98,7 @@ export function CategoriesSection() {
           <p className="text-red-600">عذراً، حدث خطأ في تحميل الأقسام</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#EC221F] text-white rounded-lg hover:bg-[#d11d1a] transition"
+            className="mt-4 px-4 py-2 bg-[#EC221F] text-white rounded-[8px]  hover:bg-[#d11d1a] transition"
           >
             إعادة المحاولة
           </button>

@@ -271,7 +271,7 @@ export function YouMayAlsoLike() {
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#EC221F] text-white rounded-lg hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#EC221F] text-white rounded-[8px]  hover:bg-[#d11d1a] transition"
             >
               إعادة المحاولة
             </button>

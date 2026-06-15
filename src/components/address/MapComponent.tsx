@@ -106,7 +106,7 @@ export default function MapComponent({ onLocationSelect, initialLocation }: Loca
 
   if (isLoading) {
     return (
-      <div className="bg-gray-100 rounded-lg h-80 flex items-center justify-center">
+      <div className="bg-gray-100 rounded-[8px]  h-80 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
           <p className="text-gray-600">جاري تحميل الخريطة...</p>
@@ -118,11 +118,11 @@ export default function MapComponent({ onLocationSelect, initialLocation }: Loca
   return (
     <div className="relative">
       {error && (
-        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-[8px]  text-yellow-700 text-sm">
           ⚠️ {error}
         </div>
       )}
-      <div className="rounded-lg overflow-hidden border border-gray-200">
+      <div className="rounded-[8px]  overflow-hidden border border-gray-200">
         <MapContainer
           center={userLocation || [30.0444, 31.2357]}
           zoom={13}

@@ -184,7 +184,7 @@ export default function OTPWithEmail() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 font-medium"
+              className="w-full py-3 bg-black text-white rounded-[8px]  hover:bg-gray-800 transition disabled:opacity-50 font-medium"
             >
               {isLoading ? (
                 <>

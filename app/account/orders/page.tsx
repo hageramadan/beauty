@@ -334,7 +334,7 @@ export default function OrdersPage() {
                                 href={`/account/orders/${order.id}`}
                                 className="flex-shrink-0"
                               >
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg sm:rounded-xl overflow-hidden hover:opacity-80 transition cursor-pointer">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px]  sm:rounded-xl overflow-hidden hover:opacity-80 transition cursor-pointer">
                                   <Image 
                                     src={productImage} 
                                     alt={item.title} 

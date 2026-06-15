@@ -26,7 +26,7 @@ const getDefaultSlides = (): Slide[] => {
       title: "حيث تلتقي الأناقة بالثقة",
       description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
       buttonText: "تسوق الآن",
-      buttonLink: "/",
+      buttonLink: "/products",
     },
     {
       id: 2,
@@ -34,7 +34,7 @@ const getDefaultSlides = (): Slide[] => {
       title: "حيث تلتقي الأناقة بالثقة",
       description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
       buttonText: "تسوق الآن",
-      buttonLink: "/",
+      buttonLink: "/products",
     },
     {
       id: 3,
@@ -42,7 +42,7 @@ const getDefaultSlides = (): Slide[] => {
       title: "حيث تلتقي الأناقة بالثقة",
       description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
       buttonText: "تسوق الآن",
-      buttonLink: "/",
+      buttonLink: "/products",
     },
   ];
 };
@@ -77,7 +77,7 @@ export function Hero() {
           title: slider.name,
           description: slider.description,
           buttonText: "تسوق الآن",
-          buttonLink: slider.link || "/",
+          buttonLink: slider.link || "/products",
         }));
         
         setSlides(transformedSlides);
@@ -202,7 +202,7 @@ export function Hero() {
           <p className="text-red-600">عذراً، حدث خطأ   </p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#EC221F] text-white rounded-lg hover:bg-[#d11d1a] transition"
+            className="mt-4 px-4 py-2 bg-[#EC221F] text-white rounded-[8px]  hover:bg-[#d11d1a] transition"
           >
             إعادة المحاولة
           </button>

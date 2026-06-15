@@ -32,7 +32,7 @@ export default function Map({ onLocationSelect }: MapProps) {
     <div className="relative">
       <div 
         onClick={handleMapClick}
-        className="bg-gray-100 rounded-lg h-64 relative cursor-pointer overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-500 transition"
+        className="bg-gray-100 rounded-[8px]  h-64 relative cursor-pointer overflow-hidden border-2 border-dashed border-gray-300 hover:border-blue-500 transition"
       >
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">

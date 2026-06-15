@@ -372,7 +372,7 @@ export default function ReturnDetailsPage() {
           <p className="text-gray-500 mb-6">رقم المرتجع غير موجود أو تم حذفه</p>
           <Link
             href="/account/returns"
-            className="inline-flex items-center gap-2 bg-[#EC221F] text-white px-6 py-2 rounded-lg hover:bg-[#d11d1a] transition"
+            className="inline-flex items-center gap-2 bg-[#EC221F] text-white px-6 py-2 rounded-[8px]  hover:bg-[#d11d1a] transition"
           >
             <ArrowRight className="w-5 h-5" />
             العودة إلى المرتجعات
@@ -460,7 +460,7 @@ export default function ReturnDetailsPage() {
                 <div className="space-y-4">
                   {returnDetails.items.map((item, idx) => (
                     <div key={idx} className="flex gap-4">
-                      <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="w-20 h-20 bg-gray-100 rounded-[8px]  overflow-hidden flex-shrink-0">
                         {item.image ? (
                           <Image
                             src={item.image}
@@ -656,7 +656,7 @@ export default function ReturnDetailsPage() {
                             <h2 className="text-base font-bold">طريقة استرداد المبلغ</h2>
                           </div>
                           <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
-                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                            <div className="w-10 h-10 bg-white rounded-[8px]  flex items-center justify-center shadow-sm">
                               <Image src="/images/payment/mada.png" width={40} height={40} alt="mada"/>
                             </div>
                             <div>

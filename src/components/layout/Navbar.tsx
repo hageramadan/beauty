@@ -277,7 +277,7 @@ const itemsCount = cart?.items?.length || 0;
                   {/* Categories Dropdown - Desktop */}
                   {showCategoriesDropdown && (
                     <div 
-                      className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200"
+                      className="absolute top-full right-0 mt-2 w-64 bg-white rounded-[8px]  border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200"
                       style={{ borderColor: '#e2e8f0' }}
                       onMouseLeave={() => setShowCategoriesDropdown(false)}
                     >
@@ -431,7 +431,7 @@ const itemsCount = cart?.items?.length || 0;
 
                 {/* User Dropdown Menu */}
                 {showUserDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ borderColor: '#e2e8f0' }}>
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-[8px]  border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ borderColor: '#e2e8f0' }}>
                     <div className="py-2">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-800">{user.name || "مستخدم"}</p>
@@ -543,7 +543,7 @@ const itemsCount = cart?.items?.length || 0;
             <div className="flex items-center justify-around px-3 py-2 border-b border-gray-100">
               <Link 
                 href="/account/wishlist" 
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+                className="flex flex-col items-center gap-1 p-2 rounded-[8px]  hover:bg-gray-50 transition-colors relative"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {favoritesCount > 0 && (
@@ -557,7 +557,7 @@ const itemsCount = cart?.items?.length || 0;
               
               <Link 
                 href="/cart" 
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+                className="flex flex-col items-center gap-1 p-2 rounded-[8px]  hover:bg-gray-50 transition-colors relative"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {itemsCount > 0 && (
@@ -579,7 +579,7 @@ const itemsCount = cart?.items?.length || 0;
               ) : (
                 <Link 
                   href="/auth/login" 
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex flex-col items-center gap-1 p-2 rounded-[8px]  hover:bg-gray-50 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <User className="h-5 w-5" style={{ color: '#195073' }} />
@@ -593,7 +593,7 @@ const itemsCount = cart?.items?.length || 0;
               <div className="px-3 space-y-1 border-b border-gray-100 pb-3">
                 <Link 
                   href="/account/orders" 
-                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-[8px]  hover:bg-gray-50"
                   style={{ color: '#112B40' }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -602,7 +602,7 @@ const itemsCount = cart?.items?.length || 0;
                 </Link>
                 <Link 
                   href="/account/returns" 
-                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-[8px]  hover:bg-gray-50"
                   style={{ color: '#112B40' }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -614,7 +614,7 @@ const itemsCount = cart?.items?.length || 0;
                     handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-[8px]  hover:bg-gray-50"
                   style={{ color: '#EC221F' }}
                 >
                   <LogOut className="h-4 w-4" />

@@ -92,7 +92,7 @@ export default function WalletPage() {
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchWalletBalance}
-              className="px-4 py-2 bg-[#ff3c27] text-white rounded-lg hover:bg-[#e63520] transition"
+              className="px-4 py-2 bg-[#ff3c27] text-white rounded-[8px]  hover:bg-[#e63520] transition"
             >
               إعادة المحاولة
             </button>

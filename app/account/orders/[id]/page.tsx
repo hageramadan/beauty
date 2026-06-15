@@ -357,13 +357,13 @@ export default function OrderDetailsPage() {
               
               setIsCancelling(false);
             }}
-            className="px-5 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition font-medium shadow-sm"
+            className="px-5 py-2 bg-red-500 text-white text-sm rounded-[8px]  hover:bg-red-600 transition font-medium shadow-sm"
           >
             نعم، إلغاء الطلب
           </button>
           <button
             onClick={() => toast.dismiss(t.id)}
-            className="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition font-medium"
+            className="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded-[8px]  hover:bg-gray-200 transition font-medium"
           >
             إلغاء
           </button>
@@ -398,7 +398,7 @@ export default function OrderDetailsPage() {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition">
+          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-[8px]  hover:bg-gray-800 transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -585,7 +585,7 @@ export default function OrderDetailsPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
               <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 bg-white rounded-[8px]  flex items-center justify-center shadow-sm">
                   <GrMoney />
                 </div>
                 <div>

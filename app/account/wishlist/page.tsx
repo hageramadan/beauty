@@ -159,7 +159,7 @@ export default function WishlistPage() {
               <Heart className="w-7 h-7 text-[#EC221F] fill-current" />
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800">قائمة المفضلة</h1>
               {total > 0 && (
-                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm">
+                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-[8px]  text-sm">
                   {total} منتج
                 </span>
               )}

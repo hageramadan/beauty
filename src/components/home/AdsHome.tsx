@@ -67,7 +67,7 @@ export function AdsHome() {
             <div className="flex justify-center md:justify-start gap-1.5 md:gap-5">
               {/* Days */}
               <div className="text-center">
-                <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                   <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.days)}</span>
                 </div>
                 <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">أيام</p>
@@ -75,7 +75,7 @@ export function AdsHome() {
               
               {/* Hours */}
               <div className="text-center">
-                <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                   <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.hours)}</span>
                 </div>
                 <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ساعات</p>
@@ -83,7 +83,7 @@ export function AdsHome() {
               
               {/* Minutes */}
               <div className="text-center">
-                <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                   <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.minutes)}</span>
                 </div>
                 <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">دقائق</p>
@@ -91,7 +91,7 @@ export function AdsHome() {
               
               {/* Seconds */}
               <div className="text-center">
-                <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
+                <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
                   <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.seconds)}</span>
                 </div>
                 <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ثواني</p>
@@ -107,7 +107,7 @@ export function AdsHome() {
              font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200 rounded-xl mt-1 md:mt-4"
             style={{ backgroundColor: '#EC221F' }}
           >
-            <Link href="#" className="flex items-center justify-center gap-1 md:gap-2 text-white">
+            <Link href="/products" className="flex items-center justify-center gap-1 md:gap-2 text-white">
               تسوق الان
               <FaArrowLeft className="h-2 w-2 md:h-4 md:w-4" />
             </Link>
