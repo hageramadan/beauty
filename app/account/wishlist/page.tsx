@@ -140,7 +140,7 @@ export default function WishlistPage() {
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -150,7 +150,7 @@ export default function WishlistPage() {
             direction: 'rtl',
           },
         }}
-      />
+      /> */}
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">

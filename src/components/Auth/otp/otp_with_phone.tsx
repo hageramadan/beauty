@@ -82,7 +82,7 @@ export default function OTPWithPhone() {
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -92,7 +92,7 @@ export default function OTPWithPhone() {
             direction: "rtl",
           },
         }}
-      />
+      /> */}
 
       <div className=" page-with-padding bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="container mx-auto px-4 py-6 md:py-12">

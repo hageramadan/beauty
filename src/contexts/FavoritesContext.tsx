@@ -83,7 +83,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       const response = await addToFavorites(productId);
       
       if (response.result === true && response.data) {
-        // toast.success('تم إضافة المنتج إلى المفضلة');
+        toast.success('تم إضافة المنتج إلى المفضلة');
         
         // إعادة جلب البيانات بالكامل للتأكد من التزامن
         await fetchData(false);

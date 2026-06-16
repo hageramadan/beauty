@@ -391,7 +391,7 @@ export default function EditProfilePage() {
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           duration: 3000,
@@ -402,7 +402,7 @@ export default function EditProfilePage() {
             direction: 'rtl',
           },
         }}
-      />
+      /> */}
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto py-6">

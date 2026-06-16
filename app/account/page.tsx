@@ -181,7 +181,7 @@ export default function AccountPage() {
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -191,7 +191,7 @@ export default function AccountPage() {
             direction: 'rtl',
           },
         }}
-      />
+      /> */}
       
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto pb-4">

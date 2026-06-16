@@ -15,7 +15,7 @@ import {
 import { GrMoney } from "react-icons/gr";
 import Image from "next/image";
 import Link from "next/link";
-import OrderTracker from "@/components/OrderTracker";
+import OrderTracker, { type OrderStatus } from "@/components/OrderTracker";
 import { IoCopyOutline } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6";
 import toast from "react-hot-toast";
@@ -65,7 +65,7 @@ interface OrderDetails {
   id: number;
   orderNumber: string;
   date: string;
-  status: "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status: OrderStatus;
   status_label: string;
   payment_method: string;
   payment_status: string;
@@ -113,6 +113,14 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
       headers: getHeaders(),
     });
     
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+      }
+      throw new Error('UNAUTHORIZED');
+    }
+    
     const data = await response.json();
     
     if (data.result === true && data.data) {
@@ -121,6 +129,18 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
     return null;
   } catch (error) {
     console.error("❌ Error fetching order details:", error);
+    
+    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+      toast.error("جلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى", {
+        duration: 3000,
+        position: "top-center",
+      });
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
+      return null;
+    }
+    
     toast.error("حدث خطأ في جلب تفاصيل الطلب");
     return null;
   }
@@ -137,6 +157,21 @@ const cancelOrder = async (orderId: number): Promise<boolean> => {
         status: 'cancelled'
       }),
     });
+    
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+      }
+      toast.error("جلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى", {
+        duration: 3000,
+        position: "top-center",
+      });
+      setTimeout(() => {
+        window.location.href = '/auth/login';
+      }, 1500);
+      return false;
+    }
     
     const data = await response.json();
     
@@ -165,17 +200,17 @@ const cancelOrder = async (orderId: number): Promise<boolean> => {
 };
 
 // ========== تحويل حالة الطلب ==========
-const mapStatusToEnglish = (statusLabel: string): "pending" | "processing" | "ready" | "delivering" | "delivered" | "cancelled" => {
-  const statusMap: Record<string, any> = {
-    "ordered": "pending",
+const mapStatusToEnglish = (statusLabel: string): OrderStatus => {
+  const statusMap: Record<string, OrderStatus> = {
+    "ordered": "ordered",
     "processing": "processing",
-    "ready": "ready",
+    "ready_for_receive": "ready_for_receive",
     "delivering": "delivering",
     "delivered": "delivered",
+    "not_delivered": "not_delivered",
     "cancelled": "cancelled",
-    "ملغي": "cancelled",
   };
-  return statusMap[statusLabel] || "pending";
+  return statusMap[statusLabel] || "ordered";
 };
 
 // ========== تحويل طريقة الدفع ==========
@@ -220,15 +255,12 @@ const cleanImageUrl = (url: string): string => {
 
 // ========== الحصول على اسم المستخدم ==========
 const getUserName = (order: any): string => {
-  // الحالة 1: من address.user.name
   if (order.address?.user?.name) {
     return order.address.user.name;
   }
-  // الحالة 2: من additional_data.name
   if (order.additional_data?.name) {
     return order.additional_data.name;
   }
-  // الحالة 3: غير متوفر
   return "غير متوفر";
 };
 
@@ -261,12 +293,13 @@ const transformOrderDetails = (apiOrder: any): OrderDetails => {
 };
 
 // ========== حالة الطلب مع التنسيق ==========
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: "تم الطلب", color: "status-pending", icon: Clock },
+const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
+  ordered: { label: "تم الطلب", color: "status-pending", icon: Clock },
   processing: { label: "قيد المعالجة", color: "status-processing", icon: Package },
-  ready: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
+  ready_for_receive: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
   delivering: { label: "في الطريق", color: "status-delivering", icon: Truck },
   delivered: { label: "تم التسليم", color: "status-delivered", icon: CheckCircle },
+  not_delivered: { label: "لم يتم التسليم", color: "status-cancelled", icon: XCircle },
   cancelled: { label: "ملغي", color: "status-cancelled", icon: XCircle },
 };
 
@@ -280,8 +313,21 @@ export default function OrderDetailsPage() {
   const [orderNotes, setOrderNotes] = useState("");
   const [copied, setCopied] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  // ✅ State for Cancel Modal
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      toast.error("يرجى تسجيل الدخول أولاً", {
+        duration: 3000,
+        position: "top-center",
+      });
+      router.push('/auth/login');
+      return;
+    }
+    
     const loadOrderDetails = async () => {
       setLoading(true);
       const data = await fetchOrderDetails(orderId);
@@ -295,7 +341,7 @@ export default function OrderDetailsPage() {
     if (orderId) {
       loadOrderDetails();
     }
-  }, [orderId]);
+  }, [orderId, router]);
 
   const copyOrderNumber = () => {
     if (order) {
@@ -317,67 +363,37 @@ export default function OrderDetailsPage() {
     router.push(`/products`);
   };
 
-  // ✅ دالة إلغاء الطلب مع Toast confirmation بدلاً من alert
-  const handleCancelOrder = () => {
+  // ✅ فتح وإغلاق مودال الإلغاء
+  const openCancelModal = () => {
+    setShowCancelModal(true);
+  };
+
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+  };
+
+  // ✅ دالة تأكيد إلغاء الطلب
+  const confirmCancelOrder = async () => {
     if (!order) return;
     
-    // عرض Toast للتأكيد
-    toast((t) => (
-      <div className="flex flex-col gap-3 p-4 min-w-[280px]" dir="rtl">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
-            <XCircle className="w-6 h-6 text-red-600" />
-          </div>
-          <p className="text-gray-800 font-bold text-lg mb-1">تأكيد إلغاء الطلب</p>
-          <p className="text-gray-500 text-sm">
-            هل أنت متأكد من إلغاء الطلب <span className="font-bold text-red-500">{order.orderNumber}</span>؟
-          </p>
-          <p className="text-gray-400 text-xs mt-2">لا يمكنك التراجع عن هذا الإجراء</p>
-        </div>
-        <div className="flex justify-center gap-3 mt-2">
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              setIsCancelling(true);
-              
-              const success = await cancelOrder(order.id);
-              
-              if (success) {
-                setOrder({
-                  ...order,
-                  status: "cancelled",
-                  status_label: "ملغي"
-                });
-                
-                // العودة إلى صفحة الطلبات بعد 2 ثانية
-                setTimeout(() => {
-                  router.push("/account/orders");
-                }, 2000);
-              }
-              
-              setIsCancelling(false);
-            }}
-            className="px-5 py-2 bg-red-500 text-white text-sm rounded-[8px]  hover:bg-red-600 transition font-medium shadow-sm"
-          >
-            نعم، إلغاء الطلب
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded-[8px]  hover:bg-gray-200 transition font-medium"
-          >
-            إلغاء
-          </button>
-        </div>
-      </div>
-    ), {
-      duration: 10000,
-      style: {
-        maxWidth: '400px',
-        padding: '0',
-        borderRadius: '20px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-      },
-    });
+    setIsCancelling(true);
+    closeCancelModal();
+    
+    const success = await cancelOrder(order.id);
+    
+    if (success) {
+      setOrder({
+        ...order,
+        status: "cancelled",
+        status_label: "ملغي"
+      });
+      
+      setTimeout(() => {
+        router.push("/account/orders");
+      }, 2000);
+    }
+    
+    setIsCancelling(false);
   };
 
   if (loading) {
@@ -408,250 +424,304 @@ export default function OrderDetailsPage() {
 
   const status = statusConfig[order.status];
   const StatusIcon = status.icon;
-  
-  // الحصول على اسم المستخدم
   const userName = getUserName(order);
 
   return (
-    <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <div className="container mx-auto mb-3 px-4 md:px-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-          <Link href="/account" className="hover:text-[#EC221F] transition">حسابي</Link>
-          <ChevronRight className="w-4 h-4" />
-          <Link href="/account/orders" className="hover:text-[#EC221F] transition">طلباتي</Link>
-          <ChevronRight className="w-4 h-4" />
-          <span className="text-[#EC221F] font-medium">تفاصيل الطلب</span>
-        </div>
-        
-        <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* العمود الأيمن */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* معلومات الطلب الأساسية */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                    <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
-                      <h1 className="text-sm sm:text-base">رقم الطلب</h1>
-                      <div className="flex gap-1 sm:gap-2 items-center">
-                        <p className="font-bold text-gray-800 text-sm sm:text-base">
-                          <span className="hidden sm:inline">{order.orderNumber}</span>
-                          <span className="sm:hidden">
-                            {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
-                          </span>
-                        </p>
-                        <IoCopyOutline 
-                          className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#EC221F]'}`}
-                          onClick={copyOrderNumber}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}>
-                    <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    {status.label}
-                  </div>
-                </div>
-                <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
-              </div>
-            </div>
-           <br />
-            {/* المنتجات */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
-              <div className="space-y-4">
-                {order.items.map((item, idx) => {
-                  const productImage = item.images && item.images.length > 0 
-                    ? cleanImageUrl(item.images[0]) 
-                    : PLACEHOLDER_IMAGE;
-                  
-                  return (
-                    <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
-                      <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                        <Image
-                          src={productImage}
-                          alt={item.title}
-                          width={80}
-                          height={80}
-                          className="object-cover w-full h-full"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 md:text-right text-center">
-                        <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
-                          <div>
-                            <p className="font-bold text-gray-800">{item.title}</p>
-                            <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
-                              <span>الكمية: <span className="text-gray-500">x{item.quantity}</span></span>
-                              <span>السعر: <span className="text-gray-500">EGP {item.unit_price.toFixed(2)}</span></span>
-                            </div>
-                          </div>
-                          <div className="text-left">
-                            <p className="font-bold text-[#EC221F]">EGP {item.total_price.toFixed(2)}</p>
-                            {item.discount_amount > 0 && (
-                              <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
-                            )}
-                          </div>
+    <>
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
+        <div className="container mx-auto mb-3 px-4 md:px-8">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            <Link href="/account" className="hover:text-[#EC221F] transition">حسابي</Link>
+            <ChevronRight className="w-4 h-4" />
+            <Link href="/account/orders" className="hover:text-[#EC221F] transition">طلباتي</Link>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-[#EC221F] font-medium">تفاصيل الطلب</span>
+          </div>
+          
+          <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* العمود الأيمن */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* معلومات الطلب الأساسية */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                      <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
+                        <h1 className="text-sm sm:text-base">رقم الطلب</h1>
+                        <div className="flex gap-1 sm:gap-2 items-center">
+                          <p className="font-bold text-gray-800 text-sm sm:text-base">
+                            <span className="hidden sm:inline">{order.orderNumber}</span>
+                            <span className="sm:hidden">
+                              {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
+                            </span>
+                          </p>
+                          <IoCopyOutline 
+                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#EC221F]'}`}
+                            onClick={copyOrderNumber}
+                          />
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}>
+                      <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      {status.label}
+                    </div>
+                  </div>
+                  <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
+                </div>
               </div>
-              
-              {/* إخفاء OrderTracker عندما يكون الطلب ملغي */}
-              {order.status !== "cancelled" && (
-                <div className="mt-6">
-                  <OrderTracker currentStatus={order.status} />
+             <br />
+              {/* المنتجات */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ">
+                <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
+                <div className="space-y-4">
+                  {order.items.map((item, idx) => {
+                    const productImage = item.images && item.images.length > 0 
+                      ? cleanImageUrl(item.images[0]) 
+                      : PLACEHOLDER_IMAGE;
+                    
+                    return (
+                      <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
+                        <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                          <Image
+                            src={productImage}
+                            alt={item.title}
+                            width={80}
+                            height={80}
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 md:text-right text-center">
+                          <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
+                            <div>
+                              <p className="font-bold text-gray-800">{item.title}</p>
+                              <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
+                                <span>الكمية: <span className="text-gray-500">x{item.quantity}</span></span>
+                                <span>السعر: <span className="text-gray-500">EGP {item.unit_price.toFixed(2)}</span></span>
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-bold text-[#EC221F]">EGP {item.total_price.toFixed(2)}</p>
+                              {item.discount_amount > 0 && (
+                                <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-           <br />
-            {/* ملخص الطلب */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الطلب</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">المبلغ الإجمالي</span>
-                  <span className="font-bold text-gray-800">EGP {order.subtotal.toFixed(2)}</span>
-                </div>
-                {order.coupon_discount_amount > 0 && (
+                
+                {/* إخفاء OrderTracker عندما يكون الطلب ملغي */}
+                {order.status !== "cancelled" && order.status !== "not_delivered" && (
+                  <div className="mt-6">
+                    <OrderTracker currentStatus={order.status} />
+                  </div>
+                )}
+              </div>
+             <br />
+              {/* ملخص الطلب */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الطلب</h2>
+                <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">خصم الكوبون</span>
-                    <span className="font-bold text-[#EC221F]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
+                    <span className="text-gray-500">المبلغ الإجمالي</span>
+                    <span className="font-bold text-gray-800">EGP {order.subtotal.toFixed(2)}</span>
                   </div>
-                )}
-                {order.total_discount_amount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">خصم</span>
-                    <span className="font-bold text-[#EC221F]">-EGP {order.total_discount_amount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-500">رسوم التوصيل</span>
-                  <span className="font-bold text-gray-800">EGP {order.shipping_amount.toFixed(2)}</span>
-                </div>
-                {order.tax_amount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">الضرائب</span>
-                    <span className="font-bold text-gray-800">EGP {order.tax_amount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
-                  <span className="text-lg font-bold text-gray-800">الإجمالي</span>
-                  <span className="text-xl font-bold text-[#EC221F]">EGP {order.total_amount.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* العمود الأيسر */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-base font-bold text-gray-800 mb-4">معلومات الاتصال</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-bold">الاسم الكامل</span>
-                  <span className="font-medium text-gray-600">{userName}</span>
-                </div>
-                {/* عرض رقم الهاتف إذا موجود في additional_data */}
-                {order.additional_data?.phone && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold">رقم الهاتف</span>
-                    <span className="font-medium text-gray-600">{order.additional_data.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <br />
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-base font-bold mb-4">طريقة الاستلام</h2>
-              <span className="font-medium text-gray-800">{order.delivery_method}</span>
-              {order.address && (
-                <div className="flex items-center gap-2 border rounded-xl px-2 py-3 mt-3">
-                  <FaLocationDot className="text-gray-500 flex-shrink-0" />
-                  <p className="font-medium text-gray-400 text-sm">
-                    {order.address.street}، {order.address.city?.name}
-                  </p>
-                </div>
-              )}
-            </div>
-              <br/>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
-              <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
-                <div className="w-10 h-10 bg-white rounded-[8px]  flex items-center justify-center shadow-sm">
-                  <GrMoney />
-                </div>
-                <div>
-                  <p className="text-gray-500">{order.payment_method}</p>
-                </div>
-              </div>
-            </div>
-              <br/>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-base font-bold text-gray-800 mb-4">ملاحظات</h2>
-              <textarea
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="لا توجد ملاحظات"
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#EC221F] resize-none bg-gray-50"
-                rows={3}
-                readOnly
-              />
-            </div>
-
-            <div className="flex gap-3 mt-3 md:mt-6 mx-2">
-              {order.status === "delivered" && (
-                <>
-                  <button 
-                    onClick={handleReturnClick} 
-                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
-                  >
-                    إرجاع
-                  </button>
-                  <button 
-                    onClick={handleProductsClick} 
-                    className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
-                  >
-                    إعادة الطلب
-                  </button>
-                </>
-              )}
-              {order.status === "pending" && (
-                <button 
-                  onClick={handleCancelOrder}
-                  disabled={isCancelling}
-                  className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isCancelling ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                      جاري الإلغاء...
-                    </>
-                  ) : (
-                    "إلغاء الطلب"
+                  {order.coupon_discount_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">خصم الكوبون</span>
+                      <span className="font-bold text-[#EC221F]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
+                    </div>
                   )}
-                </button>
-              )}
+                  {order.total_discount_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">خصم</span>
+                      <span className="font-bold text-[#EC221F]">-EGP {order.total_discount_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">رسوم التوصيل</span>
+                    <span className="font-bold text-gray-800">EGP {order.shipping_amount.toFixed(2)}</span>
+                  </div>
+                  {order.tax_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">الضرائب</span>
+                      <span className="font-bold text-gray-800">EGP {order.tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
+                    <span className="text-lg font-bold text-gray-800">الإجمالي</span>
+                    <span className="text-xl font-bold text-[#EC221F]">EGP {order.total_amount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* العمود الأيسر */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-bold text-gray-800 mb-4">معلومات الاتصال</h2>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold">الاسم الكامل</span>
+                    <span className="font-medium text-gray-600">{userName}</span>
+                  </div>
+                  {order.additional_data?.phone && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-bold">رقم الهاتف</span>
+                      <span className="font-medium text-gray-600" dir="ltr">{order.additional_data.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <br />
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-bold mb-4">طريقة الاستلام</h2>
+                <span className="font-medium text-gray-800">{order.delivery_method}</span>
+                {order.address && (
+                  <div className="flex items-center gap-2 border rounded-xl px-2 py-3 mt-3">
+                    <FaLocationDot className="text-gray-500 flex-shrink-0" />
+                    <p className="font-medium text-gray-400 text-sm">
+                      {order.address.street}، {order.address.city?.name}
+                    </p>
+                  </div>
+                )}
+              </div>
+                <br/>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
+                <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
+                  <div className="w-10 h-10 bg-white rounded-[8px]  flex items-center justify-center shadow-sm">
+                    <GrMoney />
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{order.payment_method}</p>
+                  </div>
+                </div>
+              </div>
+                <br/>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-bold text-gray-800 mb-4">ملاحظات</h2>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  placeholder="لا توجد ملاحظات"
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#EC221F] resize-none bg-gray-50"
+                  rows={3}
+                  readOnly
+                />
+              </div>
+
+              <div className="flex gap-3 mt-3 md:mt-6 mx-2">
+                {order.status === "delivered" && (
+                  <>
+                    <button 
+                      onClick={handleReturnClick} 
+                      className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
+                    >
+                      إرجاع
+                    </button>
+                    <button 
+                      onClick={handleProductsClick} 
+                      className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
+                    >
+                      إعادة الطلب
+                    </button>
+                  </>
+                )}
+                
+                {order.status === "ordered" && (
+                  <button 
+                    onClick={openCancelModal}
+                    disabled={isCancelling}
+                    className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-xl font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        جاري الإلغاء...
+                      </>
+                    ) : (
+                      "إلغاء الطلب"
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        <style jsx global>{`
+          .status-pending { background-color: #A0AEC03D; color: #A0AEC0; }
+          .status-processing { background-color: #ED89363D; color: #ED8936; }
+          .status-ready { background-color: #9F7AEA3D; color: #9F7AEA; }
+          .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
+          .status-delivered { background-color: #48BB783D; color: #48BB78; }
+          .status-cancelled { background-color: #F565653D; color: #F56565; }
+        `}</style>
       </div>
 
-      <style jsx global>{`
-        .status-pending { background-color: #A0AEC03D; color: #A0AEC0; }
-        .status-processing { background-color: #ED89363D; color: #ED8936; }
-        .status-ready { background-color: #9F7AEA3D; color: #9F7AEA; }
-        .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
-        .status-delivered { background-color: #48BB783D; color: #48BB78; }
-        .status-cancelled { background-color: #F565653D; color: #F56565; }
-      `}</style>
-    </div>
+      {/* ✅ Modal تأكيد إلغاء الطلب */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fadeIn">
+            {/* أيقونة */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                <XCircle className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+            
+            {/* النص */}
+            <h3 className="text-xl font-bold text-center text-gray-800 mb-2">
+              تأكيد إلغاء الطلب
+            </h3>
+            <p className="text-center text-gray-600 text-sm mb-1">
+              هل أنت متأكد من إلغاء الطلب؟
+            </p>
+            <p className="text-center text-red-500 font-bold text-sm mb-4">
+              #{order?.orderNumber}
+            </p>
+            <p className="text-center text-gray-400 text-xs mb-6">
+              لا يمكنك التراجع عن هذا الإجراء
+            </p>
+            
+            {/* الأزرار */}
+            <div className="flex gap-3">
+              <button
+                onClick={closeCancelModal}
+                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                disabled={isCancelling}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isCancelling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    جاري الإلغاء...
+                  </>
+                ) : (
+                  "نعم، إلغاء الطلب"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+    </>
   );
 }

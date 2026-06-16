@@ -372,7 +372,7 @@ export default function ReturnRequestPage() {
 
           {/* ملاحظات */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 md:p-6 space-y-6 my-4">
-            <label className="block text-[#252525] text-lg md:text-2xl font-bold">
+            <label className="block text-[#252525] text-lg md:text-2xl font-bold mb-2">
               ملاحظات
             </label>
             <textarea
@@ -386,7 +386,7 @@ export default function ReturnRequestPage() {
 
           {/* طريقة استرداد المبلغ */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 md:p-6 space-y-6 my-4">
-            <label className="block text-[#252525] text-lg md:text-2xl font-bold">
+            <label className="block text-[#252525] text-lg md:text-xl font-bold mb-3">
               طريقة استرداد المبلغ
             </label>
             <div className="space-y-3">

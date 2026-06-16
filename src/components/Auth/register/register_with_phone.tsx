@@ -147,7 +147,7 @@ export default function RegisterWithPhone() {
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -157,7 +157,7 @@ export default function RegisterWithPhone() {
             direction: "rtl",
           },
         }}
-      />
+      /> */}
 
       <div className="page-with-padding bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center min-h-screen">
         <div className="container mx-auto px-4 py-6 md:py-12">

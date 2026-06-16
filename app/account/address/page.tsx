@@ -110,7 +110,7 @@ export default function AddressPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      <Toaster
+      {/* <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{
@@ -129,7 +129,7 @@ export default function AddressPage() {
             iconTheme: { primary: 'white', secondary: '#EF4444' },
           },
         }}
-      />
+      /> */}
       <div className="container mx-auto">
         <div className="mb-3">
           <div className="flex justify-between items-center mb-6">

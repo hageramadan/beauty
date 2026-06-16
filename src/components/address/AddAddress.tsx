@@ -481,7 +481,7 @@ export default function AddAddress({
 
   return (
     <>
-      <Toaster
+      {/* <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{
@@ -494,7 +494,7 @@ export default function AddAddress({
           success: { style: { background: "#10B981", color: "white" } },
           error: { style: { background: "#EF4444", color: "white" } },
         }}
-      />
+      /> */}
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">

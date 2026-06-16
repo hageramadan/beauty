@@ -2,6 +2,7 @@
 "use client";
 
 import { CreditCard, DollarSign, Wallet, Landmark } from "lucide-react";
+import { useState } from "react";
 
 interface PaymentMethodFormProps {
   paymentMethod: string;
@@ -12,6 +13,7 @@ export default function PaymentMethodForm({
   paymentMethod,
   onPaymentMethodChange,
 }: PaymentMethodFormProps) {
+  const [isWalletAvailable, setIsWalletAvailable] = useState(false); // أو true إذا كنت تريد تفعيلها لاحقاً
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -85,27 +87,33 @@ export default function PaymentMethodForm({
           </div>
         </label>
 
-        {/* محفظة */}
-        <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
-            paymentMethod === "wallet"
-              ? "border-[#EC221F] bg-red-50"
-              : "border-gray-200 hover:border-gray-300"
-          }`}
-        >
-          <input
-            type="radio"
-            name="paymentMethod"
-            value="wallet"
-            checked={paymentMethod === "wallet"}
-            onChange={() => onPaymentMethodChange("wallet")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
-          />
-          <Wallet className="w-5 h-5 text-orange-600" />
-          <div>
-            <p className="font-medium text-gray-800">محفظة</p>
-          </div>
-        </label>
+      {/* محفظة */}
+<label
+  className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+    paymentMethod === "wallet"
+      ? "border-[#EC221F] bg-red-50"
+      : "border-gray-200 hover:border-gray-300"
+  } ${!isWalletAvailable ? "opacity-60 cursor-not-allowed" : ""}`}
+>
+  <input
+    type="radio"
+    name="paymentMethod"
+    value="wallet"
+    checked={paymentMethod === "wallet"}
+    onChange={() => onPaymentMethodChange("wallet")}
+    className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+    disabled={!isWalletAvailable}
+  />
+  <Wallet className="w-5 h-5 text-orange-600" />
+  <div>
+    <p className="font-medium text-gray-800">محفظة</p>
+    {!isWalletAvailable && (
+      <p className="text-xs text-gray-500 mt-1">
+        غير متاحة حالياً - سوف تتوفر قريباً
+      </p>
+    )}
+  </div>
+</label>
       </div>
     </div>
   );
