@@ -13,19 +13,28 @@ import SuccessPopup from "./SuccessPopup";
 interface CheckoutFormProps {
   formData: CheckoutFormData;
   onFormChange: (data: Partial<CheckoutFormData>) => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
   total: number;
+  isSubmitting?: boolean;
 }
 
-export default function CheckoutForm({ formData, onFormChange, onSubmit, total }: CheckoutFormProps) {
+export default function CheckoutForm({ 
+  formData, 
+  onFormChange, 
+  onSubmit, 
+  total,
+  isSubmitting: externalIsSubmitting = false 
+}: CheckoutFormProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+
+  const isSubmitting = externalIsSubmitting || internalIsSubmitting;
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
     
-    setIsSubmitting(true);
+    setInternalIsSubmitting(true);
     
     try {
       // استدعاء دالة onSubmit الأصلية (إرسال الطلب للخادم)
@@ -41,7 +50,7 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
       console.error("Error submitting order:", error);
       // يمكن إضافة رسالة خطأ هنا
     } finally {
-      setIsSubmitting(false);
+      setInternalIsSubmitting(false);
     }
   };
 
@@ -52,7 +61,7 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
 
   // تحضير تفاصيل الطلب للبوب اب
   const orderDetails = {
-    itemsCount:  0,
+    itemsCount: 0,
     total: total,
     deliveryDate: getDeliveryDate(formData.deliveryMethod),
     address: formData.deliveryMethod === "delivery" && formData.deliveryAddress 
@@ -84,6 +93,8 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
           apartmentNo: ""
         }}
         onAddressChange={(address) => onFormChange({ deliveryAddress: address })}
+        onAddressSaved={() => {}}
+        onAddressSelected={() => {}}
       />
       
       <PaymentMethodForm 
@@ -99,9 +110,11 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
       {/* زر إتمام الطلب - يظهر فقط في الموبايل */}
       <button
         onClick={handleSubmit}
-        disabled={isSubmitting}
-        className={`w-full md:mb-4 bg-[#000000] text-white py-3 rounded-xl font-semibold text-lg transition ${
-          isSubmitting ? "opacity-90 cursor-not-allowed" : "hover:bg-gray-800"
+        disabled={isSubmitting || !formData.deliveryMethod}
+        className={`w-full md:mb-4 text-white py-3 rounded-xl font-semibold text-lg transition ${
+          isSubmitting || !formData.deliveryMethod
+            ? "bg-gray-400 cursor-not-allowed opacity-70"
+            : "bg-[#000000] hover:bg-gray-800"
         }`}
       >
         {isSubmitting ? (
@@ -113,9 +126,16 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
             جاري المعالجة...
           </span>
         ) : (
-          `تأكيد الطلب `
+          "تأكيد الطلب"
         )}
       </button>
+      
+      {/* رسالة توضيحية عند عدم اختيار طريقة الاستلام */}
+      {!formData.deliveryMethod && (
+        <p className="text-xs text-amber-600 text-center mt-2">
+          ⚠️ الرجاء اختيار طريقة الاستلام أولاً
+        </p>
+      )}
 
       {/* Popup النجاح */}
       <SuccessPopup
@@ -129,7 +149,7 @@ export default function CheckoutForm({ formData, onFormChange, onSubmit, total }
 }
 
 // دالة مساعدة لحساب تاريخ التوصيل المتوقع
-function getDeliveryDate(deliveryMethod: string): string {
+function getDeliveryDate(deliveryMethod: "pickup" | "delivery" | null): string {
   if (deliveryMethod === "delivery") {
     const date = new Date();
     date.setDate(date.getDate() + 3); // بعد 3 أيام
@@ -139,7 +159,7 @@ function getDeliveryDate(deliveryMethod: string): string {
       month: "long", 
       day: "numeric" 
     });
-  } else {
+  } else if (deliveryMethod === "pickup") {
     const date = new Date();
     date.setDate(date.getDate() + 1); // بعد يوم واحد للاستلام من الفرع
     return date.toLocaleDateString("ar-EG", { 
@@ -149,4 +169,5 @@ function getDeliveryDate(deliveryMethod: string): string {
       day: "numeric" 
     });
   }
+  return "غير محدد";
 }

@@ -30,6 +30,29 @@ interface OrderItem {
   discount_amount: number;
   total_price: number;
   images: string[];
+  variant?: {
+    id: number;
+    sku: string | null;
+    price: number;
+    has_discount: boolean;
+    discount_type: string | null;
+    discount_value: string | null;
+    price_after_discount: number;
+    quantity: number;
+    is_active: boolean;
+    variant_image: string;
+    attributes: Array<{
+      id: number;
+      attribute_type: {
+        id: number;
+        name: string;
+      };
+      value: string;
+      meta: {
+        color?: string;
+      } | null;
+    }>;
+  };
 }
 
 interface OrderAddress {
@@ -69,7 +92,7 @@ interface OrderDetails {
   status_label: string;
   payment_method: string;
   payment_status: string;
-  delivery_method: string;
+  delivery_method: "pickup" | "delivery";
   subtotal: number;
   coupon_discount_amount: number;
   total_discount_amount: number;
@@ -226,12 +249,13 @@ const mapPaymentMethod = (method: string): string => {
 };
 
 // ========== تحويل طريقة التوصيل ==========
-const mapDeliveryMethod = (method: string): string => {
-  const methodMap: Record<string, string> = {
-    "توصيل": "توصيل",
-    "استلام": "استلام من الفرع",
+const mapDeliveryMethod = (method: string): "pickup" | "delivery" => {
+  const methodMap: Record<string, "pickup" | "delivery"> = {
+    "توصيل": "delivery",
+    "استلام": "pickup",
+    "استلام من الفرع": "pickup",
   };
-  return methodMap[method] || method;
+  return methodMap[method] || "pickup";
 };
 
 // ========== تحويل تاريخ الطلب ==========
@@ -262,6 +286,28 @@ const getUserName = (order: any): string => {
     return order.additional_data.name;
   }
   return "غير متوفر";
+};
+
+// ========== دوال استخراج المقاس واللون ==========
+const getSize = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const sizeAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "مقاس"
+  );
+  return sizeAttr?.value || null;
+};
+
+const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
+  if (!item.variant?.attributes) return null;
+  const colorAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "اللون"
+  );
+  if (!colorAttr) return null;
+  
+  return {
+    name: colorAttr.value,
+    hex: colorAttr.meta?.color || null,
+  };
 };
 
 // ========== تحويل بيانات الطلب ==========
@@ -297,7 +343,7 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
   ordered: { label: "تم الطلب", color: "status-pending", icon: Clock },
   processing: { label: "قيد المعالجة", color: "status-processing", icon: Package },
   ready_for_receive: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
-  delivering: { label: "في الطريق", color: "status-delivering", icon: Truck },
+  delivering: { label: "جارٍ التوصيل", color: "status-delivering", icon: Truck },
   delivered: { label: "تم التسليم", color: "status-delivered", icon: CheckCircle },
   not_delivered: { label: "لم يتم التسليم", color: "status-cancelled", icon: XCircle },
   cancelled: { label: "ملغي", color: "status-cancelled", icon: XCircle },
@@ -359,10 +405,6 @@ export default function OrderDetailsPage() {
     router.push(`/account/orders/${orderId}/return`);
   };
 
-  const handleProductsClick = () => {
-    router.push(`/products`);
-  };
-
   // ✅ فتح وإغلاق مودال الإلغاء
   const openCancelModal = () => {
     setShowCancelModal(true);
@@ -414,7 +456,7 @@ export default function OrderDetailsPage() {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-[8px]  hover:bg-gray-800 transition">
+          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-[8px] hover:bg-gray-800 transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -453,8 +495,7 @@ export default function OrderDetailsPage() {
                         <h1 className="text-sm sm:text-base">رقم الطلب</h1>
                         <div className="flex gap-1 sm:gap-2 items-center">
                           <p className="font-bold text-gray-800 text-sm sm:text-base">
-                            {/* <span className="hidden sm:inline">{order.orderNumber}</span> */}
-                            <span >
+                            <span>
                               {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
                             </span>
                           </p>
@@ -473,15 +514,21 @@ export default function OrderDetailsPage() {
                   <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
                 </div>
               </div>
-             <br />
+              
+              <br />
+              
               {/* المنتجات */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
                 <div className="space-y-4">
                   {order.items.map((item, idx) => {
                     const productImage = item.images && item.images.length > 0 
                       ? cleanImageUrl(item.images[0]) 
                       : PLACEHOLDER_IMAGE;
+                    
+                    // استخراج المقاس واللون
+                    const size = getSize(item);
+                    const color = getColor(item);
                     
                     return (
                       <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
@@ -501,6 +548,30 @@ export default function OrderDetailsPage() {
                           <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
                             <div>
                               <p className="font-bold text-gray-800">{item.title}</p>
+                              
+                              {/* 🔥 عرض المقاس واللون */}
+                              <div className="flex flex-wrap gap-2 mt-1.5">
+                                {size && (
+                                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
+                                    <span className="font-medium">المقاس:</span>
+                                    <span>{size}</span>
+                                  </span>
+                                )}
+                                
+                                {color && (
+                                  <span className="inline-flex items-center gap-1.5 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
+                                    <span className="font-medium">اللون:</span>
+                                    <span>{color.name}</span>
+                                    {color.hex && (
+                                      <span 
+                                        className="w-3 h-3 rounded-full border border-gray-300 inline-block"
+                                        style={{ backgroundColor: color.hex }}
+                                      />
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                              
                               <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
                                 <span>الكمية: <span className="text-gray-500">x{item.quantity}</span></span>
                                 <span>السعر: <span className="text-gray-500">EGP {item.unit_price.toFixed(2)}</span></span>
@@ -519,14 +590,17 @@ export default function OrderDetailsPage() {
                   })}
                 </div>
                 
-                {/* إخفاء OrderTracker عندما يكون الطلب ملغي */}
-                {order.status !== "cancelled" && order.status !== "not_delivered" && (
-                  <div className="mt-6">
-                    <OrderTracker currentStatus={order.status} />
-                  </div>
-                )}
+                {/* 🔥 عرض OrderTracker مع تمرير deliveryMethod */}
+                <div className="mt-6">
+                  <OrderTracker 
+                    currentStatus={order.status} 
+                    deliveryMethod={order.delivery_method}
+                  />
+                </div>
               </div>
-             <br />
+              
+              <br />
+              
               {/* ملخص الطلب */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الطلب</h2>
@@ -582,10 +656,14 @@ export default function OrderDetailsPage() {
                   )}
                 </div>
               </div>
+              
               <br />
+              
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-base font-bold mb-4">طريقة الاستلام</h2>
-                <span className="font-medium text-gray-800">{order.delivery_method}</span>
+                <span className="font-medium text-gray-800">
+                  {order.delivery_method === "pickup" ? "استلام من الفرع" : "توصيل"}
+                </span>
                 {order.address && (
                   <div className="flex items-center gap-2 border rounded-xl px-2 py-3 mt-3">
                     <FaLocationDot className="text-gray-500 flex-shrink-0" />
@@ -595,11 +673,13 @@ export default function OrderDetailsPage() {
                   </div>
                 )}
               </div>
-                <br/>
+              
+              <br/>
+              
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
                 <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
-                  <div className="w-10 h-10 bg-white rounded-[8px]  flex items-center justify-center shadow-sm">
+                  <div className="w-10 h-10 bg-white rounded-[8px] flex items-center justify-center shadow-sm">
                     <GrMoney />
                   </div>
                   <div>
@@ -607,7 +687,9 @@ export default function OrderDetailsPage() {
                   </div>
                 </div>
               </div>
-                <br/>
+              
+              <br/>
+              
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-base font-bold text-gray-800 mb-4">ملاحظات</h2>
                 <textarea
@@ -622,20 +704,12 @@ export default function OrderDetailsPage() {
 
               <div className="flex gap-3 mt-3 md:mt-6 mx-2">
                 {order.status === "delivered" && (
-                  <>
-                    <button 
-                      onClick={handleReturnClick} 
-                      className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
-                    >
-                      إرجاع
-                    </button>
-                    <button 
-                      onClick={handleProductsClick} 
-                      className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition"
-                    >
-                      إعادة الطلب
-                    </button>
-                  </>
+                  <button 
+                    onClick={handleReturnClick} 
+                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
+                  >
+                    إرجاع
+                  </button>
                 )}
                 
                 {order.status === "ordered" && (
@@ -660,9 +734,9 @@ export default function OrderDetailsPage() {
         </div>
 
         <style jsx global>{`
-          .status-pending { background-color: #A0AEC03D; color: #A0AEC0; }
+          .status-pending { background-color: #f181173D; color: #f18117; }
           .status-processing { background-color: #ED89363D; color: #ED8936; }
-          .status-ready { background-color: #9F7AEA3D; color: #9F7AEA; }
+          .status-ready { background-color: #A0AEC03D; color: #A0AEC0; }
           .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
           .status-delivered { background-color: #48BB783D; color: #48BB78; }
           .status-cancelled { background-color: #F565653D; color: #F56565; }
@@ -720,8 +794,6 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       )}
-
-      
     </>
   );
 }

@@ -455,8 +455,8 @@ export default function ReturnsPage() {
           color: #4299E1;
         }
         .status-return-inspected {
-          background-color: #9F7AEA3D;
-          color: #9F7AEA;
+          background-color: #A0AEC03D;
+          color: #A0AEC0;
         }
         .status-return-refunded {
           background-color: #48BB783D;

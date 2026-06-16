@@ -27,7 +27,7 @@ export interface CheckoutFormData {
     apartmentNo: string;
   };
   notes: string;
-  deliveryMethod: "pickup" | "delivery";
+  deliveryMethod: "pickup" | "delivery" ;
   paymentMethod: "cash" | "card" | "mada" | "wallet";
 }
 
@@ -48,7 +48,7 @@ export interface ContactInfoFormProps {
 }
 
 export interface DeliveryMethodFormProps {
-  deliveryMethod: "pickup" | "delivery";
+  deliveryMethod: "pickup" | "delivery" | null;
   onDeliveryMethodChange: (method: "pickup" | "delivery") => void;
 }
 
@@ -66,5 +66,13 @@ export interface NotesFormProps {
 export interface OrderSummaryProps {
   cartItems: CartItem[]; // يمكن الاحتفاظ بالمنتجات لعرضها
   cartSummary: CartSummary;
-  deliveryMethod: string;
+   deliveryMethod: "pickup" | "delivery" ; 
+}
+
+export interface DeliveryAddressFormProps {
+  show: boolean;
+  addressData: CheckoutFormData['deliveryAddress'];
+  onAddressChange: (address: CheckoutFormData['deliveryAddress']) => void;
+  onAddressSaved: (address: any) => void;
+  onAddressSelected: (addressId: number) => void;
 }

@@ -231,20 +231,15 @@ export default function CheckoutPage() {
     paymentMethod: "cash",
   });
 
-  // ✅ إضافة couponDiscount و couponCode إلى cartSummary
   const cartSummary: CartSummary = useMemo(() => {
     const subtotal = cart?.subtotal || 0;
     const discount = cart?.discount_amount || 0;
-    const couponDiscount = cart?.coupon_discount || 0;
-    const couponCode = cart?.applied_coupon_code || "";
     const deliveryFee = formData.deliveryMethod === "delivery" ? (cart?.delivery_fee || 0) : 0;
     const total = (cart?.total_amount || 0) + deliveryFee;
 
     return {
       subtotal,
       discount,
-      couponDiscount,
-      couponCode,
       deliveryFee,
       total
     };
@@ -581,11 +576,11 @@ function SuccessPopup({
         </div>
 
         {/* ✅ زرّان فقط: متابعة الطلبات / العودة للرئيسية */}
-        <div className="p-3 flex gap-1">
+        <div className="grid grid-cols-2 gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5">
          
           <button
             onClick={onGoToHome}
-            className="w-full bg-black text-white py-2 rounded-xl font-medium hover:bg-gray-800 transition"
+            className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
           >
             العودة إلى الرئيسية
           </button>

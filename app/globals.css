@@ -47,16 +47,17 @@
 
 /* status colors */
 .status-pending {
-  background-color: #A0AEC03D;
-  color: #A0AEC0;
+  /* background-color: #A0AEC03D;
+  color: #A0AEC0; */
+  background-color: #f181173D; color: #f18117; 
 }
 .status-processing {
   background-color: #ED89363D;
   color: #ED8936;
 }
 .status-ready {
-  background-color: #9F7AEA3D;
-  color: #9F7AEA;
+  background-color: #A0AEC03D;
+  color: #A0AEC0;
 }
 .status-delivering {
   background-color: #F6AD553D;

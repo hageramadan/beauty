@@ -1,7 +1,7 @@
 // app/account/orders/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Package,
   ChevronDown,
@@ -19,6 +19,7 @@ import Link from "next/link";
 import { IoCopyOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from 'next/navigation';
+import Pagination from '@/components/products/Pagination'; // استيراد مكون Pagination
 
 // ========== تعريف الأنواع ==========
 type OrderStatus = 
@@ -39,6 +40,29 @@ interface OrderItem {
   discount_amount: number;
   total_price: number;
   images: string[];
+  variant?: {
+    id: number;
+    sku: string | null;
+    price: number;
+    has_discount: boolean;
+    discount_type: string | null;
+    discount_value: string | null;
+    price_after_discount: number;
+    quantity: number;
+    is_active: boolean;
+    variant_image: string;
+    attributes: Array<{
+      id: number;
+      attribute_type: {
+        id: number;
+        name: string;
+      };
+      value: string;
+      meta: {
+        color?: string;
+      } | null;
+    }>;
+  };
 }
 
 interface OrderAddress {
@@ -81,6 +105,17 @@ interface Order {
   created_at: string;
 }
 
+interface PaginationData {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
+  next_page: number | null;
+  previous_page: number | null;
+}
+
 // ========== إعدادات API ==========
 const API_URL = "https://dukanah.admin.t-carts.com/api";
 
@@ -102,24 +137,55 @@ const getHeaders = (): HeadersInit => {
 // صورة ثابتة للمنتجات التي لا تحتوي على صورة
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
 
-// ========== دالة جلب الطلبات ==========
-const fetchOrders = async (): Promise<Order[]> => {
+// ========== دالة جلب الطلبات مع Pagination من الـ API ==========
+const fetchOrders = async (page: number = 1, perPage: number = 10): Promise<{ orders: Order[], pagination: PaginationData }> => {
   try {
-    const response = await fetch(`${API_URL}/orders`, {
+    const response = await fetch(`${API_URL}/orders?page=${page}&per_page=${perPage}`, {
       method: "GET",
       headers: getHeaders(),
     });
 
     const data = await response.json();
 
-    if (data.result === true && data.data && data.data.orders) {
-      return data.data.orders.map(transformOrder);
+    if (data.result === true && data.data) {
+      const orders = data.data.orders.map(transformOrder);
+      const pagination = data.data.pagination;
+      
+      return {
+        orders: orders,
+        pagination: pagination
+      };
     }
-    return [];
+    
+    return {
+      orders: [],
+      pagination: {
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+        from: 0,
+        to: 0,
+        next_page: null,
+        previous_page: null
+      }
+    };
   } catch (error) {
     console.error("❌ Error fetching orders:", error);
     toast.error("حدث خطأ في جلب الطلبات");
-    return [];
+    return {
+      orders: [],
+      pagination: {
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+        from: 0,
+        to: 0,
+        next_page: null,
+        previous_page: null
+      }
+    };
   }
 };
 
@@ -154,6 +220,28 @@ const cleanImageUrl = (url: string): string => {
     return `https://dukanah.admin.t-carts.com${url}`;
   }
   return url;
+};
+
+// ========== دوال استخراج المقاس واللون ==========
+const getSize = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const sizeAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "مقاس"
+  );
+  return sizeAttr?.value || null;
+};
+
+const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
+  if (!item.variant?.attributes) return null;
+  const colorAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "اللون"
+  );
+  if (!colorAttr) return null;
+  
+  return {
+    name: colorAttr.value,
+    hex: colorAttr.meta?.color || null,
+  };
 };
 
 // ========== تحويل بيانات الطلب ==========
@@ -232,25 +320,62 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [pagination, setPagination] = useState<PaginationData>({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0,
+    next_page: null,
+    previous_page: null
+  });
   const router = useRouter();
+  
+  const itemsPerPage = 10;
 
+  // ========== جلب الطلبات من الـ API ==========
+  const loadOrders = useCallback(async (page: number = 1) => {
+    setLoading(true);
+    const result = await fetchOrders(page, itemsPerPage);
+    setOrders(result.orders);
+    setPagination(result.pagination);
+    setLoading(false);
+  }, [itemsPerPage]);
+
+  // ========== تحميل الصفحة الأولى عند التحميل ==========
   useEffect(() => {
-    const loadOrders = async () => {
-      setLoading(true);
-      const data = await fetchOrders();
-      setOrders(data);
-      setLoading(false);
-    };
-    loadOrders();
+    loadOrders(1);
+  }, [loadOrders]);
+
+  // ========== تغيير الصفحة ==========
+  const handlePageChange = useCallback((newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.last_page) {
+      loadOrders(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pagination.last_page, loadOrders]);
+
+  // ========== فلترة الطلبات حسب الحالة (فلتر محلي) ==========
+  const filteredOrders = useMemo(() => {
+    if (filterStatus === "all") {
+      return orders;
+    }
+    return orders.filter((order) => order.status === filterStatus);
+  }, [orders, filterStatus]);
+
+  const toggleExpand = useCallback((orderId: number) => {
+    setExpandedOrderId(prev => prev === orderId ? null : orderId);
   }, []);
 
-  const toggleExpand = (orderId: number) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
-  };
+  const copyOrderNumber = useCallback((orderNumber: string) => {
+    navigator.clipboard.writeText(orderNumber);
+    toast.success("تم نسخ رقم الطلب");
+  }, []);
 
-  const filteredOrders = orders.filter((order) =>
-    filterStatus === "all" ? true : order.status === filterStatus,
-  );
+  const goToOrderDetails = useCallback((orderId: number) => {
+    router.push(`/account/orders/${orderId}`);
+  }, [router]);
 
   const statusFilters: { value: FilterStatus; label: string }[] = [
     { value: "all", label: "الكل" },
@@ -262,15 +387,6 @@ export default function OrdersPage() {
     { value: "not_delivered", label: "لم يتم التسليم" },
     { value: "cancelled", label: "ملغي" },
   ];
-
-  const copyOrderNumber = (orderNumber: string) => {
-    navigator.clipboard.writeText(orderNumber);
-    toast.success("تم نسخ رقم الطلب");
-  };
-
-  const goToOrderDetails = (orderId: number) => {
-    router.push(`/account/orders/${orderId}`);
-  };
 
   if (loading) {
     return (
@@ -296,6 +412,9 @@ export default function OrdersPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             طلباتي
           </h1>
+          <span className="text-sm text-gray-500 mr-2">
+            (إجمالي {pagination.total} طلب)
+          </span>
         </div>
 
         {/* فلتر الحالات */}
@@ -303,7 +422,13 @@ export default function OrdersPage() {
           {statusFilters.map((filter) => (
             <button
               key={filter.value}
-              onClick={() => setFilterStatus(filter.value)}
+              onClick={() => {
+                setFilterStatus(filter.value);
+                // إعادة تعيين الصفحة إلى 1 عند تغيير الفلتر
+                if (pagination.current_page !== 1) {
+                  loadOrders(1);
+                }
+              }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
                 filterStatus === filter.value
                   ? "bg-[#000000] text-white"
@@ -354,7 +479,6 @@ export default function OrdersPage() {
                             <h1 className="text-sm sm:text-base">رقم الطلب</h1>
                             <div className="flex gap-1 sm:gap-2 items-center">
                               <p className="font-bold text-gray-800 text-sm sm:text-base">
-                               
                                 <span>
                                   {order.orderNumber.length > 10
                                     ? order.orderNumber.substring(0, 10) + "..."
@@ -406,12 +530,14 @@ export default function OrdersPage() {
                               ? cleanImageUrl(item.images[0])
                               : PLACEHOLDER_IMAGE;
 
+                          const size = getSize(item);
+                          const color = getColor(item);
+
                           return (
                             <div
                               key={idx}
                               className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0"
                             >
-                              {/* صورة المنتج */}
                               <Link
                                 href={`/account/orders/${order.id}`}
                                 className="flex-shrink-0"
@@ -431,7 +557,6 @@ export default function OrdersPage() {
                                 </div>
                               </Link>
 
-                              {/* تفاصيل المنتج */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                                   <div>
@@ -443,6 +568,29 @@ export default function OrdersPage() {
                                         {item.title}
                                       </p>
                                     </Link>
+                                    
+                                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1">
+                                      {size && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
+                                          <span className="font-medium">المقاس:</span>
+                                          <span>{size}</span>
+                                        </span>
+                                      )}
+                                      
+                                      {color && (
+                                        <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
+                                          <span className="font-medium">اللون:</span>
+                                          <span>{color.name}</span>
+                                          {color.hex && (
+                                            <span 
+                                              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border border-gray-300 inline-block"
+                                              style={{ backgroundColor: color.hex }}
+                                            />
+                                          )}
+                                        </span>
+                                      )}
+                                    </div>
+                                    
                                     <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
                                       <span>الكمية: x{item.quantity}</span>
                                       <span>
@@ -461,7 +609,6 @@ export default function OrdersPage() {
                           );
                         })}
 
-                        {/* إجمالي الطلب */}
                         <div className="pt-2 sm:pt-3 flex justify-between items-center">
                           <Link
                             href={`/account/orders/${order.id}`}
@@ -489,21 +636,26 @@ export default function OrdersPage() {
             })
           )}
         </div>
+
+        {/* ========== مكون Pagination ========== */}
+        <Pagination
+          currentPage={pagination.current_page}
+          lastPage={pagination.last_page}
+          onPageChange={handlePageChange}
+        />
       </div>
 
-      {/* إضافة CSS للألوان */}
       <style jsx global>{`
         .status-ordered {
-          background-color: #a0aec03d;
-          color: #a0aec0;
+         background-color: #f181173D; color: #f18117; 
         }
         .status-processing {
           background-color: #ed89363d;
           color: #ed8936;
         }
         .status-ready {
-          background-color: #9f7aea3d;
-          color: #9f7aea;
+          background-color: #A0AEC03d;
+          color: #A0AEC0;
         }
         .status-delivering {
           background-color: #f6ad553d;

@@ -1,184 +1,244 @@
 // components/OrderTracker.tsx
 "use client";
 
-import { Clock, Box, Bike, Home, XCircle, PackageCheck, Truck, AlertCircle } from "lucide-react";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import {
+  Clock,
+  Box,
+  Home,
+  XCircle,
+  PackageCheck,
+  Truck,
+  AlertCircle,
+} from "lucide-react";
 import { FaCircleCheck } from "react-icons/fa6";
 
 // ✅ تصدير النوع هنا
-export type OrderStatus = 
-  | "ordered"        // تم الطلب
-  | "processing"     // قيد المعالجة
+export type OrderStatus =
+  | "ordered" // تم الطلب
+  | "processing" // قيد المعالجة
   | "ready_for_receive" // جاهز للاستلام
-  | "delivering"     // جارٍ التوصيل
-  | "delivered"      // تم التسليم
-  | "not_delivered"  // لم يتم التسليم
-  | "cancelled";     // ملغي
+  | "delivering" // جارٍ التوصيل
+  | "delivered" // تم التسليم
+  | "not_delivered" // لم يتم التسليم
+  | "cancelled"; // ملغي
+
+export type DeliveryMethod = "pickup" | "delivery";
 
 interface OrderTrackerProps {
   currentStatus: OrderStatus;
+  deliveryMethod?: DeliveryMethod;
 }
 
-export default function OrderTracker({ currentStatus }: OrderTrackerProps) {
-  // تحديد الخطوة الحالية بناءً على الحالة
-  const getCurrentStep = (): number => {
-    switch (currentStatus) {
-      case "ordered":
-        return 0;
-      case "processing":
-        return 1;
-      case "ready_for_receive":
-        return 2;
-      case "delivering":
-        return 3;
-      case "delivered":
-        return 4;
-      case "not_delivered":
-        return 4; // نفس خطوة delivered لكن بلون مختلف
-      case "cancelled":
-        return 5; // خطوة منفصلة للإلغاء
-      default:
-        return 0;
-    }
-  };
-
-  // تحديد أيقونة خاصة للحالات الاستثنائية
-  const getStatusIcon = () => {
-    switch (currentStatus) {
-      case "not_delivered":
-        return <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-500" />;
-      case "cancelled":
-        return <XCircle className="w-5 h-5 md:w-6 md:h-6 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
-  // تحديد لون الحالة
-  const getStatusColor = () => {
-    switch (currentStatus) {
-      case "not_delivered":
-        return "border-red-500 bg-red-50";
-      case "cancelled":
-        return "border-red-500 bg-red-50";
-      case "delivered":
-        return "border-green-500 bg-green-50";
-      default:
-        return "border-[#2D93CA] bg-white";
-    }
-  };
-
-  // خطوات الطلب الأساسية
-  const steps = [
+// ========== تكوين المراحل حسب نوع الاستلام ==========
+const STEPS_CONFIG = {
+  pickup: [
     { label: "تم الطلب", icon: Clock },
     { label: "قيد المعالجة", icon: Box },
     { label: "جاهز للاستلام", icon: PackageCheck },
+    { label: "تم التسليم", icon: Home },
+  ],
+  delivery: [
+    { label: "تم الطلب", icon: Clock },
+    { label: "قيد المعالجة", icon: Box },
     { label: "في الطريق", icon: Truck },
     { label: "تم التسليم", icon: Home },
-  ];
+  ],
+} as const;
 
-  // إضافة خطوة الإلغاء إذا كانت الحالة ملغية أو لم يتم التسليم
-  const displaySteps = currentStatus === "cancelled" || currentStatus === "not_delivered"
-    ? [...steps, { label: currentStatus === "cancelled" ? "ملغي" : "لم يتم التسليم", icon: XCircle }]
-    : steps;
+export default function OrderTracker({
+  currentStatus,
+  deliveryMethod = "pickup",
+}: OrderTrackerProps) {
+  // ========== حساب المراحل بناءً على نوع الاستلام ==========
+  const steps = useMemo(() => {
+    return STEPS_CONFIG[deliveryMethod];
+  }, [deliveryMethod]);
 
-  const currentStep = getCurrentStep();
+  // ========== حساب الخطوة الحالية ==========
+  const currentStep = useMemo(() => {
+    const statusMap: Record<OrderStatus, number> = {
+      ordered: 0,
+      processing: 1,
+      ready_for_receive: 2,
+      delivering: 2,
+      delivered: 3,
+      not_delivered: 3,
+      cancelled: -1,
+    };
+    return statusMap[currentStatus] ?? 0;
+  }, [currentStatus]);
 
-  // إذا كانت الحالة ملغية أو لم يتم التسليم، نعرض حالة خاصة
+  // ========== عرض الحالات الخاصة ==========
   if (currentStatus === "cancelled") {
     return (
-      <div className="w-full" dir="rtl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full"
+        dir="rtl"
+      >
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 text-center">
-          <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+          >
+            <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
+          </motion.div>
           <h3 className="text-lg md:text-xl font-bold text-red-600">تم إلغاء الطلب</h3>
           <p className="text-sm md:text-base text-red-500 mt-1">تم إلغاء هذا الطلب ولن يتم تنفيذه</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   if (currentStatus === "not_delivered") {
     return (
-      <div className="w-full" dir="rtl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full"
+        dir="rtl"
+      >
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 text-center">
-          <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+          >
+            <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
+          </motion.div>
           <h3 className="text-lg md:text-xl font-bold text-red-600">لم يتم التسليم</h3>
           <p className="text-sm md:text-base text-red-500 mt-1">لم نتمكن من توصيل الطلب، يرجى التواصل مع خدمة العملاء</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
+  // ========== عرض الـ Timeline ==========
   return (
     <div className="w-full" dir="rtl">
       <div className="relative">
-        {/* الخط الأزرق للمراحل المكتملة */}
-        <div 
-          className="absolute top-5 h-[2px] bg-[#2D93CA] rounded-full transition-all duration-500"
-          style={{
-            right: '36px',
-            width: currentStep >= 4 
-              ? 'calc(100% - 72px)'
-              : `calc(${(currentStep / 4) * 100}% - ${(currentStep / 4) * 72}px)`,
+        {/* الخط الخلفي (الرمادي) */}
+        <div className="absolute top-5 right-9 left-9 h-[2px] bg-gray-200 rounded-full" />
+
+        {/* الخط الأمامي (المتحرك) */}
+        <motion.div
+          className="absolute top-5 h-[2px] bg-[#2D93CA] rounded-full"
+          initial={{ right: "36px", width: "0%" }}
+          animate={{
+            right: "36px",
+            width:
+              currentStep >= steps.length - 1
+                ? "calc(100% - 72px)"
+                : `calc(${(currentStep / (steps.length - 1)) * 100}% - ${
+                    (currentStep / (steps.length - 1)) * 72
+                  }px)`,
           }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
         />
-        
+
         {/* الأيقونات */}
         <div className="relative flex justify-between items-center">
-          {displaySteps.map((step, idx) => {
-            // ✅ إزالة التحقق غير الضروري من cancelled و not_delivered
+          {steps.map((step, idx) => {
             const isCompleted = idx <= currentStep;
             const isCurrent = idx === currentStep;
-            
+
             return (
               <div key={idx} className="flex flex-col items-center text-center">
-                <div className="relative z-10 mb-2">
+                <motion.div
+                  className="relative z-10 mb-2"
+                  initial={false}
+                  animate={
+                    isCurrent
+                      ? {
+                          scale: [1, 1.1, 1],
+                          transition: {
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          },
+                        }
+                      : { scale: 1 }
+                  }
+                >
+                  {/* Glow Effect للحالة الحالية */}
+                  {isCurrent && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full bg-blue-300"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1.4, opacity: [0.2, 0.5, 0.2] }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  )}
+
                   <div
                     className={`
-                      w-10 h-10 md:w-12 md:h-12 rounded-full 
+                      relative z-10 w-10 h-10 md:w-12 md:h-12 rounded-full 
                       flex items-center justify-center bg-white
                       border-2 transition-all duration-300
-                      ${isCompleted 
-                        ? 'border-[#2D93CA] bg-[#2D93CA]/10'
-                        : isCurrent 
-                          ? 'border-[#EC221F] animate-pulse'
-                          : 'border-gray-300'
+                      ${
+                        isCompleted
+                          ? "border-[#2D93CA] bg-[#2D93CA]/10"
+                          : isCurrent
+                          ? "border-[#EC221F]"
+                          : "border-gray-300"
                       }
                     `}
                   >
                     {isCompleted ? (
-                      <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-[#2D93CA]" />
+                      <motion.div
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20,
+                        }}
+                      >
+                        <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-[#2D93CA]" />
+                      </motion.div>
                     ) : (
-                      <step.icon className={`w-5 h-5 md:w-6 md:h-6 ${isCurrent ? 'text-[#EC221F]' : 'text-gray-400'}`} />
+                      <step.icon
+                        className={`w-5 h-5 md:w-6 md:h-6 ${
+                          isCurrent ? "text-[#EC221F]" : "text-gray-400"
+                        }`}
+                      />
                     )}
                   </div>
-                </div>
-                
-                <p className={`
-                  font-bold text-xs md:text-sm
-                  ${isCompleted || isCurrent ? 'text-gray-800' : 'text-gray-400'}
-                `}>
+                </motion.div>
+
+                <p
+                  className={`
+                    font-bold text-xs md:text-sm
+                    ${isCompleted || isCurrent ? "text-gray-800" : "text-gray-400"}
+                  `}
+                >
                   {step.label}
                 </p>
+
+                {/* {isCurrent && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-[10px] md:text-xs text-[#EC221F] font-medium mt-0.5"
+                  >
+                    الحالية
+                  </motion.p>
+                )} */}
               </div>
             );
           })}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.1);
-          }
-        }
-        
-        .animate-pulse {
-          animation: pulse 1.5s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

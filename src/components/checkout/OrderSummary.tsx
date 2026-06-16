@@ -15,14 +15,29 @@ export default function OrderSummary({
     discount, 
     total, 
     deliveryFee, 
-    couponDiscount = 0,  // ✅ قيمة افتراضية
-    couponCode = ""     // ✅ قيمة افتراضية
+    couponDiscount = 0,
+    couponCode = ""
   } = cartSummary;
 
-  // حساب نسبة الخصم (اختياري، لمزيد من المعلومات)
+  // حساب نسبة الخصم
   const discountPercentage = discount > 0 && (subtotal + discount) > 0
     ? Math.round((discount / (subtotal + discount)) * 100)
     : 0;
+
+  // 🔥 تحديد عرض رسوم التوصيل
+  const getDeliveryFeeDisplay = () => {
+    if (!deliveryMethod) {
+      return "-"; // شرطتين عندما لا يكون هناك اختيار
+    }
+    if (deliveryMethod === "pickup") {
+      return "-"; // شرطتين للاستلام من الفرع
+    }
+    // delivery
+    if (deliveryFee > 0) {
+      return `EGP ${deliveryFee.toFixed(2)}`;
+    }
+    return "مجاني";
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm sticky top-20 mb-4 md:mb-0">
@@ -60,10 +75,11 @@ export default function OrderSummary({
           </div>
         )}
         
+        {/* 🔥 رسوم التوصيل - عرض شرطتين للاستلام من الفرع أو عدم الاختيار */}
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">رسوم التوصيل</span>
-          <span className="text-gray-800">
-            {deliveryMethod === "delivery" ? ` ${deliveryFee > 0 ? `EGP ${deliveryFee.toFixed(2)}` : 'مجاني'}` : "مجاني"}
+          <span className={`font-semibold ${!deliveryMethod || deliveryMethod === "pickup" ? "text-gray-400" : "text-gray-800"}`}>
+            {getDeliveryFeeDisplay()}
           </span>
         </div>
         
