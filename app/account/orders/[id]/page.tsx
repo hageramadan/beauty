@@ -453,8 +453,8 @@ export default function OrderDetailsPage() {
                         <h1 className="text-sm sm:text-base">رقم الطلب</h1>
                         <div className="flex gap-1 sm:gap-2 items-center">
                           <p className="font-bold text-gray-800 text-sm sm:text-base">
-                            <span className="hidden sm:inline">{order.orderNumber}</span>
-                            <span className="sm:hidden">
+                            {/* <span className="hidden sm:inline">{order.orderNumber}</span> */}
+                            <span >
                               {order.orderNumber.length > 10 ? order.orderNumber.substring(0, 10) + '...' : order.orderNumber}
                             </span>
                           </p>
