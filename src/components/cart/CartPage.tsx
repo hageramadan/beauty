@@ -34,10 +34,8 @@ export interface CartItemDisplay {
 }
 
 export function CartPage() {
-  const { cart, isLoading, updateQuantity, removeItem } = useCartContext();
+  const { cart, isLoading, updateQuantity, removeItem, refetchCart } = useCartContext();
   const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoDiscount, setPromoDiscount] = useState(0);
 
   // ✅ عدد العناصر (المنتجات المختلفة) وليس الكميات
   const itemsCount = cart?.items?.length || 0;
@@ -129,11 +127,15 @@ export function CartPage() {
     }
   }, [cart]);
 
-  // حساب المجاميع من السلة
+  // ✅ حساب المجاميع من السلة مباشرة
   const subtotal = cart?.subtotal || 0;
   const totalDiscount = cart?.discount_amount || 0;
   const deliveryFee = cart?.delivery_fee || 0;
   const total = cart?.total_amount || 0;
+  
+  // ✅ استخراج بيانات الكوبون من السلة مباشرة
+  const promoDiscount = cart?.coupon_discount || 0;
+  const promoCode = cart?.applied_coupon_code || "";
 
   const handleUpdateQuantity = async (cartItemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -147,14 +149,14 @@ export function CartPage() {
   const saveForLater = (id: string) => {
   };
 
-  const applyPromoCode = (code: string, discount: number) => {
-    setPromoCode(code);
-    setPromoDiscount(discount);
+  const applyPromoCode = async (code: string, discount: number) => {
+    // ✅ إعادة تحميل السلة للحصول على البيانات المحدثة من الـ API
+    await refetchCart();
   };
 
-  const removePromoCode = () => {
-    setPromoCode("");
-    setPromoDiscount(0);
+  const removePromoCode = async () => {
+    // ✅ إعادة تحميل السلة للحصول على البيانات المحدثة من الـ API
+    await refetchCart();
   };
 
   if (isLoading) {
@@ -194,7 +196,7 @@ export function CartPage() {
               promoDiscount={promoDiscount}
               promoCode={promoCode}
               deliveryFee={deliveryFee}
-              total={total - promoDiscount}
+              total={total}
               onApplyPromoCode={applyPromoCode}
               onRemovePromoCode={removePromoCode}
             />

@@ -33,8 +33,10 @@ export interface CheckoutFormData {
 
 // ✅ واجهة جديدة لملخص سلة التسوق
 export interface CartSummary {
-  subtotal: number;
+   subtotal: number;
   discount: number;
+  couponDiscount?: number;        // ✅ خصم الكوبون
+  couponCode?: string;            // ✅ كود الكوبون المطبق
   deliveryFee: number;
   total: number;
 }

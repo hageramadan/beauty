@@ -13,6 +13,7 @@ interface CartSummaryProps {
   total: number;
   onApplyPromoCode: (code: string, discount: number) => void;
   onRemovePromoCode: () => void;
+  isApplying?: boolean;
 }
 
 export function CartSummary({
@@ -24,6 +25,7 @@ export function CartSummary({
   total,
   onApplyPromoCode,
   onRemovePromoCode,
+  isApplying = false,
 }: CartSummaryProps) {
   const isDeliveryFree = deliveryFee === 0;
   
@@ -41,7 +43,7 @@ export function CartSummary({
         )}
         
         {promoDiscount > 0 && (
-          <SummaryRow label="خصم كود الخصم" value={-promoDiscount} isDiscount />
+          <SummaryRow label="خصم " value={-promoDiscount} isDiscount />
         )}
         
         <SummaryRow 

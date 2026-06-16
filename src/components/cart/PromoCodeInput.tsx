@@ -11,6 +11,8 @@ interface PromoCodeInputProps {
   appliedCode: string;
 }
 
+// const API_URL = 'https://admin.souqkaber.com/api';
+
 // API URL
 const API_URL = 'https://dukanah.admin.t-carts.com/api';
 
@@ -37,17 +39,20 @@ const applyCouponAPI = async (code: string): Promise<{ success: boolean; discoun
     const response = await fetch(`${API_URL}/coupons/apply`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ code: code.toUpperCase() }),
+      body: JSON.stringify({ code: code }),
     });
     
     const data = await response.json();
     
     if (data.result === true && data.data) {
-      // افترض أن الخصم في data.discount أو data.data.discount
-      const discount = data.data?.discount || data.data?.discount_amount || 0;
+      // استخراج نسبة الخصم من الرد
+      const discount = data.data?.coupon?.discount_percentage || 
+                       data.data?.discount_percentage || 
+                       data.data?.discount || 
+                       0;
       return {
         success: true,
-        discount: discount,
+        discount: parseFloat(discount),
         message: data.message || "تم تطبيق كود الخصم بنجاح"
       };
     } else {
@@ -168,6 +173,7 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
           </button>
         </div>
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
     );
   }
@@ -189,7 +195,9 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
           }}
           placeholder="أدخل كود الخصم..."
           disabled={isLoading}
-          className="flex-1 px-2 md:px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent text-sm disabled:bg-gray-100"
+          className={`flex-1 px-2 md:px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent text-sm disabled:bg-gray-100 ${
+            error ? 'border-red-500' : 'border-gray-200'
+          }`}
         />
         <button
           onClick={handleApply}
@@ -200,7 +208,7 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
           {isLoading ? "جاري.." : "تطبيق"}
         </button>
       </div>
-      
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }

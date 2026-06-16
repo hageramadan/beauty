@@ -543,7 +543,7 @@ export default function OrderDetailsPage() {
                   )}
                   {order.total_discount_amount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">خصم</span>
+                      <span className="text-gray-500">الخصم الكلي</span>
                       <span className="font-bold text-[#EC221F]">-EGP {order.total_discount_amount.toFixed(2)}</span>
                     </div>
                   )}

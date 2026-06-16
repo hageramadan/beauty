@@ -231,15 +231,20 @@ export default function CheckoutPage() {
     paymentMethod: "cash",
   });
 
+  // ✅ إضافة couponDiscount و couponCode إلى cartSummary
   const cartSummary: CartSummary = useMemo(() => {
     const subtotal = cart?.subtotal || 0;
     const discount = cart?.discount_amount || 0;
+    const couponDiscount = cart?.coupon_discount || 0;
+    const couponCode = cart?.applied_coupon_code || "";
     const deliveryFee = formData.deliveryMethod === "delivery" ? (cart?.delivery_fee || 0) : 0;
     const total = (cart?.total_amount || 0) + deliveryFee;
 
     return {
       subtotal,
       discount,
+      couponDiscount,
+      couponCode,
       deliveryFee,
       total
     };

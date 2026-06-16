@@ -1,7 +1,6 @@
 // components/checkout/OrderSummary.tsx
 "use client";
 
-
 import { OrderSummaryProps } from "./types";
 
 export default function OrderSummary({ 
@@ -10,8 +9,15 @@ export default function OrderSummary({
   deliveryMethod 
 }: OrderSummaryProps) {
   
-  // استخراج القيم من الكائن الملخص
-  const { subtotal, discount, total, deliveryFee } = cartSummary;
+  // استخراج القيم من الكائن الملخص مع قيم افتراضية للخصائص الاختيارية
+  const { 
+    subtotal, 
+    discount, 
+    total, 
+    deliveryFee, 
+    couponDiscount = 0,  // ✅ قيمة افتراضية
+    couponCode = ""     // ✅ قيمة افتراضية
+  } = cartSummary;
 
   // حساب نسبة الخصم (اختياري، لمزيد من المعلومات)
   const discountPercentage = discount > 0 && (subtotal + discount) > 0
@@ -21,11 +27,8 @@ export default function OrderSummary({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm sticky top-20 mb-4 md:mb-0">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-    
         ملخص الطلب
       </h2>
-
-      
 
       {/* تفاصيل الأسعار باستخدام cartSummary */}
       <div className="space-y-3 pt-3 border-t border-gray-100">
@@ -44,6 +47,19 @@ export default function OrderSummary({
           </div>
         )}
         
+        {/* ✅ عرض خصم الكوبون إذا كان موجود */}
+        {couponDiscount > 0 && couponCode && (
+          <div className="flex justify-between text-sm text-gray-600">
+            <span className="flex items-center gap-1">
+              <span>خصم </span>
+              <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                {couponCode}
+              </span>
+            </span>
+            <span className="text-[#EC221F]">-EGP {couponDiscount.toFixed(2)}</span>
+          </div>
+        )}
+        
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">رسوم التوصيل</span>
           <span className="text-gray-800">
@@ -53,11 +69,9 @@ export default function OrderSummary({
         
         <div className="flex justify-between pt-3 border-t border-gray-200">
           <span className="text-lg font-bold text-gray-900">الإجمالي</span>
-          <span className="text-xl font-bold ">EGP {total.toFixed(2)}</span>
+          <span className="text-xl font-bold text-[#EC221F]">EGP {total.toFixed(2)}</span>
         </div>
       </div>
-
-   
     </div>
   );
 }
