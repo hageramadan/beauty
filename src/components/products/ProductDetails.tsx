@@ -313,51 +313,44 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const itemInCartQuantity = getItemQuantity(product.id);
 
   // ✅ إضافة إلى السلة مع التحقق من وجود مقاسات
-  const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى السلة", {
-        duration: 3000,
-        position: "top-center",
-        icon: "🔐",
-      });
-      
-      router.push(`/auth/login`);
-      return;
-    }
+  // components/products/ProductDetails.tsx
+// ✅ تحديث دالة handleAddToCart فقط
 
-    if (isAddingToCart) return;
+// ✅ إضافة إلى السلة (دعم الضيوف)
+const handleAddToCart = async () => {
+  if (isAddingToCart) return;
+  
+  // ✅ التحقق من وجود مقاسات للمنتج
+  if (product.has_variants && !productHasSizes) {
+    toast.error("عذراً، لا توجد مقاسات متاحة لهذا المنتج حالياً. لا يمكنك إضافته إلى السلة.", {
+      duration: 4000,
+      position: "top-center",
+      icon: "⚠️",
+    });
+    return;
+  }
+  
+  if (product.has_variants && !selectedVariant) {
+    toast.error("الرجاء اختيار اللون والمقاس أولاً");
+    return;
+  }
+  
+  setIsAddingToCart(true);
+  
+  try {
+    const variantId = selectedVariant?.id || null;
+    const success = await addItem(product.id, quantity, variantId);
     
-    // ✅ التحقق من وجود مقاسات للمنتج
-    if (product.has_variants && !productHasSizes) {
-      toast.error("عذراً، لا توجد مقاسات متاحة لهذا المنتج حالياً. لا يمكنك إضافته إلى السلة.", {
-        duration: 4000,
-        position: "top-center",
-        icon: "⚠️",
-      });
-      return;
+    if (success) {
+      setQuantity(1);
     }
-    
-    if (product.has_variants && !selectedVariant) {
-      toast.error("الرجاء اختيار اللون والمقاس أولاً");
-      return;
-    }
-    
-    setIsAddingToCart(true);
-    
-    try {
-      const variantId = selectedVariant?.id || null;
-      const success = await addItem(product.id, quantity, variantId);
-      
-      if (success) {
-        setQuantity(1);
-      }
-    } catch (error) {
-      console.error("❌ خطأ في الإضافة إلى السلة:", error);
-      toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+  } catch (error) {
+    console.error("❌ خطأ في الإضافة إلى السلة:", error);
+    toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
+  } finally {
+    setIsAddingToCart(false);
+  }
+};
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {

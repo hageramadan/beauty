@@ -41,6 +41,7 @@ interface DeliveryAddressFormProps {
   onAddressSaved?: (address: any) => void;
   onAddressSelected?: (addressId: number) => void;
   onCitySelected?: (cityId: string) => void;
+  isGuest?: boolean;
 }
 
 // قائمة المحافظات المصرية (احتياطي في حال فشل الـ API)
@@ -72,6 +73,7 @@ export default function DeliveryAddressForm({
   onAddressSaved,
   onAddressSelected,
   onCitySelected,
+  isGuest = false,
 }: DeliveryAddressFormProps) {
   const [useSavedAddress, setUseSavedAddress] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -90,6 +92,7 @@ export default function DeliveryAddressForm({
   // ✅ منع التكرار
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const hasFetchedAddressesRef = useRef(false);
   
   const API_URL = 'https://dukanah.admin.t-carts.com/api';
 
@@ -97,12 +100,25 @@ export default function DeliveryAddressForm({
     return value && value.trim() !== "" ? value.trim() : "1";
   };
 
+  // ✅ جلب العناوين المحفوظة (للمستخدمين المسجلين فقط)
   const fetchSavedAddresses = async () => {
-    if (isFetchingRef.current && hasFetchedRef.current) return;
+    // ✅ إذا كان المستخدم ضيف، لا تجلب العناوين
+    if (isGuest) {
+      console.log("🟢 Guest user - skipping saved addresses fetch");
+      return;
+    }
+    
+    if (isFetchingRef.current && hasFetchedAddressesRef.current) return;
     
     setIsLoadingAddresses(true);
     try {
       const token = localStorage.getItem('auth_token');
+      // ✅ إذا لم يوجد توكن، لا تجلب
+      if (!token) {
+        console.log("🟢 No auth token - skipping saved addresses fetch");
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/addresses`, {
         headers: {
           'Content-Type': 'application/json',
@@ -125,6 +141,7 @@ export default function DeliveryAddressForm({
           city_id: addr.city.id,
         }));
         setSavedAddresses(addresses);
+        hasFetchedAddressesRef.current = true;
       }
     } catch (error) {
       console.error("❌ خطأ في جلب العناوين:", error);
@@ -186,8 +203,10 @@ export default function DeliveryAddressForm({
       const result = await response.json();
       
       if (result.result === true && Array.isArray(result.data)) {
+        console.log("🟢 Cities loaded:", result.data);
         setCities(result.data);
       } else {
+        console.warn("⚠️ No cities data received");
         setCities([]);
       }
     } catch (error) {
@@ -215,16 +234,19 @@ export default function DeliveryAddressForm({
       return;
     }
 
-    console.log("🟢 Fetching governorates and addresses for the first time");
+    console.log("🟢 Fetching governorates for the first time");
     isFetchingRef.current = true;
 
     const fetchData = async () => {
       try {
-        await Promise.all([
-          fetchGovernorates(),
-          fetchSavedAddresses()
-        ]);
+        // ✅ جلب المحافظات دائماً
+        await fetchGovernorates();
         hasFetchedRef.current = true;
+        
+        // ✅ جلب العناوين فقط إذا كان المستخدم مسجل
+        if (!isGuest) {
+          await fetchSavedAddresses();
+        }
         console.log("🟢 Data fetched successfully");
       } catch (error) {
         console.error("❌ Error fetching data:", error);
@@ -236,11 +258,31 @@ export default function DeliveryAddressForm({
     fetchData();
 
     return () => {};
-  }, [show]);
+  }, [show, isGuest]);
 
   const getCityIdByName = (cityName: string): string | null => {
     const city = cities.find(c => c.name === cityName);
     return city?.id || null;
+  };
+
+  // ✅ عند اختيار المدينة (للضيف والمستخدم)
+  const handleCitySelect = (value: string | null) => {
+    if (!value) {
+      console.log("🟢 No city selected");
+      return;
+    }
+    
+    console.log(`🟢 City selected from dropdown: ${value}`);
+    
+    const selectedCity = cities.find(c => c.name === value);
+    console.log(`🟢 Selected city object:`, selectedCity);
+    
+    if (selectedCity && onCitySelected) {
+      console.log(`📤 Calling onCitySelected with ID: ${selectedCity.id}`);
+      onCitySelected(String(selectedCity.id));
+    }
+    
+    updateAddress("city", value);
   };
 
   const saveAddressToAPI = async () => {
@@ -369,7 +411,6 @@ export default function DeliveryAddressForm({
     if (address) {
       console.log("🟢 Selected saved address:", address);
       
-      // تخزين تفاصيل العنوان المختار
       setSelectedAddressDetails(address);
       
       if (onCitySelected && address.city_id) {
@@ -392,13 +433,10 @@ export default function DeliveryAddressForm({
       if (onAddressSelected) {
         console.log("📤 Calling onAddressSelected with id:", addressId);
         onAddressSelected(addressId);
-      } else {
-        console.log("⚠️ onAddressSelected is not defined");
       }
     }
   };
 
-  // دالة لإلغاء اختيار العنوان المحفوظ
   const clearSelectedAddress = () => {
     setSelectedSavedAddressId(null);
     setSelectedAddressDetails(null);
@@ -448,7 +486,7 @@ export default function DeliveryAddressForm({
               </label>
               <Select
                 value={addressData.city}
-                onValueChange={(value) => updateAddress("city", value)}
+                onValueChange={handleCitySelect}
                 disabled={!addressData.governorate || isLoadingCities}
               >
                 <SelectTrigger className="w-full bg-white rounded-[8px]">
@@ -524,7 +562,8 @@ export default function DeliveryAddressForm({
             </div>
           </div>
 
-          {!addressSaved && (
+          {/* ✅ زر الحفظ يظهر فقط للمستخدمين المسجلين */}
+          {!isGuest && !addressSaved && (
             <div className="pt-2 mt-3">
               <button
                 onClick={handleManualSave}
@@ -546,6 +585,20 @@ export default function DeliveryAddressForm({
             </div>
           )}
 
+          {/* ✅ رسالة للضيف عند اختيار المدينة */}
+          {isGuest && addressData.city && (
+            <div className="pt-2 mt-2">
+              <div className="p-3 bg-green-50 rounded-xl border border-green-200">
+                <p className="text-sm font-medium text-green-800">
+                  ✅ تم اختيار المدينة: {addressData.city}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  تم تحديث رسوم التوصيل تلقائياً
+                </p>
+              </div>
+            </div>
+          )}
+
           {saveError && (
             <div className="pt-2 mt-2">
               <div className="p-3 bg-red-50 rounded-xl border border-red-200">
@@ -554,7 +607,7 @@ export default function DeliveryAddressForm({
             </div>
           )}
 
-          {addressSaved && (
+          {!isGuest && addressSaved && (
             <div className="pt-2 mt-2">
               <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
                 <p className="text-sm font-medium text-blue-800">تم حفظ عنوانك بنجاح</p>
@@ -564,7 +617,8 @@ export default function DeliveryAddressForm({
         </>
       )}
 
-      {savedAddresses.length > 0 && (
+      {/* ✅ العناوين المحفوظة تظهر فقط للمستخدمين المسجلين */}
+      {!isGuest && savedAddresses.length > 0 && (
         <>
           <div className="border-t border-gray-200 my-4 relative">
             <span className="absolute bottom-[-10px] left-[50%] bg-white px-2">أو</span>
@@ -580,7 +634,6 @@ export default function DeliveryAddressForm({
                   if (!checked) {
                     clearSelectedAddress();
                   } else {
-                    // عند تفعيل الاختيار، يتم عرض القائمة
                     setSelectedSavedAddressId(null);
                     setSelectedAddressDetails(null);
                   }
@@ -600,7 +653,6 @@ export default function DeliveryAddressForm({
                 ) : (
                   <>
                     {selectedAddressDetails ? (
-                      // ✅ عرض العنوان المختار فقط مع زر إلغاء
                       <div className="p-4 bg-white rounded-xl border-2 border-[#EC221F] relative">
                         <button
                           onClick={clearSelectedAddress}
@@ -625,7 +677,6 @@ export default function DeliveryAddressForm({
                         </div>
                       </div>
                     ) : (
-                      // ✅ عرض قائمة العناوين كاملة للاختيار
                       savedAddresses.map((address) => (
                         <label
                           key={address.id}

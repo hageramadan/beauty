@@ -5,14 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, ShoppingCart, User, Search, X, ChevronDown, LogOut, HeartIcon, Package, RotateCcw, UserCircle } from "lucide-react";
-// import { useCart } from "@/contexts/CartContext";
 import { useCartContext } from "@/contexts/CartContext";
 import { PiUserBold } from "react-icons/pi";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getCategories } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFavorites } from "@/hooks/useFavorites"; // إضافة import
+import { useFavorites } from "@/hooks/useFavorites";
 
 // تحويل الاسم العربي إلى slug للإنجليزية (للعرض فقط)
 const generateSlug = (name: string): string => {
@@ -43,9 +42,9 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { itemCount: cartCount , cart } = useCartContext();
+  const { itemCount: cartCount, cart, isGuest } = useCartContext(); // ✅ إضافة isGuest
   const { isAuthenticated, user, logoutUser, loading } = useAuth();
-  const { total: favoritesCount } = useFavorites(); // الحصول على عدد المنتجات المفضلة
+  const { total: favoritesCount } = useFavorites();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -64,7 +63,8 @@ export function Navbar() {
 
   // التحقق من أن الصفحة الحالية هي الهوم
   const isHomePage = pathname === "/";
-const itemsCount = cart?.items?.length || 0;
+  const itemsCount = cart?.items?.length || 0;
+
   // جلب الفئات من API
   useEffect(() => {
     const fetchCategories = async () => {
@@ -393,13 +393,13 @@ const itemsCount = cart?.items?.length || 0;
               </Link>
             </Button>
 
-            {/* Cart Button */}
+            {/* Cart Button - ✅ إضافة tooltip للمستخدم الضيف */}
             <Button 
               variant="ghost" 
               aria-label="cart"
               size="icon" 
               asChild 
-              className="relative hover:bg-white/30 rounded-[10px]"
+              className="relative hover:bg-white/30 rounded-[10px] group"
               style={{ color: styles.textColor }}
             >
               <Link href="/cart">
@@ -409,6 +409,12 @@ const itemsCount = cart?.items?.length || 0;
                   </span>
                 )}
                 <ShoppingCart className="h-5 w-5" />
+                {/* ✅ إضافة tooltip للمستخدم الضيف */}
+                {isGuest && itemsCount > 0 && (
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    سلة الضيف
+                  </span>
+                )}
               </Link>
             </Button>
 
@@ -566,7 +572,9 @@ const itemsCount = cart?.items?.length || 0;
                   </span>
                 )}
                 <ShoppingCart className="h-5 w-5" style={{ color: '#195073' }} />
-                <span className="text-xs" style={{ color: '#112B40' }}>السلة</span>
+                <span className="text-xs" style={{ color: '#112B40' }}>
+                  السلة {isGuest && itemsCount > 0 && '(ضيف)'}
+                </span>
               </Link>
 
               {isAuthenticated && user ? (
@@ -620,6 +628,15 @@ const itemsCount = cart?.items?.length || 0;
                   <LogOut className="h-4 w-4" />
                   <span>تسجيل الخروج</span>
                 </button>
+              </div>
+            )}
+
+            {/* ✅ إضافة رسالة للمستخدم الضيف في الموبايل */}
+            {isGuest && itemsCount > 0 && (
+              <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg mx-3">
+                <p className="text-xs text-blue-700 text-center">
+                  🛒 سلة الضيف - سجل دخولك لحفظ المنتجات
+                </p>
               </div>
             )}
 

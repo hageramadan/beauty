@@ -1,7 +1,7 @@
 // src/contexts/CartContext.tsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef, useMemo } from 'react';
 import {
   getCart,
   addToCart,
@@ -10,6 +10,9 @@ import {
   clearCart,
   CartData,
   AddToCartPayload,
+  getGuestToken as getGuestTokenFromService,
+  setGuestToken as setGuestTokenInService,
+  clearGuestToken,
 } from '@/services/cart';
 import toast from 'react-hot-toast';
 
@@ -19,13 +22,17 @@ interface CartContextType {
   isMutating: boolean;
   itemCount: number;
   totalAmount: number;
+  guestToken: string | null;
+  isGuest: boolean;
   addItem: (productId: number, quantity: number, variantId?: number | null) => Promise<boolean>;
   updateQuantity: (cartItemId: number, quantity: number) => Promise<boolean>;
   removeItem: (cartItemId: number) => Promise<boolean>;
   clearAllItems: () => Promise<boolean>;
   refetchCart: () => Promise<void>;
-  updateCart: (newCart: CartData | null) => void; // ✅ إضافة هذه الدالة
+  updateCart: (newCart: CartData | null) => void;
   getItemQuantity: (productId: number) => number;
+  setGuestToken: (token: string) => void;
+  clearGuestMode: () => void; // ✅ دالة جديدة لمسح وضع الضيف
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,8 +43,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isMutating, setIsMutating] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [guestToken, setGuestTokenState] = useState<string | null>(() => {
+    // ✅ إذا كان هناك auth_token، لا نستخدم guest_token
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        return null;
+      }
+      return localStorage.getItem('guest_cart_token');
+    }
+    return null;
+  });
   
   const isMountedRef = useRef(true);
+
+  // ✅ التحقق إذا كان المستخدم ضيف
+  const isGuest = useMemo(() => {
+    // إذا كان هناك auth_token، فالمستخدم ليس ضيف
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        return false;
+      }
+    }
+    
+    // إذا كان هناك guest_token وليس هناك user في السلة
+    return !!guestToken && !cart?.user;
+  }, [guestToken, cart]);
+
+  // ✅ دالة لحفظ الـ guest_token
+  const setGuestToken = useCallback((token: string) => {
+    // ✅ إذا كان هناك auth_token، لا نحفظ guest_token
+    if (typeof window !== 'undefined') {
+      const authToken = localStorage.getItem('auth_token');
+      if (authToken) {
+        return;
+      }
+    }
+    
+    setGuestTokenState(token);
+    setGuestTokenInService(token);
+  }, []);
+
+  // ✅ دالة لمسح وضع الضيف
+  const clearGuestMode = useCallback(() => {
+    clearGuestToken();
+    setGuestTokenState(null);
+  }, []);
 
   const fetchCartData = useCallback(async (showLoading: boolean = true) => {
     if (showLoading) setIsLoading(true);
@@ -46,6 +98,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (response.result === true && response.data && response.data.cart) {
         const cartData = response.data.cart;
+        
+        // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
+        if (cartData.guest_token) {
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+          if (!authToken) {
+            setGuestToken(cartData.guest_token);
+          }
+        }
         
         if (isMountedRef.current) {
           setCart(cartData);
@@ -66,9 +126,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [setGuestToken]);
 
-  // ✅ دالة تحديث السلة يدوياً
   const updateCart = useCallback((newCart: CartData | null) => {
     if (!isMountedRef.current) return;
     
@@ -77,11 +136,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (newCart) {
       setItemCount(newCart.total_quantity || 0);
       setTotalAmount(newCart.total_amount || 0);
+      
+      // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
+      if (newCart.guest_token) {
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+        if (!authToken) {
+          setGuestToken(newCart.guest_token);
+        }
+      }
     } else {
       setItemCount(0);
       setTotalAmount(0);
     }
-  }, []);
+  }, [setGuestToken]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -105,6 +172,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await addToCart(payload);
       
       if (response.result === true && response.data) {
+        // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
+        if (response.data.cart?.guest_token) {
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+          if (!authToken) {
+            setGuestToken(response.data.cart.guest_token);
+          }
+        }
+        
         toast.success(response.message || 'تم إضافة المنتج إلى السلة');
         await fetchCartData(false);
         return true;
@@ -199,13 +274,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     isMutating,
     itemCount,
     totalAmount,
+    guestToken,
+    isGuest,
     addItem,
     updateQuantity,
     removeItem,
     clearAllItems,
     refetchCart: () => fetchCartData(true),
-    updateCart, // ✅ أضف هذه الدالة هنا
+    updateCart,
     getItemQuantity,
+    setGuestToken,
+    clearGuestMode, // ✅ دالة جديدة
   };
 
   return (
@@ -215,7 +294,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ✅ هذا السطر مهم جداً - تصدير الـ hook
 export function useCartContext() {
   const context = useContext(CartContext);
   if (context === undefined) {

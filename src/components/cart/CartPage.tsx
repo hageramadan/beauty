@@ -8,7 +8,7 @@ import { CartEmpty } from "./CartEmpty";
 import { useCartContext } from "@/contexts/CartContext";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react"; // ✅ إضافة Info
 
 export interface Ibrand {
   id: number;
@@ -34,7 +34,7 @@ export interface CartItemDisplay {
 }
 
 export function CartPage() {
-  const { cart, isLoading, updateQuantity, removeItem, refetchCart } = useCartContext();
+  const { cart, isLoading, updateQuantity, removeItem, refetchCart, isGuest } = useCartContext(); // ✅ إضافة isGuest
   const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
 
   // ✅ عدد العناصر (المنتجات المختلفة) وليس الكميات
@@ -175,6 +175,8 @@ export function CartPage() {
     <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
       <div className="container page-with-padding">
         <PageHeader title="سلة التسوق" itemCount={itemsCount} />
+
+       
 
         <div className="grid grid-cols-1 lg:grid-cols-3 md:gap-8 gap-4">
           <div className="lg:col-span-2 space-y-4 bg-white rounded-[16px] p-4 mb-5">

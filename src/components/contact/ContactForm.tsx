@@ -19,7 +19,7 @@ export default function ContactForm() {
     name: "",
     email: "",
     phone: "",
-    country_code: "+966",
+    country_code: "+20",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -103,15 +103,51 @@ const getToken = (): string | null => {
   return null;
 };
 
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-  };
+// ✅ دالة للحصول على guest_token من localStorage
+export const getGuestToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('guest_cart_token');
+  }
+  return null;
 };
 
-// 1. إضافة منتج إلى السلة
+// ✅ دالة لحفظ guest_token في localStorage
+export const setGuestToken = (token: string): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('guest_cart_token', token);
+  }
+};
+
+// ✅ دالة لمسح guest_token
+export const clearGuestToken = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('guest_cart_token');
+  }
+};
+
+// ✅ دالة للحصول على الـ Headers مع إضافة X-Guest-Token
+const getHeaders = (): HeadersInit => {
+  const token = getToken();
+  const guestToken = getGuestToken();
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  // ✅ إضافة الـ auth token إذا كان موجوداً
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // ✅ إضافة X-Guest-Token إذا كان موجوداً
+  if (guestToken) {
+    headers['X-Guest-Token'] = guestToken;
+  }
+  
+  return headers;
+};
+
+// 1. إضافة منتج إلى السلة (مع دعم guest_token في الـ Headers)
 export const addToCart = async (payload: AddToCartPayload): Promise<CartResponse> => {
   try {
     const response = await fetch(`${API_URL}/cart`, {
@@ -121,6 +157,12 @@ export const addToCart = async (payload: AddToCartPayload): Promise<CartResponse
     });
     
     const data = await response.json();
+    
+    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    if (data.result && data.data?.cart?.guest_token) {
+      setGuestToken(data.data.cart.guest_token);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في إضافة المنتج إلى السلة:', error);
@@ -128,7 +170,7 @@ export const addToCart = async (payload: AddToCartPayload): Promise<CartResponse
   }
 };
 
-// 2. عرض السلة
+// 2. عرض السلة (مع دعم guest_token في الـ Headers)
 export const getCart = async (): Promise<CartResponse> => {
   try {
     const response = await fetch(`${API_URL}/cart/preview`, {
@@ -137,6 +179,12 @@ export const getCart = async (): Promise<CartResponse> => {
     });
     
     const data = await response.json();
+    
+    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    if (data.result && data.data?.cart?.guest_token) {
+      setGuestToken(data.data.cart.guest_token);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في جلب السلة:', error);
@@ -144,7 +192,7 @@ export const getCart = async (): Promise<CartResponse> => {
   }
 };
 
-// 3. تحديث كمية منتج في السلة
+// 3. تحديث كمية منتج في السلة (مع دعم guest_token في الـ Headers)
 export const updateCartItemQuantity = async (cartItemId: number, quantity: number): Promise<CartResponse> => {
   try {
     const response = await fetch(`${API_URL}/cart/cart-items/${cartItemId}`, {
@@ -154,6 +202,12 @@ export const updateCartItemQuantity = async (cartItemId: number, quantity: numbe
     });
     
     const data = await response.json();
+    
+    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    if (data.result && data.data?.cart?.guest_token) {
+      setGuestToken(data.data.cart.guest_token);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في تحديث كمية المنتج:', error);
@@ -161,7 +215,7 @@ export const updateCartItemQuantity = async (cartItemId: number, quantity: numbe
   }
 };
 
-// 4. حذف منتج معين من السلة
+// 4. حذف منتج معين من السلة (مع دعم guest_token في الـ Headers)
 export const removeFromCart = async (cartItemId: number): Promise<CartResponse> => {
   try {
     const response = await fetch(`${API_URL}/cart/cart-items/${cartItemId}`, {
@@ -170,6 +224,12 @@ export const removeFromCart = async (cartItemId: number): Promise<CartResponse> 
     });
     
     const data = await response.json();
+    
+    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    if (data.result && data.data?.cart?.guest_token) {
+      setGuestToken(data.data.cart.guest_token);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في حذف المنتج من السلة:', error);
@@ -177,7 +237,7 @@ export const removeFromCart = async (cartItemId: number): Promise<CartResponse> 
   }
 };
 
-// 5. حذف كل المنتجات من السلة (تفريغ السلة)
+// 5. حذف كل المنتجات من السلة (تفريغ السلة) (مع دعم guest_token في الـ Headers)
 export const clearCart = async (): Promise<ClearCartResponse> => {
   try {
     const response = await fetch(`${API_URL}/cart/clear`, {
@@ -186,6 +246,12 @@ export const clearCart = async (): Promise<ClearCartResponse> => {
     });
     
     const data = await response.json();
+    
+    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    if (data.result && data.data?.cart?.guest_token) {
+      setGuestToken(data.data.cart.guest_token);
+    }
+    
     return data;
   } catch (error) {
     console.error('❌ خطأ في حذف جميع منتجات السلة:', error);

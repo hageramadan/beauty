@@ -27,8 +27,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className={almarai.className}>
+        <CartProvider>
         <AuthProvider>
-          <CartProvider>
+          
             <FavoritesProvider>
               <Navbar />
               <main>{children}</main>
@@ -38,8 +39,9 @@ export default function RootLayout({
               />
               <Footer />
             </FavoritesProvider>
-          </CartProvider>
+         
         </AuthProvider>
+         </CartProvider>
       </body>
     </html>
   );

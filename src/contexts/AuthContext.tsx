@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { 
   getToken, 
   getUserData, 
@@ -14,6 +14,7 @@ import {
   resendOTP,
   getUserProfile,
 } from '../services/api';
+import { useCartContext } from './CartContext';
 
 // نوع بيانات المستخدم
 interface User {
@@ -51,6 +52,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // ✅ استخدم useCartContext في المستوى الأعلى
+  const { clearGuestMode, refetchCart } = useCartContext();
 
   // دالة لجلب بيانات المستخدم من API
   const fetchUserData = useCallback(async () => {
@@ -108,12 +112,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
+  // ✅ دالة مساعدة لحذف guest_token ومسح وضع الضيف
+  const clearGuestModeAndToken = useCallback(() => {
+    // حذف guest_token من localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('guest_cart_token');
+    }
+    // مسح وضع الضيف من CartContext
+    clearGuestMode();
+  }, [clearGuestMode]);
+
   // تسجيل الدخول بالبريد الإلكتروني
   const handleLoginWithEmail = useCallback(async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
       const result = await loginWithEmail({ email, password });
       
       if (result.result) {
+        // ✅ حذف guest_token ومسح وضع الضيف
+        clearGuestModeAndToken();
+        
+        // ✅ إعادة تحميل السلة
+        await refetchCart();
+        
         return { success: true, message: result.message };
       } else {
         return { success: false, message: result.message };
@@ -122,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Login error:', error);
       return { success: false, message: 'حدث خطأ أثناء تسجيل الدخول' };
     }
-  }, []);
+  }, [clearGuestModeAndToken, refetchCart]);
 
   // تسجيل الدخول برقم الهاتف
   const handleLoginWithPhone = useCallback(async (
@@ -134,6 +154,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await loginWithPhone({ phone, password, country_code });
       
       if (result.result) {
+        // ✅ حذف guest_token ومسح وضع الضيف
+        clearGuestModeAndToken();
+        
+        // ✅ إعادة تحميل السلة
+        await refetchCart();
+        
         return { success: true, message: result.message };
       } else {
         return { success: false, message: result.message };
@@ -142,7 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Login error:', error);
       return { success: false, message: 'حدث خطأ أثناء تسجيل الدخول' };
     }
-  }, []);
+  }, [clearGuestModeAndToken, refetchCart]);
 
   // إنشاء حساب بالبريد الإلكتروني
   const handleRegisterWithEmail = useCallback(async (
@@ -206,6 +232,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           saveUserData({ user: result.data.user });
           setUser(result.data.user);
           setIsAuthenticated(true);
+          
+          // ✅ حذف guest_token ومسح وضع الضيف
+          clearGuestModeAndToken();
+          
+          // ✅ إعادة تحميل السلة
+          await refetchCart();
         }
         return { success: true, message: result.message, token: result.data?.token };
       } else {
@@ -215,7 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('OTP verification error:', error);
       return { success: false, message: 'حدث خطأ أثناء التحقق' };
     }
-  }, []);
+  }, [clearGuestModeAndToken, refetchCart]);
 
   // التحقق من OTP للهاتف
   const handleVerifyOTPWithPhone = useCallback(async (otp: string, phone: string): Promise<{ success: boolean; message: string; token?: string }> => {
@@ -238,6 +270,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           saveUserData({ user: result.data.user });
           setUser(result.data.user);
           setIsAuthenticated(true);
+          
+          // ✅ حذف guest_token ومسح وضع الضيف
+          clearGuestModeAndToken();
+          
+          // ✅ إعادة تحميل السلة
+          await refetchCart();
         }
         return { success: true, message: result.message, token: result.data?.token };
       } else {
@@ -247,7 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('OTP verification error:', error);
       return { success: false, message: 'حدث خطأ أثناء التحقق' };
     }
-  }, []);
+  }, [clearGuestModeAndToken, refetchCart]);
 
   // إعادة إرسال OTP للبريد الإلكتروني
   const handleResendOTPToEmail = useCallback(async (email: string): Promise<{ success: boolean; message: string }> => {

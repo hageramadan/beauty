@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { ContactInfoFormProps } from "./types";
 import PhoneInput from "@/components/contact/PhoneInput";
+import { Mail } from "lucide-react";
 
 // دالة التحقق من الاسم الكامل
 const validateFullName = (name: string): string | null => {
@@ -19,10 +20,33 @@ const validateFullName = (name: string): string | null => {
   return null;
 };
 
-export default function ContactInfoForm({ formData, onFormChange }: ContactInfoFormProps) {
+// ✅ دالة التحقق من البريد الإلكتروني
+const validateEmail = (email: string): string | null => {
+  if (!email.trim()) {
+    return "البريد الإلكتروني مطلوب";
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return "البريد الإلكتروني غير صحيح";
+  }
+  return null;
+};
+
+interface ContactInfoFormExtendedProps extends ContactInfoFormProps {
+  isGuest?: boolean; // ✅ إضافة prop للتحقق من حالة الضيف
+}
+
+export default function ContactInfoForm({ 
+  formData, 
+  onFormChange,
+  isGuest = false // ✅ القيمة الافتراضية false
+}: ContactInfoFormExtendedProps) {
   // حالة لتخزين رسالة الخطأ للاسم
   const [nameError, setNameError] = useState<string | null>(null);
   const [isNameTouched, setIsNameTouched] = useState(false);
+
+  // ✅ حالة لتخزين رسالة الخطأ للبريد الإلكتروني
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isEmailTouched, setIsEmailTouched] = useState(false);
 
   // معالج تغيير الاسم
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +66,24 @@ export default function ContactInfoForm({ formData, onFormChange }: ContactInfoF
     setNameError(error);
   };
 
+  // ✅ معالج تغيير البريد الإلكتروني
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    onFormChange({ email: value });
+    
+    if (isEmailTouched) {
+      const error = validateEmail(value);
+      setEmailError(error);
+    }
+  };
+
+  // ✅ معالج ترك حقل البريد الإلكتروني
+  const handleEmailBlur = () => {
+    setIsEmailTouched(true);
+    const error = validateEmail(formData.email || "");
+    setEmailError(error);
+  };
+
   // معالج تغيير رقم الهاتف (من مكون PhoneInput)
   const handlePhoneChange = (phoneNumber: string, countryCode: string) => {
     // بناء الرقم الكامل مع كود الدولة
@@ -58,7 +100,8 @@ export default function ContactInfoForm({ formData, onFormChange }: ContactInfoF
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-         معلومات الاتصال
+        <span className="text-[#EC221F]">👤</span>
+        معلومات الاتصال
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -93,8 +136,34 @@ export default function ContactInfoForm({ formData, onFormChange }: ContactInfoF
           />
         </div>
       </div>
-      
-      
+
+      {/* ✅ حقل البريد الإلكتروني (يظهر فقط للضيف) */}
+      {isGuest && (
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            البريد الإلكتروني <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="email"
+              value={formData.email || ""}
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
+              placeholder="example@email.com"
+              className={`w-full pr-12 pl-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition ${
+                emailError && isEmailTouched
+                  ? "border-red-500 focus:ring-red-500"
+                  : "border-gray-200"
+              }`}
+            />
+          </div>
+          {emailError && isEmailTouched && (
+            <p className="text-red-500 text-sm mt-1">{emailError}</p>
+          )}
+         
+        </div>
+      )}
     </div>
   );
 }

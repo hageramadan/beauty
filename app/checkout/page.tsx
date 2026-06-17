@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ChevronRight, CheckCircle } from "lucide-react";
+import { ChevronRight, CheckCircle, User, Mail, Phone, MapPin, Building, Home, AlertCircle, Eye, EyeOff } from "lucide-react";
 import {
   CartItem,
   CheckoutFormData,
@@ -31,13 +31,32 @@ const getToken = (): string | null => {
   return null;
 };
 
-// دالة جلب الهيدرز مع التوكن
+// ✅ دالة جلب الـ guest_token
+const getGuestToken = (): string | null => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("guest_cart_token");
+  }
+  return null;
+};
+
+// دالة جلب الهيدرز مع التوكن و X-Guest-Token
 const getHeaders = (): HeadersInit => {
   const token = getToken();
-  return {
+  const guestToken = getGuestToken();
+  
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
   };
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  if (guestToken) {
+    headers["X-Guest-Token"] = guestToken;
+  }
+  
+  return headers;
 };
 
 // ✅ دالة جلب السلة مع البارامترات (delivery_method و city_id)
@@ -46,7 +65,6 @@ const fetchCartWithParams = async (
   cityId?: string,
 ): Promise<any> => {
   try {
-    const token = getToken();
     const params = new URLSearchParams();
 
     if (deliveryMethod === "delivery") {
@@ -56,7 +74,7 @@ const fetchCartWithParams = async (
     }
 
     if (deliveryMethod === "delivery" && cityId) {
-      params.append("city_id", cityId);
+      params.append("city_id",  String(cityId));
     }
 
     const url = `${API_URL}/cart/preview?${params.toString()}`;
@@ -69,7 +87,6 @@ const fetchCartWithParams = async (
     const data = await response.json();
     console.log("🟢 API Response:", data);
 
-    // ✅ إرجاع كائن cart مباشرة
     if (data.result === true && data.data && data.data.cart) {
       console.log("🟢 Returning cart data:", data.data.cart);
       return data.data.cart;
@@ -249,12 +266,22 @@ interface CompletedOrderResult {
   total: number;
 }
 
+// ✅ واجهة بيانات إنشاء الحساب
+interface AccountData {
+  email: string;
+  phone: string;
+  name: string;
+  password: string;
+  password_confirmation: string;
+}
+
 export default function CheckoutPage() {
   const {
     cart,
     isLoading: cartLoading,
     refetchCart,
     updateCart,
+    isGuest,
   } = useCartContext();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -269,6 +296,20 @@ export default function CheckoutPage() {
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
 
+  // ✅ حالة خيار إنشاء حساب
+  const [createAccount, setCreateAccount] = useState(false);
+  const [showAccountPopup, setShowAccountPopup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [accountData, setAccountData] = useState<AccountData>({
+    email: "",
+    phone: "",
+    name: "",
+    password: "",
+    password_confirmation: "",
+  });
+  const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
+
   // ✅ استخدم useRef لتخزين cityId بشكل فوري
   const selectedCityIdRef = useRef<string | null>(null);
   
@@ -277,6 +318,9 @@ export default function CheckoutPage() {
   
   // ✅ تتبع آخر قيمة لـ deliveryMethod لمنع الاستدعاء المتكرر
   const lastDeliveryMethodRef = useRef<string | null>(null);
+  
+  // ✅ تتبع آخر قيمة لـ cityId لمنع الاستدعاء المتكرر
+  const lastFetchedCityIdRef = useRef<string | null>(null);
 
   const cartItems = useMemo(() => transformCartItems(cart), [cart]);
 
@@ -298,48 +342,37 @@ export default function CheckoutPage() {
     paymentMethod: "cash",
   });
 
-const cartSummary: CartSummary = useMemo(() => {
-  const subtotal = cart?.subtotal || 0;
-  const discount = cart?.discount_amount || 0;
-  
-  let deliveryFee;
-  
-  if (formData.deliveryMethod === "pickup") {
-    deliveryFee = null;
-  } else if (formData.deliveryMethod === "delivery") {
-    if (!selectedCityId) {
-      deliveryFee = undefined;
-    } else {
-      if (cart?.delivery_fee !== undefined && cart?.delivery_fee !== null) {
-        deliveryFee = cart.delivery_fee;
+  const cartSummary: CartSummary = useMemo(() => {
+    const subtotal = cart?.subtotal || 0;
+    const discount = cart?.discount_amount || 0;
+    
+    let deliveryFee;
+    
+    if (formData.deliveryMethod === "pickup") {
+      deliveryFee = null;
+    } else if (formData.deliveryMethod === "delivery") {
+      if (!selectedCityId) {
+        deliveryFee = undefined;
       } else {
-        deliveryFee = cart ? undefined : 0;
+        if (cart?.delivery_fee !== undefined && cart?.delivery_fee !== null) {
+          deliveryFee = cart.delivery_fee;
+        } else {
+          deliveryFee = cart ? undefined : 0;
+        }
       }
+    } else {
+      deliveryFee = undefined;
     }
-  } else {
-    deliveryFee = undefined;
-  }
-  
-  // ✅ استخدام total_amount مباشرة من الـ API
-  const total = cart?.total_amount || 0;
+    
+    const total = cart?.total_amount || 0;
 
-  console.log("🟢 cartSummary:", { 
-    subtotal, 
-    discount, 
-    deliveryFee, 
-    total, 
-    total_amount_from_api: cart?.total_amount,
-    selectedCityId, 
-    hasCart: !!cart 
-  });
-
-  return {
-    subtotal,
-    discount,
-    deliveryFee,
-    total, // ✅ الآن total هو total_amount من الـ API
-  };
-}, [cart, formData.deliveryMethod, selectedCityId]);
+    return {
+      subtotal,
+      discount,
+      deliveryFee,
+      total,
+    };
+  }, [cart, formData.deliveryMethod, selectedCityId]);
 
   // ✅ التعديل المهم: لا تقم بإعادة التوجيه إلى الرئيسية عند فراغ السلة إذا كان الطلب قد تم بنجاح
   useEffect(() => {
@@ -349,48 +382,77 @@ const cartSummary: CartSummary = useMemo(() => {
       router.replace("/");
     }
   }, [cart, cartLoading, router, isOrderCompleted]);
+// ✅ استدعاء الـ API عند تغيير طريقة التوصيل أو المدينة (محسّن)
+useEffect(() => {
+  if (isOrderCompleted) return;
+  if (!cart || cart.items?.length === 0) return;
+  
+  if (isFetchingRef.current) return;
 
-  // ✅ استدعاء الـ API عند تغيير طريقة التوصيل إلى pickup (محسّن)
-  useEffect(() => {
-    // منع الاستدعاء إذا كان الطلب مكتملاً أو السلة فارغة
-    if (isOrderCompleted) return;
-    if (!cart || cart.items?.length === 0) return;
-    
-    // ✅ منع الاستدعاء إذا كان هناك طلب قيد التنفيذ
-    if (isFetchingRef.current) return;
-    
-    // ✅ منع الاستدعاء إذا كانت القيمة لم تتغير
-    if (lastDeliveryMethodRef.current === formData.deliveryMethod) {
-      console.log("🟢 Skipping - deliveryMethod hasn't changed");
-      return;
-    }
+  const currentDeliveryMethod = formData.deliveryMethod;
+  // ✅ استخدم الـ ref بدلاً من الـ state
+  const currentCityId = selectedCityIdRef.current;
 
-    // ✅ تحديث آخر قيمة
-    lastDeliveryMethodRef.current = formData.deliveryMethod;
+  // ✅ التحقق: هل تغيرت طريقة التوصيل أم المدينة؟
+  const deliveryMethodChanged = lastDeliveryMethodRef.current !== currentDeliveryMethod;
+  const cityIdChanged = lastFetchedCityIdRef.current !== currentCityId;
 
-    const fetchCart = async () => {
-      try {
-        if (formData.deliveryMethod === "pickup") {
-          console.log("🟢 Fetching cart with pickup method");
-          isFetchingRef.current = true;
-          
-          const cartData = await fetchCartWithParams("pickup");
-          console.log("🟢 Cart data received for pickup:", cartData);
-          
-          if (cartData) {
-            updateCart(cartData);
-            console.log("🟢 Cart updated for pickup successfully");
-          }
+  // ✅ إذا لم يتغير شيء، لا نستدعي الـ API
+  if (!deliveryMethodChanged && !cityIdChanged) {
+    console.log("🟢 Skipping - no changes detected");
+    return;
+  }
+
+  // ✅ تحديث القيم المخزنة
+  lastDeliveryMethodRef.current = currentDeliveryMethod;
+  lastFetchedCityIdRef.current = currentCityId;
+
+  console.log(`🟢 Changes detected - deliveryMethod: ${currentDeliveryMethod}, cityId: ${currentCityId}`);
+
+  const fetchCart = async () => {
+    try {
+      isFetchingRef.current = true;
+      
+      // ✅ إذا كانت طريقة التوصيل delivery ولدينا cityId
+      if (currentDeliveryMethod === "delivery" && currentCityId) {
+        console.log(`🟢 Fetching cart with delivery and city_id: ${currentCityId}`);
+        const cartData = await fetchCartWithParams("delivery", currentCityId);
+        if (cartData) {
+          updateCart(cartData);
         }
-      } catch (error) {
-        console.error("❌ Error fetching cart for pickup:", error);
-      } finally {
-        isFetchingRef.current = false;
+      } 
+      // ✅ إذا كانت طريقة التوصيل pickup
+      else if (currentDeliveryMethod === "pickup") {
+        console.log("🟢 Fetching cart with pickup (receive)");
+        const cartData = await fetchCartWithParams("pickup");
+        if (cartData) {
+          updateCart(cartData);
+        }
+      } 
+      // ✅ إذا كانت delivery ولكن لم يتم اختيار مدينة بعد
+      else if (currentDeliveryMethod === "delivery" && !currentCityId) {
+        console.log("🟢 Fetching cart with delivery (no city yet)");
+        const cartData = await fetchCartWithParams("delivery");
+        if (cartData) {
+          updateCart(cartData);
+        }
       }
-    };
+    } catch (error) {
+      console.error("❌ Error fetching cart:", error);
+    } finally {
+      isFetchingRef.current = false;
+    }
+  };
 
-    fetchCart();
-  }, [formData.deliveryMethod, isOrderCompleted, cart, updateCart]);
+  // ✅ تأخير بسيط لتجنب الاستدعاءات المتكررة أثناء الكتابة
+  const timeoutId = setTimeout(fetchCart, 300);
+  
+  return () => {
+    clearTimeout(timeoutId);
+    isFetchingRef.current = false;
+  };
+}, [formData.deliveryMethod, selectedCityId, isOrderCompleted, cart, updateCart]);
+// ✅ لا تزال dependencies تحتوي على selectedCityId لتشغيل الـ useEffect عند تغيره
 
   const handleFormChange = useCallback((data: Partial<CheckoutFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
@@ -399,13 +461,7 @@ const cartSummary: CartSummary = useMemo(() => {
   // ✅ دالة لاستقبال address_id بعد حفظ العنوان
   const handleAddressSaved = useCallback(
     async (address: any) => {
-      console.log("🟢 handleAddressSaved called with:", address);
-
-      // ✅ منع الاستدعاء إذا كان هناك طلب قيد التنفيذ
-      if (isFetchingRef.current) {
-        console.log("🟢 Skipping - already fetching");
-        return;
-      }
+      if (isFetchingRef.current) return;
 
       if (address && address.id) {
         setSelectedAddressId(address.id);
@@ -413,52 +469,30 @@ const cartSummary: CartSummary = useMemo(() => {
 
         try {
           let cityId = selectedCityIdRef.current;
-          console.log("🟢 cityId from ref:", cityId);
 
           if (!cityId) {
             cityId = selectedCityId;
-            console.log("🟢 cityId from state:", cityId);
           }
 
           if (!cityId) {
             cityId = address.city?.id || address.city_id;
-            console.log("🟢 cityId from address:", cityId);
           }
 
           if (cityId && formData.deliveryMethod === "delivery") {
-            // ✅ تعيين علامة الجلب
             isFetchingRef.current = true;
-            
-            console.log("🟢 Fetching cart with params:", {
-              deliveryMethod: "delivery",
-              cityId,
-            });
             const cartData = await fetchCartWithParams(
               "delivery",
               String(cityId),
             );
-            console.log("🟢 Cart data received:", cartData);
-
             if (cartData) {
-              console.log("🟢 Cart data to update:", cartData);
               updateCart(cartData);
-              console.log("🟢 Cart updated successfully");
-            } else {
-              console.log("🟢 No cart data received");
             }
-          } else {
-            console.log(
-              "🟢 Skipping cart fetch - no cityId or not delivery method",
-            );
           }
         } catch (error) {
           console.error("❌ Error updating cart after address save:", error);
         } finally {
-          // ✅ إعادة تعيين علامة الجلب بعد الانتهاء
           isFetchingRef.current = false;
         }
-      } else {
-        console.log("🟢 No address or no id in address");
       }
     },
     [selectedCityId, formData.deliveryMethod, updateCart],
@@ -467,66 +501,111 @@ const cartSummary: CartSummary = useMemo(() => {
   // ✅ دالة لاستقبال address_id من عنوان محفوظ تم اختياره
   const handleAddressSelected = useCallback(
     async (addressId: number) => {
-      console.log("🟢 handleAddressSelected called with addressId:", addressId);
-      
-      // ✅ منع الاستدعاء إذا كان هناك طلب قيد التنفيذ
-      if (isFetchingRef.current) {
-        console.log("🟢 Skipping - already fetching");
-        return;
-      }
+      if (isFetchingRef.current) return;
       
       setSelectedAddressId(addressId);
 
       try {
         const cityId = selectedCityIdRef.current;
-        console.log("🟢 cityId from ref in handleAddressSelected:", cityId);
 
         if (cityId && formData.deliveryMethod === "delivery") {
-          // ✅ تعيين علامة الجلب
           isFetchingRef.current = true;
-          
-          console.log("🟢 Fetching cart with params after address selection:", {
-            deliveryMethod: "delivery",
-            cityId,
-          });
           const cartData = await fetchCartWithParams(
             "delivery",
             String(cityId),
           );
-          console.log("🟢 Cart data received:", cartData);
-
           if (cartData) {
-            console.log("🟢 Cart data to update:", cartData);
             updateCart(cartData);
-            console.log("🟢 Cart updated successfully after address selection");
-          } else {
-            console.log("🟢 No cart data received");
           }
-        } else {
-          console.log(
-            "🟢 Skipping cart fetch - no cityId or not delivery method",
-          );
         }
       } catch (error) {
         console.error("❌ Error updating cart after address selection:", error);
       } finally {
-        // ✅ إعادة تعيين علامة الجلب بعد الانتهاء
         isFetchingRef.current = false;
       }
     },
     [formData.deliveryMethod, updateCart],
   );
 
-  // ✅ دالة لاستقبال city_id عند اختيار المدينة
   const handleCitySelected = useCallback((cityId: string) => {
-    console.log("🟢 handleCitySelected called with cityId:", cityId);
-    selectedCityIdRef.current = cityId;
-    setSelectedCityId(cityId);
-    console.log("🟢 cityId stored in ref and state");
-    // ❌ لا نقوم بجلب السلة هنا، فقط نخزن cityId
+  console.log(`🟢 City selected: ${cityId}`);
+  selectedCityIdRef.current = cityId; // ✅ تحديث الـ ref أولاً
+  setSelectedCityId(cityId); // ✅ ثم تحديث الـ state
+}, []);
+
+  // ✅ دالة فتح Popup إنشاء الحساب
+  const handleOpenAccountPopup = useCallback(() => {
+    // تعبئة البيانات المبدئية من النموذج
+    setAccountData((prev) => ({
+      ...prev,
+      name: formData.fullName || "",
+      phone: formData.phone || "",
+    }));
+    setAccountErrors({});
+    setShowAccountPopup(true);
+  }, [formData.fullName, formData.phone]);
+
+  // ✅ دالة إغلاق Popup إنشاء الحساب
+  const handleCloseAccountPopup = useCallback(() => {
+    setShowAccountPopup(false);
+    setCreateAccount(false);
+    setAccountErrors({});
   }, []);
 
-// ✅ تحضير بيانات الطلب
+  // ✅ دالة التحقق من بيانات الحساب
+  const validateAccountData = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!accountData.email.trim()) {
+      errors.email = "البريد الإلكتروني مطلوب";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountData.email)) {
+      errors.email = "البريد الإلكتروني غير صحيح";
+    }
+
+    if (!accountData.phone.trim()) {
+      errors.phone = "رقم الهاتف مطلوب";
+    } else {
+      const phoneValidation = validatePhoneNumberByCountry(
+        accountData.phone.replace(/[\s\-]/g, ""),
+        "+20",
+      );
+      if (!phoneValidation.isValid) {
+        errors.phone = phoneValidation.error;
+      }
+    }
+
+    if (!accountData.name.trim()) {
+      errors.name = "الاسم مطلوب";
+    } else if (accountData.name.trim().length < 3) {
+      errors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
+    }
+
+    if (!accountData.password) {
+      errors.password = "كلمة المرور مطلوبة";
+    } else if (accountData.password.length < 8) {
+      errors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
+    }
+
+    if (!accountData.password_confirmation) {
+      errors.password_confirmation = "تأكيد كلمة المرور مطلوب";
+    } else if (accountData.password !== accountData.password_confirmation) {
+      errors.password_confirmation = "كلمات المرور غير متطابقة";
+    }
+
+    setAccountErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ✅ دالة تأكيد إنشاء الحساب
+  const handleConfirmAccount = useCallback(() => {
+    if (validateAccountData()) {
+      setCreateAccount(true);
+      setShowAccountPopup(false);
+      toast.success("سيتم إنشاء حسابك بعد إتمام الطلب");
+    }
+  }, [accountData]);
+
+// ✅ تحضير بيانات الطلب (معدل لدعم الضيف)
 const prepareOrderData = useCallback(() => {
   const paymentMethodMap: Record<string, string> = {
     cash: "cash",
@@ -545,43 +624,67 @@ const prepareOrderData = useCallback(() => {
     payment_method: paymentMethodMap[formData.paymentMethod] || "cash",
     delivery_method: deliveryMethodMap[formData.deliveryMethod] || "delivery",
     notes: formData.notes || "",
-    create_account: false,
+    create_account: createAccount,
   };
 
-  // ✅ أضف payment_gateway فقط إذا كانت طريقة الدفع هي المحفظة
+  // ✅ إذا كان الضيف يريد إنشاء حساب، أضف بيانات الحساب
+  if (createAccount && isGuest) {
+    orderData.account = {
+      email: accountData.email,
+      phone: accountData.phone,
+      name: accountData.name,
+      password: accountData.password,
+      password_confirmation: accountData.password_confirmation,
+    };
+  }
+
+  // ✅ إضافة payment_gateway فقط إذا كانت طريقة الدفع هي المحفظة
   if (formData.paymentMethod === "wallet") {
     orderData.payment_gateway = "wallet";
   }
 
-  if (formData.deliveryMethod === "delivery") {
-    if (selectedAddressId) {
-      orderData.address_id = selectedAddressId;
-    } else {
-      orderData.additional_data = {
-        name: formData.fullName,
-        phone: formData.phone,
-        city_id: selectedCityId || 1,
-        street: formData.deliveryAddress.street || "N/A",
-        building: formData.deliveryAddress.buildingNo || "N/A",
-        floor: formData.deliveryAddress.floorNo || "N/A",
-        apartment: formData.deliveryAddress.apartmentNo || "N/A",
-      };
-    }
-  } else {
-    orderData.additional_data = {
+  // ✅ بيانات إضافية للضيف
+  if (isGuest) {
+    const guestEmail = formData.email || accountData.email || "";
+    
+    // ✅ بناء additional_data الأساسي (بدون city_id)
+    const additionalData: any = {
       name: formData.fullName,
       phone: formData.phone,
+      email: guestEmail,
+      street: formData.deliveryAddress.street || "N/A",
+      building: formData.deliveryAddress.buildingNo || "N/A",
+      floor: formData.deliveryAddress.floorNo || "N/A",
+      apartment: formData.deliveryAddress.apartmentNo || "N/A",
     };
+
+    // ✅ إضافة city_id فقط إذا كانت طريقة التوصيل هي delivery
+    if (formData.deliveryMethod === "delivery") {
+      // ✅ استخدم الـ ref بدلاً من الـ state
+      const cityId = selectedCityIdRef.current || "1";
+      console.log(`🟢 Using cityId from ref: ${cityId}`);
+      additionalData.city_id = cityId; // ✅ string
+    }
+
+    orderData.additional_data = additionalData;
   }
 
-  console.log("🟢 Order Data:", orderData); // للتأكد
-  return orderData;
-}, [formData, selectedAddressId, selectedCityId]);
+  // ✅ إذا كان المستخدم مسجل دخول ولديه عنوان
+  if (!isGuest && formData.deliveryMethod === "delivery") {
+    if (selectedAddressId) {
+      orderData.address_id = selectedAddressId;
+    }
+  }
 
-  // ✅ إرسال الطلب
+  console.log("🟢 Order Data:", orderData);
+  return orderData;
+}, [formData, selectedAddressId, createAccount, isGuest, accountData, selectedCityIdRef]);
+// ✅ أزل selectedCityId من dependencies واستخدم selectedCityIdRef
+  // ✅ إرسال الطلب (معدل)
   const handleSubmit = async () => {
     if (isSubmitting || isOrderCompleted) return;
 
+    // ✅ التحقق من البيانات الأساسية
     if (!formData.fullName.trim()) {
       toast.error("الرجاء إدخال الاسم الكامل");
       return;
@@ -598,7 +701,16 @@ const prepareOrderData = useCallback(() => {
       return;
     }
 
-    if (formData.deliveryMethod === "delivery" && !selectedAddressId) {
+    if (formData.deliveryMethod === "delivery" && !selectedAddressId && isGuest) {
+      // ✅ للضيف: التحقق من وجود بيانات العنوان في formData
+      const address = formData.deliveryAddress;
+      if (!address.street || !address.city) {
+        toast.error("الرجاء إدخال بيانات العنوان بالكامل");
+        return;
+      }
+    }
+
+    if (formData.deliveryMethod === "delivery" && !selectedAddressId && !isGuest) {
       toast.error("الرجاء حفظ العنوان أو اختيار عنوان محفوظ أولاً");
       return;
     }
@@ -685,6 +797,9 @@ const prepareOrderData = useCallback(() => {
             <ChevronRight className="w-4 h-4" />
             <span className="text-[#EC221F] font-medium">إتمام الطلب</span>
           </div>
+          
+        
+         
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -692,6 +807,7 @@ const prepareOrderData = useCallback(() => {
             <ContactInfoForm
               formData={formData}
               onFormChange={handleFormChange}
+              isGuest={isGuest}
             />
 
             <DeliveryMethodForm
@@ -701,18 +817,19 @@ const prepareOrderData = useCallback(() => {
               }
             />
 
-            {formData.deliveryMethod === "delivery" && (
-              <DeliveryAddressForm
-                show={true}
-                addressData={formData.deliveryAddress}
-                onAddressChange={(address) =>
-                  handleFormChange({ deliveryAddress: address })
-                }
-                onAddressSaved={handleAddressSaved}
-                onAddressSelected={handleAddressSelected}
-                onCitySelected={handleCitySelected}
-              />
-            )}
+           {formData.deliveryMethod === "delivery" && (
+  <DeliveryAddressForm
+    show={true}
+    addressData={formData.deliveryAddress}
+    onAddressChange={(address) =>
+      handleFormChange({ deliveryAddress: address })
+    }
+    onAddressSaved={handleAddressSaved}
+    onAddressSelected={handleAddressSelected}
+    onCitySelected={handleCitySelected}
+    isGuest={isGuest} // ✅ أرسل isGuest
+  />
+)}
 
             <PaymentMethodForm
               paymentMethod={formData.paymentMethod}
@@ -725,6 +842,45 @@ const prepareOrderData = useCallback(() => {
               notes={formData.notes}
               onNotesChange={(notes) => handleFormChange({ notes })}
             />
+
+            {/* ✅ خيار إنشاء حساب للضيف */}
+            {isGuest && (
+              <div className="bg-white rounded-xl p-4 border border-gray-200 mb-2 md:mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                      <User className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        إنشاء حساب
+                      </p>
+                     
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleOpenAccountPopup}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                      createAccount
+                        ? "bg-green-100 text-green-700 border border-green-300"
+                        : "bg-black text-white hover:bg-gray-800"
+                    }`}
+                  >
+                    {createAccount ? "✅ تم الاختيار" : "إنشاء حساب"}
+                  </button>
+                </div>
+                {createAccount && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">
+                      سيتم إنشاء حسابك باستخدام: 
+                      <span className="font-medium text-gray-700 block mt-1">
+                        {accountData.name || "..."} • {accountData.email || "..."} • {accountData.phone || "..."}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               onClick={handleSubmit}
@@ -745,6 +901,22 @@ const prepareOrderData = useCallback(() => {
         </div>
       </div>
 
+      {/* ✅ Popup إنشاء الحساب */}
+      {showAccountPopup && (
+        <AccountPopup
+          isOpen={showAccountPopup}
+          onClose={handleCloseAccountPopup}
+          onConfirm={handleConfirmAccount}
+          accountData={accountData}
+          setAccountData={setAccountData}
+          errors={accountErrors}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          showConfirmPassword={showConfirmPassword}
+          setShowConfirmPassword={setShowConfirmPassword}
+        />
+      )}
+
       {showSuccessPopup && orderResult && (
         <SuccessPopup
           isOpen={showSuccessPopup}
@@ -756,8 +928,196 @@ const prepareOrderData = useCallback(() => {
             itemsCount: orderResult.itemsCount,
             total: orderResult.total,
           }}
+          isGuest={isGuest}
         />
       )}
+    </div>
+  );
+}
+
+// ✅ Popup إنشاء الحساب
+interface AccountPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  accountData: AccountData;
+  setAccountData: (data: AccountData | ((prev: AccountData) => AccountData)) => void;
+  errors: Record<string, string>;
+  showPassword: boolean;
+  setShowPassword: (show: boolean) => void;
+  showConfirmPassword: boolean;
+  setShowConfirmPassword: (show: boolean) => void;
+}
+
+function AccountPopup({
+  isOpen,
+  onClose,
+  onConfirm,
+  accountData,
+  setAccountData,
+  errors,
+  showPassword,
+  setShowPassword,
+  showConfirmPassword,
+  setShowConfirmPassword,
+}: AccountPopupProps) {
+  if (!isOpen) return null;
+
+  const handleChange = (field: keyof AccountData, value: string) => {
+    setAccountData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 text-center">
+            إنشاء حساب جديد
+          </h3>
+          <p className="text-sm text-gray-500 text-center mt-1">
+            أدخل بياناتك لإنشاء حساب وتتبع طلبك
+          </p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* الاسم */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              الاسم الكامل <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={accountData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="أدخل اسمك الكامل"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.name ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          {/* البريد الإلكتروني */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              البريد الإلكتروني <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                value={accountData.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+                placeholder="example@email.com"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.email ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          {/* رقم الهاتف */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              رقم الهاتف <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="tel"
+                value={accountData.phone}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                placeholder="01012345678"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.phone ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+            )}
+          </div>
+
+          {/* كلمة المرور */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              كلمة المرور <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={accountData.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                placeholder="••••••••"
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.password ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* تأكيد كلمة المرور */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              تأكيد كلمة المرور <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={accountData.password_confirmation}
+                onChange={(e) => handleChange("password_confirmation", e.target.value)}
+                placeholder="••••••••"
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.password_confirmation ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password_confirmation && (
+              <p className="text-xs text-red-500 mt-1">{errors.password_confirmation}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-100 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 bg-[#EC221F] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
+          >
+            إنشاء الحساب
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -773,8 +1133,10 @@ interface SuccessPopupProps {
     itemsCount: number;
     total: number;
   };
+  isGuest:boolean
 }
 
+// ✅ Popup النجاح - إخفاء زر "متابعة الطلبات" للضيف
 function SuccessPopup({
   isOpen,
   onClose,
@@ -782,6 +1144,7 @@ function SuccessPopup({
   onGoToHome,
   orderNumber,
   orderDetails,
+  isGuest = false, // ✅ أضف هذا
 }: SuccessPopupProps) {
   if (!isOpen) return null;
 
@@ -809,19 +1172,22 @@ function SuccessPopup({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5">
+           <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
           <button
             onClick={onGoToHome}
             className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
           >
             العودة إلى الرئيسية
           </button>
-          <button
-            onClick={onGoToOrders}
-            className="w-full bg-[#EC221F] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
-          >
-            متابعة الطلبات
-          </button>
+          {/* ✅ إخفاء زر "متابعة الطلبات" للضيف */}
+          {!isGuest && (
+            <button
+              onClick={onGoToOrders}
+              className="w-full bg-[#EC221F] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
+            >
+              متابعة الطلبات
+            </button>
+          )}
         </div>
       </div>
     </div>

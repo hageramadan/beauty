@@ -18,6 +18,7 @@ export interface CheckoutFormData {
   phone: string;                    // الرقم الكامل مع كود الدولة (مثال: +201012345678)
   phoneNumber?: string;             // الرقم فقط بدون كود الدولة
   phoneCountryCode?: string;        // كود الدولة (مثال: +20)
+  email?: string; 
   deliveryAddress: {
     street: string;
     city: string;
