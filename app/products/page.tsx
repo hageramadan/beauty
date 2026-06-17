@@ -1,7 +1,7 @@
 // app/products/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/products/ProductCard";
 import ProductFilters from "@/components/products/FilterSidebar";
@@ -60,7 +60,6 @@ const extractColorsFromVariants = (
   variants.forEach((variant) => {
     if (variant.attributes && Array.isArray(variant.attributes)) {
       variant.attributes.forEach((attr: VariantAttribute) => {
-        // إذا كان الـ attribute من نوع "اللون"
         if (
           attr.attribute_type?.name === "اللون" &&
           attr.value &&
@@ -89,24 +88,26 @@ export default function ProductsPage() {
   const [lastPage, setLastPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [filters, setFilters] = useState<FiltersState>({});
-
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-
   const [categoryName, setCategoryName] = useState<string | null>(null);
+  
   const perPage = 12;
+
+  // ✅ استخدام ref لمنع التكرار
+  const hasLoadedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isFilterChangeRef = useRef(false);
 
   // ✅ قراءة الفئة من URL عند تحميل الصفحة
   useEffect(() => {
     const categoriesParam = searchParams.get("categories");
     if (categoriesParam) {
       try {
-        // استخراج الـ id من الـ JSON array مثل "[10]"
         const categoryIds = JSON.parse(categoriesParam);
         if (categoryIds && categoryIds.length > 0) {
           const categoryId = categoryIds[0];
           setFilters((prev) => ({ ...prev, categoryIds: [categoryId] }));
 
-          // جلب اسم الفئة من الـ API
           const fetchCategoryName = async () => {
             const categories = await getCategories();
             const category = categories.find((c) => c.id === categoryId);
@@ -122,11 +123,15 @@ export default function ProductsPage() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    loadProducts();
-  }, [currentPage, filters]);
-
-  const loadProducts = async () => {
+  // ✅ دالة تحميل المنتجات مع منع التكرار
+  const loadProducts = useCallback(async () => {
+    // ✅ إلغاء الطلب السابق
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    
     setLoading(true);
     try {
       const filterParams: any = {
@@ -134,23 +139,18 @@ export default function ProductsPage() {
         per_page: perPage,
       };
 
-      // تحويل الفلاتر من الصيغة القديمة إلى الصيغة الجديدة
       if (filters.categoryIds && filters.categoryIds.length > 0) {
         filterParams.categories = filters.categoryIds;
       }
-
       if (filters.colors && filters.colors.length > 0) {
         filterParams.colors = filters.colors;
       }
-
       if (filters.sizes && filters.sizes.length > 0) {
         filterParams.sizes = filters.sizes;
       }
-
       if (filters.brands && filters.brands.length > 0) {
         filterParams.brands = filters.brands;
       }
-
       if (filters.minPrice !== undefined && filters.minPrice > 0) {
         filterParams.price_range = [
           filters.minPrice,
@@ -158,29 +158,59 @@ export default function ProductsPage() {
         ];
       }
 
+      console.log(`🟢 Fetching products page ${currentPage}`, filterParams);
+      
       const { products: productsData, pagination } =
         await getAllProducts(filterParams);
-      setProducts(productsData);
-      if (pagination) {
-        setLastPage(pagination.last_page || 1);
-        setTotalProducts(pagination.total || 0);
+      
+      if (!abortControllerRef.current?.signal.aborted) {
+        setProducts(productsData);
+        if (pagination) {
+          setLastPage(pagination.last_page || 1);
+          setTotalProducts(pagination.total || 0);
+        }
+        hasLoadedRef.current = true;
       }
     } catch (error) {
-      console.error("Error loading products:", error);
+      if (!abortControllerRef.current?.signal.aborted) {
+        console.error("Error loading products:", error);
+      }
     } finally {
-      setLoading(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setLoading(false);
+      }
     }
-  };
+  }, [currentPage, filters, perPage]);
+
+  // ✅ تحميل المنتجات عند تغيير الصفحة أو الفلتر
+  useEffect(() => {
+    if (hasLoadedRef.current || isFilterChangeRef.current) {
+      loadProducts();
+    } else {
+      hasLoadedRef.current = true;
+      loadProducts();
+    }
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadProducts]);
 
   const handleFilterChange = (newFilters: any) => {
+    isFilterChangeRef.current = true;
     setFilters(newFilters);
     setCurrentPage(1);
     setIsMobileFilterOpen(false);
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    console.log(`🔄 Changing to page ${page}`);
+    if (page >= 1 && page <= lastPage) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   // منع التمرير في الخلفية عند فتح الفلتر
@@ -199,7 +229,6 @@ export default function ProductsPage() {
   const transformProductForCard = (product: ProductData) => {
     let colors: Array<{ color: string; name: string }> = [];
 
-    // ✅ استخراج الألوان من جميع الـ variants وليس فقط الأول
     if (
       product.has_variants &&
       product.variants &&
@@ -260,31 +289,36 @@ export default function ProductsPage() {
 
   const activeFiltersCount = getActiveFiltersCount();
 
+  // ✅ عرض معلومات Pagination
+  const getPaginationInfo = () => {
+    const from = (currentPage - 1) * perPage + 1;
+    const to = Math.min(currentPage * perPage, totalProducts);
+    return `عرض ${from} - ${to} من ${totalProducts} منتج`;
+  };
+
   return (
     <div className="min-h-screen page-with-padding">
       <div className="container mx-auto px-4 pb-16">
         <div className="flex gap-4">
           <div className="flex-1">
-            <div className="rounded-[8px]   mb-6">
+            <div className="rounded-[8px] mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-end gap-1">
                   <Link href="/" className="text-[#726C6C] text-xl">
                     الرئيسية
                   </Link>
                   <span>/</span>
-                  {/* ✅ عرض اسم الفئة إذا وجدت */}
                   <h1 className="text-base md:text-xl font-bold text-[#180100]">
                     {categoryName ? ` ${categoryName}` : "جميع المنتجات"}
                   </h1>
                 </div>
 
-                {/* زر الفلتر للموبايل */}
                 <button
                   type="button"
                   onClick={() => {
                     setIsMobileFilterOpen(true);
                   }}
-                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-[8px]  hover:bg-gray-200 transition-colors"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-[8px] hover:bg-gray-200 transition-colors"
                 >
                   <FilterIcon className="w-5 h-5" />
                   <span>فلتر</span>
@@ -301,6 +335,8 @@ export default function ProductsPage() {
               <LoadingSpinner size="lg" text="جاري تحميل المنتجات..." />
             ) : products.length > 0 ? (
               <>
+                
+
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((product) => {
                     const cardData = transformProductForCard(product);
@@ -333,6 +369,7 @@ export default function ProductsPage() {
                     currentPage={currentPage}
                     lastPage={lastPage}
                     onPageChange={handlePageChange}
+                    total={totalProducts}
                   />
                 </div>
               </>
@@ -344,36 +381,31 @@ export default function ProductsPage() {
             )}
           </div>
 
-          {/* الفلتر الجانبي - يظهر فقط في الشاشات الكبيرة */}
           <div className="hidden md:block">
             <ProductFilters onFilterChange={handleFilterChange} />
           </div>
         </div>
       </div>
 
-      {/* نافذة الفلتر المنزلقة من اليمين بحجم كامل للموبايل */}
-
+      {/* نافذة الفلتر المنزلقة من اليمين للموبايل */}
       <div
         className={`
-    fixed inset-0 z-50 md:hidden
-    ${isMobileFilterOpen ? "block" : "hidden"}
-  `}
+          fixed inset-0 z-50 md:hidden
+          ${isMobileFilterOpen ? "block" : "hidden"}
+        `}
       >
-        {/* خلفية معتمة */}
         <div
           className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
           onClick={() => setIsMobileFilterOpen(false)}
         />
 
-        {/* الفلتر المنزلق من اليمين بحجم كامل */}
         <div
           className={`
-              absolute top-0 right-0 bottom-0 w-full bg-white shadow-xl
-              transition-transform duration-300 ease-out
-              ${isMobileFilterOpen ? "translate-x-0" : "translate-x-full"}
-            `}
+            absolute top-0 right-0 bottom-0 w-full bg-white shadow-xl
+            transition-transform duration-300 ease-out
+            ${isMobileFilterOpen ? "translate-x-0" : "translate-x-full"}
+          `}
         >
-          {/* رأس النافذة */}
           <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
             <h2 className="text-lg font-bold">تصفية المنتجات</h2>
             <button
@@ -384,7 +416,6 @@ export default function ProductsPage() {
             </button>
           </div>
 
-          {/* محتوى الفلتر مع تمرير داخلي */}
           <div className="h-[calc(100%-60px)] overflow-y-auto">
             <ProductFilters
               onFilterChange={handleFilterChange}

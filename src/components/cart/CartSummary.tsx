@@ -48,7 +48,7 @@ export function CartSummary({
         
         <SummaryRow 
           label="رسوم التوصيل" 
-          value={isDeliveryFree ? "--" : deliveryFee} 
+          value={"--"} 
         />
 
         <div className="border-t border-gray-200 my-2" />

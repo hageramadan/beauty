@@ -7,9 +7,10 @@ interface PaginationProps {
   currentPage: number;
   lastPage: number;
   onPageChange: (page: number) => void;
+  total?: number; // إضافة total اختياري
 }
 
-export default function Pagination({ currentPage, lastPage, onPageChange }: PaginationProps) {
+export default function Pagination({ currentPage, lastPage, onPageChange, total }: PaginationProps) {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisible = 5;
@@ -50,6 +51,11 @@ export default function Pagination({ currentPage, lastPage, onPageChange }: Pagi
     return page < 10 ? `0${page}` : `${page}`;
   };
 
+  // ✅ التحقق من صحة البيانات
+  if (!lastPage || lastPage <= 0) {
+    return null;
+  }
+
   // إذا كان هناك صفحة واحدة فقط
   if (lastPage <= 1) {
     return (
@@ -61,54 +67,70 @@ export default function Pagination({ currentPage, lastPage, onPageChange }: Pagi
     );
   }
 
+  // ✅ منع تجاوز الصفحات
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= lastPage) {
+      onPageChange(page);
+    }
+  };
+
   return (
-    <div className="flex justify-center items-center gap-2 mt-12 mb-4 flex-wrap">
-      {/* زر السابق */}
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
-          currentPage === 1
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
-        }`}
-      >
-        <ChevronRight size={18} />
-      </button>
+    <div className="flex flex-col items-center gap-3 mt-12 mb-4">
+     
       
-      {/* أرقام الصفحات */}
-      {getPageNumbers().map((page, index) => (
-        page === '...' ? (
-          <span key={index} className="w-12 h-12 flex items-center justify-center text-gray-500">
-            ...
-          </span>
-        ) : (
-          <button
-            key={index}
-            onClick={() => onPageChange(page as number)}
-            className={`w-12 h-12 rounded-full transition-all duration-200 font-medium ${
-              page === currentPage
-                ? 'bg-black text-white border-2 border-black'
-                : 'bg-white text-black border-2 border-gray-300 hover:border-black'
-            }`}
-          >
-            {formatPageNumber(page as number)}
-          </button>
-        )
-      ))}
-      
-      {/* زر التالي */}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === lastPage}
-        className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
-          currentPage === lastPage
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
-        }`}
-      >
-        <ChevronLeft size={18} />
-      </button>
+      {/* أزرار التصفح */}
+      <div className="flex justify-center items-center gap-2 flex-wrap">
+        {/* زر السابق */}
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
+            currentPage === 1
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
+          }`}
+          aria-label="الصفحة السابقة"
+        >
+          <ChevronRight size={18} />
+        </button>
+        
+        {/* أرقام الصفحات */}
+        {getPageNumbers().map((page, index) => (
+          page === '...' ? (
+            <span key={`dots-${index}`} className="w-12 h-12 flex items-center justify-center text-gray-500">
+              ...
+            </span>
+          ) : (
+            <button
+              key={`page-${page}`}
+              onClick={() => handlePageChange(page as number)}
+              className={`w-12 h-12 rounded-full transition-all duration-200 font-medium ${
+                page === currentPage
+                  ? 'bg-black text-white border-2 border-black'
+                  : 'bg-white text-black border-2 border-gray-300 hover:border-black hover:bg-gray-50'
+              }`}
+              aria-label={`الصفحة ${page}`}
+              aria-current={page === currentPage ? 'page' : undefined}
+            >
+              {formatPageNumber(page as number)}
+            </button>
+          )
+        ))}
+        
+        {/* زر التالي */}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === lastPage}
+          className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
+            currentPage === lastPage
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
+          }`}
+          aria-label="الصفحة التالية"
+        >
+          <ChevronLeft size={18} />
+        </button>
+      </div>
     </div>
   );
 }

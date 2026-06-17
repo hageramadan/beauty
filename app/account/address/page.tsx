@@ -110,26 +110,7 @@ export default function AddressPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-      {/* <Toaster
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          style: {
-            fontSize: '14px',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            direction: 'rtl',
-          },
-          success: {
-            style: { background: '#10B981', color: 'white' },
-            iconTheme: { primary: 'white', secondary: '#10B981' },
-          },
-          error: {
-            style: { background: '#EF4444', color: 'white' },
-            iconTheme: { primary: 'white', secondary: '#EF4444' },
-          },
-        }}
-      /> */}
+    
       <div className="container mx-auto">
         <div className="mb-3">
           <div className="flex justify-between items-center mb-6">

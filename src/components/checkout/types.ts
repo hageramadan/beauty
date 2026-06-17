@@ -37,7 +37,7 @@ export interface CartSummary {
   discount: number;
   couponDiscount?: number;        // ✅ خصم الكوبون
   couponCode?: string;            // ✅ كود الكوبون المطبق
-  deliveryFee: number;
+   deliveryFee: number | null | undefined; 
   total: number;
 }
 

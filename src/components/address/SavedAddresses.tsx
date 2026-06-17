@@ -1,27 +1,62 @@
 // components/address/SavedAddresses.tsx
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { CiEdit } from "react-icons/ci";
 import { FaHome, FaBriefcase, FaMapMarkerAlt } from "react-icons/fa";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { Address } from "@/types/address";
+import Pagination from '@/components/products/Pagination';
 
 interface SavedAddressesProps {
   addresses: Address[];
   onDelete: (id: number) => void;
   onEdit: (address: Address) => void;
+  itemsPerPage?: number; // ✅ عدد العناصر في كل صفحة (اختياري)
 }
 
 export default function SavedAddresses({
   addresses,
   onDelete,
   onEdit,
+  itemsPerPage = 5, // ✅ القيمة الافتراضية 5 عناصر في الصفحة
 }: SavedAddressesProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<{
     show: boolean;
     id: number | null;
   }>({ show: false, id: null });
+  
+  // ✅ حالة Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // ✅ إعادة تعيين الصفحة إلى 1 عندما يتغير عدد العناوين
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [addresses.length]);
+
+  // ✅ حساب عدد الصفحات
+  const totalPages = useMemo(() => {
+    return Math.ceil(addresses.length / itemsPerPage);
+  }, [addresses.length, itemsPerPage]);
+
+  // ✅ الحصول على العناوين في الصفحة الحالية
+  const currentAddresses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return addresses.slice(startIndex, endIndex);
+  }, [addresses, currentPage, itemsPerPage]);
+
+  // ✅ تغيير الصفحة
+  const handlePageChange = useCallback((page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // ✅ التمرير إلى أعلى القائمة
+      const element = document.getElementById('saved-addresses-container');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [totalPages]);
 
   // دالة للحصول على الأيقونة المناسبة لنوع العنوان
   const getAddressIcon = (type: string) => {
@@ -42,6 +77,13 @@ export default function SavedAddresses({
   const confirmDelete = () => {
     if (deleteConfirm.id) {
       onDelete(deleteConfirm.id);
+      // ✅ إذا كان العنصر المحذوف هو آخر عنصر في الصفحة الحالية
+      // وكانت الصفحة الحالية أكبر من 1، ننتقل للصفحة السابقة
+      const remainingItems = addresses.length - 1;
+      const newTotalPages = Math.ceil(remainingItems / itemsPerPage);
+      if (currentPage > newTotalPages && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
     setDeleteConfirm({ show: false, id: null });
   };
@@ -52,7 +94,7 @@ export default function SavedAddresses({
 
   if (!addresses || addresses.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+      <div className="bg-white rounded-xl shadow-sm p-8 text-center" id="saved-addresses-container">
         <div className="text-gray-400 mb-3">
           <svg
             className="w-16 h-16 mx-auto"
@@ -82,8 +124,14 @@ export default function SavedAddresses({
 
   return (
     <>
-      <div className="grid gap-4 p-2 md:p-4 rounded-[8px] bg-white">
-        {addresses.map((address) => (
+      <div 
+        className="grid gap-4 p-2 md:p-4 rounded-[8px] bg-white"
+        id="saved-addresses-container"
+      >
+       
+
+        {/* ✅ عرض العناوين في الصفحة الحالية */}
+        {currentAddresses.map((address) => (
           <div key={address.id} className="rounded-xl p-2 bg-[#f5f5f5e1]">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
@@ -98,12 +146,14 @@ export default function SavedAddresses({
                 <button
                   onClick={() => onEdit(address)}
                   className="text-[#ff3c27] transition p-2 hover:bg-[#fcb8b075] rounded-full"
+                  aria-label="تعديل العنوان"
                 >
                   <CiEdit className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleDeleteClick(address.id)}
                   className="text-red-500 hover:text-red-700 transition p-2 hover:bg-red-50 rounded-full"
+                  aria-label="حذف العنوان"
                 >
                   <FaRegTrashAlt />
                 </button>
@@ -133,6 +183,18 @@ export default function SavedAddresses({
             </div>
           </div>
         ))}
+
+        {/* ✅ مكون Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              lastPage={totalPages}
+              onPageChange={handlePageChange}
+              total={addresses.length}
+            />
+          </div>
+        )}
       </div>
 
       {/* Custom Delete Confirmation Popup */}
@@ -144,6 +206,7 @@ export default function SavedAddresses({
               <button
                 onClick={cancelDelete}
                 className="text-gray-400 hover:text-gray-600 transition"
+                aria-label="إلغاء"
               >
                 <IoClose size={24} />
               </button>

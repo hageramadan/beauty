@@ -172,10 +172,10 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawValue = e.target.value;
+    const rawValue = e.target.value;
     
     // إزالة أي أحرف غير رقمية
-    let numbersOnly = rawValue.replace(/[^\d]/g, "");
+    const numbersOnly = rawValue.replace(/[^\d]/g, "");
     
     // السماح بإدخال حتى الحد الأقصى للرقم (وليس أقل)
     // لا نحد من الإدخال هنا، نسمح للمستخدم بكتابة العدد المطلوب
@@ -227,7 +227,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
               required={required}
               placeholder={selectedCountry.placeholder}
               inputMode="numeric"
-              className={`w-full px-4 py-3 border rounded-l-xl rounded-r-none focus:outline-none focus:ring-1 transition bg-white text-left font-mono text-base
+              className={`w-full px-4 py-[11px] border rounded-l-xl rounded-r-none focus:outline-none  transition bg-white text-left font-mono text-base
                 ${error && isTouched && localPhoneNumber 
                   ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
                   : !error && localPhoneNumber && localPhoneNumber.length === selectedCountry.minLength
@@ -245,7 +245,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
           <div className="relative">
             <Select value={selectedCountry.code} onValueChange={handleCountrySelect}>
               <SelectTrigger 
-                className="!h-12 bg-white border-gray-200 rounded-r-xl rounded-l-none border-l-0 focus:ring-0 focus:border-gray-200 min-w-[140px]"
+                className="!h-12 bg-white border-gray-200 rounded-r-xl rounded-l-none border-l-0 focus:ring-0 focus:border-gray-200 min-w-[110px]"
                 style={{ 
                   borderTopLeftRadius: 0, 
                   borderBottomLeftRadius: 0,
@@ -271,7 +271,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
                 align="center" 
                 side="bottom" 
                 sideOffset={4}
-                className="min-w-[280px]"
+                className="min-w-[220px]"
               >
                 {countryCodes.map((country) => (
                   <SelectItem key={country.code} value={country.code}>
@@ -324,11 +324,11 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
         )}
         
         {/* معلومات المساعدة - عندما يكون الحقل فارغاً */}
-        {!error && !localPhoneNumber && (
+        {/* {!error && !localPhoneNumber && (
           <p className="text-gray-400 text-xs mt-1">
             مثال: {selectedCountry.example} ({selectedCountry.minLength} أرقام)
           </p>
-        )}
+        )} */}
       </div>
     </div>
   );

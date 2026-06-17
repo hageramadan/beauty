@@ -24,6 +24,7 @@ interface CartContextType {
   removeItem: (cartItemId: number) => Promise<boolean>;
   clearAllItems: () => Promise<boolean>;
   refetchCart: () => Promise<void>;
+  updateCart: (newCart: CartData | null) => void; // ✅ إضافة هذه الدالة
   getItemQuantity: (productId: number) => number;
 }
 
@@ -64,6 +65,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (showLoading && isMountedRef.current) {
         setIsLoading(false);
       }
+    }
+  }, []);
+
+  // ✅ دالة تحديث السلة يدوياً
+  const updateCart = useCallback((newCart: CartData | null) => {
+    if (!isMountedRef.current) return;
+    
+    setCart(newCart);
+    
+    if (newCart) {
+      setItemCount(newCart.total_quantity || 0);
+      setTotalAmount(newCart.total_amount || 0);
+    } else {
+      setItemCount(0);
+      setTotalAmount(0);
     }
   }, []);
 
@@ -188,6 +204,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeItem,
     clearAllItems,
     refetchCart: () => fetchCartData(true),
+    updateCart, // ✅ أضف هذه الدالة هنا
     getItemQuantity,
   };
 

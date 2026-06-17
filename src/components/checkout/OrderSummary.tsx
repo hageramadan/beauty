@@ -1,4 +1,3 @@
-// components/checkout/OrderSummary.tsx
 "use client";
 
 import { OrderSummaryProps } from "./types";
@@ -24,19 +23,36 @@ export default function OrderSummary({
     ? Math.round((discount / (subtotal + discount)) * 100)
     : 0;
 
-  // 🔥 تحديد عرض رسوم التوصيل
+  // ✅ تحديد عرض رسوم التوصيل
   const getDeliveryFeeDisplay = () => {
+    // إذا لم يتم اختيار طريقة توصيل
     if (!deliveryMethod) {
-      return "-"; // شرطتين عندما لا يكون هناك اختيار
+      return "--";
     }
+    
+    // إذا كان استلام من الفرع
     if (deliveryMethod === "pickup") {
-      return "-"; // شرطتين للاستلام من الفرع
+      return "--";
     }
-    // delivery
-    if (deliveryFee > 0) {
-      return `EGP ${deliveryFee.toFixed(2)}`;
+    
+    // ✅ إذا كانت deliveryFee غير محددة (undefined أو null) - لم يتم جلب البيانات بعد
+    if (deliveryFee === undefined || deliveryFee === null) {
+      return "--";
     }
-    return "مجاني";
+    
+    // ✅ إذا كانت رسوم التوصيل 0 (مجاني)
+    if (deliveryFee === 0) {
+      return "--";
+    }
+    
+    // رسوم توصيل مدفوعة
+    return `EGP ${deliveryFee.toFixed(2)}`;
+  };
+
+  // ✅ تحديد ما إذا كانت رسوم التوصيل غير محددة
+  const isDeliveryFeeUndefined = () => {
+    if (!deliveryMethod || deliveryMethod === "pickup") return true;
+    return deliveryFee === undefined || deliveryFee === null;
   };
 
   return (
@@ -49,7 +65,7 @@ export default function OrderSummary({
       <div className="space-y-3 pt-3 border-t border-gray-100">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">المبلغ الإجمالي</span>
-          <span className="text-gray-800">EGP {subtotal.toFixed(2)}</span>
+          <span className="text-gray-800">EGP {subtotal?.toFixed(2) || "0.00"}</span>
         </div>
         
         {discount > 0 && (
@@ -75,17 +91,21 @@ export default function OrderSummary({
           </div>
         )}
         
-        {/* 🔥 رسوم التوصيل - عرض شرطتين للاستلام من الفرع أو عدم الاختيار */}
+        {/* 🔥 رسوم التوصيل - عرض -- إذا لم يتم تحديد مدينة بعد */}
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">رسوم التوصيل</span>
-          <span className={`font-semibold ${!deliveryMethod || deliveryMethod === "pickup" ? "text-gray-400" : "text-gray-800"}`}>
+          <span className={`font-semibold ${
+            isDeliveryFeeUndefined() ? "text-gray-400" : "text-gray-800"
+          }`}>
             {getDeliveryFeeDisplay()}
           </span>
         </div>
         
         <div className="flex justify-between pt-3 border-t border-gray-200">
           <span className="text-lg font-bold text-gray-900">الإجمالي</span>
-          <span className="text-xl font-bold text-[#EC221F]">EGP {total.toFixed(2)}</span>
+          <span className="text-xl font-bold text-[#EC221F]">
+            EGP {total?.toFixed(2) || "0.00"}
+          </span>
         </div>
       </div>
     </div>

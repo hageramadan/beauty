@@ -1,4 +1,3 @@
-// components/checkout/DeliveryMethodForm.tsx
 "use client";
 
 import { MapPin, Truck } from "lucide-react";
@@ -8,7 +7,6 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-      
         طريقة الاستلام
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -28,7 +26,6 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
           <MapPin className="w-5 h-5 text-gray-600" />
           <div>
             <p className="font-medium text-gray-800">استلام من الفرع</p>
-           
           </div>
         </label>
         
@@ -48,7 +45,6 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
           <Truck className="w-5 h-5 text-gray-600" />
           <div>
             <p className="font-medium text-gray-800">توصيل</p>
-          
           </div>
         </label>
       </div>

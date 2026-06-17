@@ -90,6 +90,7 @@ interface OrderDetails {
   date: string;
   status: OrderStatus;
   status_label: string;
+  return_status_label: string | null;
   payment_method: string;
   payment_status: string;
   delivery_method: "pickup" | "delivery";
@@ -320,6 +321,7 @@ const transformOrderDetails = (apiOrder: any): OrderDetails => {
     date: formatDate(apiOrder.created_at),
     status: englishStatus,
     status_label: apiOrder.status_label,
+    return_status_label: apiOrder.return_status_label || null,
     payment_method: mapPaymentMethod(apiOrder.payment_method),
     payment_status: apiOrder.payment_status,
     delivery_method: mapDeliveryMethod(apiOrder.delivery_method),
@@ -464,8 +466,24 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const status = statusConfig[order.status];
-  const StatusIcon = status.icon;
+  // ✅ اختيار الحالة المناسبة للعرض
+  const isRefunded = order.return_status_label === "refunded";
+  const isReturnPending = order.return_status_label === "pending";
+  const isReturnRejected = order.return_status_label === "rejected";
+
+  // تحديد الحالة المعروضة
+  let displayStatus;
+  if (isRefunded) {
+    displayStatus = { label: "مرتجع", color: "status-refunded", icon: GrMoney };
+  } else if (isReturnPending) {
+    displayStatus = { label: "طلب مرتجع قيد الانتظار", color: "status-return-pending", icon: Clock };
+  } else if (isReturnRejected) {
+    displayStatus = { label: "تم رفض الإرجاع", color: "status-return-rejected", icon: XCircle };
+  } else {
+    displayStatus = statusConfig[order.status];
+  }
+
+  const StatusIcon = displayStatus.icon;
   const userName = getUserName(order);
 
   return (
@@ -506,9 +524,10 @@ export default function OrderDetailsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${status.color}`}>
+                    {/* ✅ عرض الحالة (مرتجع / قيد الانتظار / مرفوض / الحالة العادية) */}
+                    <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${displayStatus.color}`}>
                       <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      {status.label}
+                      {displayStatus.label}
                     </div>
                   </div>
                   <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
@@ -522,9 +541,17 @@ export default function OrderDetailsPage() {
                 <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
                 <div className="space-y-4">
                   {order.items.map((item, idx) => {
+                    // ✅ استخدام صورة المتغير أولاً إذا كانت موجودة
+                    const variantImage = item.variant?.variant_image 
+                      ? cleanImageUrl(item.variant.variant_image) 
+                      : null;
+                    
                     const productImage = item.images && item.images.length > 0 
                       ? cleanImageUrl(item.images[0]) 
                       : PLACEHOLDER_IMAGE;
+
+                    // ✅ اختيار الصورة المناسبة (أولوية لصورة المتغير)
+                    const displayImage = variantImage || productImage;
                     
                     // استخراج المقاس واللون
                     const size = getSize(item);
@@ -532,9 +559,9 @@ export default function OrderDetailsPage() {
                     
                     return (
                       <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
-                        <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
                           <Image
-                            src={productImage}
+                            src={displayImage}
                             alt={item.title}
                             width={80}
                             height={80}
@@ -590,13 +617,15 @@ export default function OrderDetailsPage() {
                   })}
                 </div>
                 
-                {/* 🔥 عرض OrderTracker مع تمرير deliveryMethod */}
-                <div className="mt-6">
-                  <OrderTracker 
-                    currentStatus={order.status} 
-                    deliveryMethod={order.delivery_method}
-                  />
-                </div>
+                {/* 🔥 عرض OrderTracker - يخفي إذا كان مرتجع أو قيد الانتظار أو مرفوض */}
+                {!isRefunded && !isReturnPending && !isReturnRejected && (
+                  <div className="mt-6">
+                    <OrderTracker 
+                      currentStatus={order.status} 
+                      deliveryMethod={order.delivery_method}
+                    />
+                  </div>
+                )}
               </div>
               
               <br />
@@ -703,7 +732,8 @@ export default function OrderDetailsPage() {
               </div>
 
               <div className="flex gap-3 mt-3 md:mt-6 mx-2">
-                {order.status === "delivered" && (
+                {/* ✅ إخفاء زر الإرجاع إذا كان الطلب مرتجع أو قيد الانتظار أو مرفوض */}
+                {!isRefunded && !isReturnPending && !isReturnRejected && order.status === "delivered" && (
                   <button 
                     onClick={handleReturnClick} 
                     className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-red-50 transition"
@@ -712,7 +742,7 @@ export default function OrderDetailsPage() {
                   </button>
                 )}
                 
-                {order.status === "ordered" && (
+                {!isRefunded && !isReturnPending && !isReturnRejected && order.status === "ordered" && (
                   <button 
                     onClick={openCancelModal}
                     disabled={isCancelling}
@@ -740,6 +770,9 @@ export default function OrderDetailsPage() {
           .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
           .status-delivered { background-color: #48BB783D; color: #48BB78; }
           .status-cancelled { background-color: #F565653D; color: #F56565; }
+          .status-refunded { background-color: #9F7AEA3D; color: #9F7AEA; } /* ✅ حالة المرتجع */
+          .status-return-pending { background-color: #F6AD553D; color: #F6AD55; } /* ✅ طلب مرتجع قيد الانتظار */
+          .status-return-rejected { background-color: #F565653D; color: #F56565; } /* ✅ تم رفض الإرجاع */
         `}</style>
       </div>
 

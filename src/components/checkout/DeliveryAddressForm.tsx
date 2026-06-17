@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Home, MapPin, Building, Save } from "lucide-react";
+import { Home, MapPin, Building, Save, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,7 @@ interface SavedAddress {
   isDefault?: boolean;
   latitude?: string | null;
   longitude?: string | null;
+  city_id?: string | number;
 }
 
 interface DeliveryAddressFormProps {
@@ -39,6 +40,7 @@ interface DeliveryAddressFormProps {
   onAddressChange: (data: any) => void;
   onAddressSaved?: (address: any) => void;
   onAddressSelected?: (addressId: number) => void;
+  onCitySelected?: (cityId: string) => void;
 }
 
 // قائمة المحافظات المصرية (احتياطي في حال فشل الـ API)
@@ -69,10 +71,12 @@ export default function DeliveryAddressForm({
   onAddressChange,
   onAddressSaved,
   onAddressSelected,
+  onCitySelected,
 }: DeliveryAddressFormProps) {
   const [useSavedAddress, setUseSavedAddress] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<number | null>(null);
+  const [selectedAddressDetails, setSelectedAddressDetails] = useState<SavedAddress | null>(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [addressSaved, setAddressSaved] = useState(false);
@@ -83,7 +87,10 @@ export default function DeliveryAddressForm({
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   
-  const hasAutoSavedRef = useRef(false);
+  // ✅ منع التكرار
+  const hasFetchedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  
   const API_URL = 'https://dukanah.admin.t-carts.com/api';
 
   const getFieldValue = (value: string): string => {
@@ -91,6 +98,8 @@ export default function DeliveryAddressForm({
   };
 
   const fetchSavedAddresses = async () => {
+    if (isFetchingRef.current && hasFetchedRef.current) return;
+    
     setIsLoadingAddresses(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -113,6 +122,7 @@ export default function DeliveryAddressForm({
           apartment: addr.apartment,
           latitude: addr.latitude,
           longitude: addr.longitude,
+          city_id: addr.city.id,
         }));
         setSavedAddresses(addresses);
       }
@@ -123,8 +133,9 @@ export default function DeliveryAddressForm({
     }
   };
 
-  // ✅ جلب المحافظات فقط
   const fetchGovernorates = async () => {
+    if (isFetchingRef.current && hasFetchedRef.current) return;
+    
     setIsLoadingGovernorates(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -139,7 +150,6 @@ export default function DeliveryAddressForm({
       if (result.result === true && result.data && Array.isArray(result.data.governates)) {
         setGovernorates(result.data.governates);
       } else {
-        // تحويل المحافظات الاحتياطية إلى نفس الهيكل
         setGovernorates(EGYPT_GOVERNORATES.map((name, index) => ({
           id: String(index + 1),
           name,
@@ -148,7 +158,6 @@ export default function DeliveryAddressForm({
       }
     } catch (error) {
       console.error("❌ خطأ في جلب المحافظات:", error);
-      // استخدام المحافظات الاحتياطية
       setGovernorates(EGYPT_GOVERNORATES.map((name, index) => ({
         id: String(index + 1),
         name,
@@ -159,7 +168,6 @@ export default function DeliveryAddressForm({
     }
   };
 
-  // ✅ جلب المدن عند اختيار المحافظة باستخدام الـ endpoint الجديد
   const fetchCitiesByGovernorate = async (governorateId: string) => {
     if (!governorateId) {
       setCities([]);
@@ -190,7 +198,6 @@ export default function DeliveryAddressForm({
     }
   };
 
-  // ✅ عند تغيير المحافظة، جلب المدن
   useEffect(() => {
     if (addressData.governorate) {
       const selectedGov = governorates.find(gov => gov.name === addressData.governorate);
@@ -203,32 +210,35 @@ export default function DeliveryAddressForm({
   }, [addressData.governorate, governorates]);
 
   useEffect(() => {
-    if (show) {
-      fetchGovernorates();
-      fetchSavedAddresses();
-      hasAutoSavedRef.current = false;
-      setAddressSaved(false);
-      setSaveError(null);
+    if (!show || hasFetchedRef.current || isFetchingRef.current) {
+      console.log("🟢 Skipping fetch - already fetched or fetching");
+      return;
     }
+
+    console.log("🟢 Fetching governorates and addresses for the first time");
+    isFetchingRef.current = true;
+
+    const fetchData = async () => {
+      try {
+        await Promise.all([
+          fetchGovernorates(),
+          fetchSavedAddresses()
+        ]);
+        hasFetchedRef.current = true;
+        console.log("🟢 Data fetched successfully");
+      } catch (error) {
+        console.error("❌ Error fetching data:", error);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    };
+
+    fetchData();
+
+    return () => {};
   }, [show]);
 
-  const isAllFieldsFilled = () => {
-    return (
-      addressData.governorate &&
-      addressData.city &&
-      addressData.street &&
-      addressData.buildingNo &&
-      addressData.floorNo &&
-      addressData.apartmentNo
-    );
-  };
-
-  // ✅ الحصول على city_id من اسم المدينة والمحافظة
-  const getCityIdByName = (cityName: string, governorateName: string): string | null => {
-    const selectedGov = governorates.find(gov => gov.name === governorateName);
-    if (!selectedGov) return null;
-    
-    // نبحث في المدن التي تم تحميلها لهذه المحافظة
+  const getCityIdByName = (cityName: string): string | null => {
     const city = cities.find(c => c.name === cityName);
     return city?.id || null;
   };
@@ -249,17 +259,21 @@ export default function DeliveryAddressForm({
     setIsSavingAddress(true);
     
     try {
-      // ✅ الحصول على city_id من الـ API
-      const cityId = getCityIdByName(addressData.city, addressData.governorate);
+      const cityId = getCityIdByName(addressData.city);
       
       if (!cityId) {
         setSaveError("لم يتم العثور على المدينة في النظام");
         return null;
       }
       
+      if (onCitySelected) {
+        console.log("📤 Sending cityId to parent:", cityId);
+        onCitySelected(cityId);
+      }
+      
       const token = localStorage.getItem('auth_token');
       const addressToSave = {
-        city_id: cityId, // ✅ إرسال city_id كـ string
+        city_id: cityId,
         street: getFieldValue(addressData.street),
         building: getFieldValue(addressData.buildingNo),
         floor: getFieldValue(addressData.floorNo),
@@ -269,6 +283,7 @@ export default function DeliveryAddressForm({
         type: 'home',
       };
       
+      console.log("📤 Saving address:", addressToSave);
       
       const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
@@ -281,11 +296,14 @@ export default function DeliveryAddressForm({
       
       const result = await response.json();
       
+      console.log("📥 Save address response:", result);
+      
       if (result.result === true) {
         await fetchSavedAddresses();
         setAddressSaved(true);
         
-        if (onAddressSaved) {
+        if (onAddressSaved && result.data) {
+          console.log("📤 Calling onAddressSaved with:", result.data);
           onAddressSaved(result.data);
         }
         
@@ -318,32 +336,13 @@ export default function DeliveryAddressForm({
       return;
     }
     
+    console.log("🟢 Manual save clicked");
     const savedAddress = await saveAddressToAPI();
     
     if (savedAddress && savedAddress.id && onAddressSelected) {
       onAddressSelected(savedAddress.id);
     }
   };
-
-  useEffect(() => {
-    if (useSavedAddress || addressSaved || isSavingAddress || !isAllFieldsFilled()) {
-      return;
-    }
-    
-    if (hasAutoSavedRef.current) return;
-    
-    const timer = setTimeout(async () => {
-      if (isAllFieldsFilled() && !useSavedAddress && !addressSaved) {
-        hasAutoSavedRef.current = true;
-        const savedAddress = await saveAddressToAPI();
-        if (savedAddress && savedAddress.id && onAddressSelected) {
-          onAddressSelected(savedAddress.id);
-        }
-      }
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [addressData, useSavedAddress, addressSaved]);
 
   if (!show) return null;
 
@@ -357,10 +356,10 @@ export default function DeliveryAddressForm({
 
   const updateAddress = (field: string, value: string | null) => {
     if (!useSavedAddress) {
-      hasAutoSavedRef.current = false;
       setAddressSaved(false);
       setSaveError(null);
     }
+    
     onAddressChange({ ...addressData, [field]: value || "" });
   };
 
@@ -368,6 +367,16 @@ export default function DeliveryAddressForm({
     setSelectedSavedAddressId(addressId);
     const address = savedAddresses.find((a) => a.id === addressId);
     if (address) {
+      console.log("🟢 Selected saved address:", address);
+      
+      // تخزين تفاصيل العنوان المختار
+      setSelectedAddressDetails(address);
+      
+      if (onCitySelected && address.city_id) {
+        console.log("📤 Sending cityId from saved address:", address.city_id);
+        onCitySelected(String(address.city_id));
+      }
+      
       onAddressChange({
         street: address.street,
         city: address.city,
@@ -381,9 +390,29 @@ export default function DeliveryAddressForm({
       setSaveError(null);
       
       if (onAddressSelected) {
+        console.log("📤 Calling onAddressSelected with id:", addressId);
         onAddressSelected(addressId);
+      } else {
+        console.log("⚠️ onAddressSelected is not defined");
       }
     }
+  };
+
+  // دالة لإلغاء اختيار العنوان المحفوظ
+  const clearSelectedAddress = () => {
+    setSelectedSavedAddressId(null);
+    setSelectedAddressDetails(null);
+    setUseSavedAddress(false);
+    setAddressSaved(false);
+    setSaveError(null);
+    onAddressChange({
+      street: "",
+      city: "",
+      governorate: "",
+      buildingNo: "",
+      floorNo: "",
+      apartmentNo: "",
+    });
   };
 
   return (
@@ -549,18 +578,11 @@ export default function DeliveryAddressForm({
                 onCheckedChange={(checked) => {
                   setUseSavedAddress(checked as boolean);
                   if (!checked) {
+                    clearSelectedAddress();
+                  } else {
+                    // عند تفعيل الاختيار، يتم عرض القائمة
                     setSelectedSavedAddressId(null);
-                    hasAutoSavedRef.current = false;
-                    setAddressSaved(false);
-                    setSaveError(null);
-                    onAddressChange({
-                      street: "",
-                      city: "",
-                      governorate: "",
-                      buildingNo: "",
-                      floorNo: "",
-                      apartmentNo: "",
-                    });
+                    setSelectedAddressDetails(null);
                   }
                 }}
               />
@@ -576,34 +598,64 @@ export default function DeliveryAddressForm({
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
                   </div>
                 ) : (
-                  savedAddresses.map((address) => (
-                    <label
-                      key={address.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        selectedSavedAddressId === address.id
-                          ? "border-[#EC221F] bg-red-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                      onClick={() => handleSelectSavedAddress(address.id)}
-                    >
-                      <input
-                        type="radio"
-                        name="savedAddress"
-                        checked={selectedSavedAddressId === address.id}
-                        onChange={() => handleSelectSavedAddress(address.id)}
-                        className="mt-0.5 w-4 h-4 text-[#EC221F]"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">{address.street}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {address.building && `مبنى ${address.building} `}
-                          {address.floor && `دور ${address.floor} `}
-                          {address.apartment && `شقة ${address.apartment}`}
-                        </p>
-                        <p className="text-sm text-gray-500">{address.city}، {address.governorate}</p>
+                  <>
+                    {selectedAddressDetails ? (
+                      // ✅ عرض العنوان المختار فقط مع زر إلغاء
+                      <div className="p-4 bg-white rounded-xl border-2 border-[#EC221F] relative">
+                        <button
+                          onClick={clearSelectedAddress}
+                          className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition"
+                          title="إلغاء الاختيار"
+                        >
+                          <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <div className="pr-8">
+                          <p className="font-medium text-gray-800">{selectedAddressDetails.street}</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {selectedAddressDetails.building && `مبنى ${selectedAddressDetails.building} `}
+                            {selectedAddressDetails.floor && `دور ${selectedAddressDetails.floor} `}
+                            {selectedAddressDetails.apartment && `شقة ${selectedAddressDetails.apartment}`}
+                          </p>
+                          <p className="text-sm text-gray-500">{selectedAddressDetails.city}، {selectedAddressDetails.governorate}</p>
+                          <div className="mt-2">
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                              ✓ تم الاختيار
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </label>
-                  ))
+                    ) : (
+                      // ✅ عرض قائمة العناوين كاملة للاختيار
+                      savedAddresses.map((address) => (
+                        <label
+                          key={address.id}
+                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                            selectedSavedAddressId === address.id
+                              ? "border-[#EC221F] bg-red-50"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          }`}
+                          onClick={() => handleSelectSavedAddress(address.id)}
+                        >
+                          <input
+                            type="radio"
+                            name="savedAddress"
+                            checked={selectedSavedAddressId === address.id}
+                            onChange={() => handleSelectSavedAddress(address.id)}
+                            className="mt-0.5 w-4 h-4 text-[#EC221F]"
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">{address.street}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {address.building && `مبنى ${address.building} `}
+                              {address.floor && `دور ${address.floor} `}
+                              {address.apartment && `شقة ${address.apartment}`}
+                            </p>
+                            <p className="text-sm text-gray-500">{address.city}، {address.governorate}</p>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </>
                 )}
               </div>
             )}

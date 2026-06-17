@@ -1,15 +1,20 @@
 // app/search/page.tsx
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/products/ProductCard";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import Pagination from "@/components/products/Pagination";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
 const API_URL = 'https://dukanah.admin.t-carts.com/api';
+
+// ✅ متغيرات لمنع التكرار على مستوى الدالة
+let isFetching = false;
+let lastFetchTime = 0;
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
@@ -20,21 +25,54 @@ const getToken = (): string | null => {
 };
 
 // دالة جلب نتائج البحث باستخدام endpoint /products?search=
-const searchProducts = async (query: string, page: number = 1) => {
+const searchProducts = async (query: string, page: number = 1, perPage: number = 12) => {
+  // ✅ منع التكرار في نفس الثانية
+  const now = Date.now();
+  if (isFetching || (now - lastFetchTime < 300)) {
+    console.log("⏳ Skipping duplicate search request");
+    return {
+      result: true,
+      data: {
+        products: [],
+        pagination: {
+          current_page: 1,
+          last_page: 1,
+          per_page: perPage,
+          total: 0,
+          from: 0,
+          to: 0,
+          next_page: null,
+          previous_page: null
+        }
+      }
+    };
+  }
+  
+  isFetching = true;
+  lastFetchTime = now;
+  
   try {
     const token = getToken();
-    const response = await fetch(`${API_URL}/products?page=${page}&search=${encodeURIComponent(query)}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-      },
-    });
+    console.log(`🟢 Searching products for "${query}" page ${page}`);
+    
+    const response = await fetch(
+      `${API_URL}/products?page=${page}&per_page=${perPage}&search=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      }
+    );
     
     const data = await response.json();
+    console.log(`📥 Search response for page ${page}:`, data);
     return data;
   } catch (error) {
     console.error("Search error:", error);
     throw error;
+  } finally {
+    isFetching = false;
   }
 };
 
@@ -102,76 +140,104 @@ function SearchContent() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [searchInput, setSearchInput] = useState(query);
   const [sortBy, setSortBy] = useState("newest");
+  
+  const perPage = 12;
 
-  // جلب نتائج البحث
+  // ✅ استخدام ref لمنع التكرار
+  const hasLoadedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isSearchChangeRef = useRef(false);
+
+  // ✅ دالة جلب نتائج البحث مع منع التكرار
+  const fetchSearchResults = useCallback(async () => {
+    if (!query) {
+      setProducts([]);
+      setTotalProducts(0);
+      setLastPage(1);
+      setIsLoading(false);
+      return;
+    }
+
+    // ✅ إلغاء الطلب السابق
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    
+    setIsLoading(true);
+    try {
+      const result = await searchProducts(query, currentPage, perPage);
+      
+      if (!abortControllerRef.current?.signal.aborted) {
+        // التعامل مع استجابة الـ API
+        if (result.result === true && result.data) {
+          const productsData = result.data.products || [];
+          const paginationData = result.data.pagination;
+          
+          console.log(`✅ Found ${productsData.length} products for page ${currentPage}`);
+          
+          setProducts(productsData);
+          
+          if (paginationData) {
+            setLastPage(paginationData.last_page || 1);
+            setTotalProducts(paginationData.total || productsData.length);
+          } else {
+            setLastPage(1);
+            setTotalProducts(productsData.length);
+          }
+          hasLoadedRef.current = true;
+        } else {
+          setProducts([]);
+          setTotalProducts(0);
+          setLastPage(1);
+        }
+      }
+    } catch (error) {
+      if (!abortControllerRef.current?.signal.aborted) {
+        console.error("Error fetching search results:", error);
+        toast.error("حدث خطأ أثناء جلب نتائج البحث");
+        setProducts([]);
+      }
+    } finally {
+      if (!abortControllerRef.current?.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
+  }, [query, currentPage, perPage]);
+
+  // ✅ جلب النتائج عند تغيير البحث أو الصفحة
   useEffect(() => {
     if (query) {
+      if (isSearchChangeRef.current || hasLoadedRef.current) {
+        fetchSearchResults();
+      } else {
+        hasLoadedRef.current = true;
+        fetchSearchResults();
+      }
+    } else {
+      setProducts([]);
+      setTotalProducts(0);
+      setLastPage(1);
+      setIsLoading(false);
+    }
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [query, currentPage, fetchSearchResults]);
+
+  // ✅ إعادة تعيين الصفحة عند تغيير البحث
+  useEffect(() => {
+    if (query) {
+      isSearchChangeRef.current = true;
       setCurrentPage(1);
-      fetchSearchResults();
     }
   }, [query]);
 
-  useEffect(() => {
-    if (query) {
-      fetchSearchResults();
-    }
-  }, [currentPage]);
-
-  const fetchSearchResults = async () => {
-    setIsLoading(true);
-    try {
-      const result = await searchProducts(query, currentPage);
-      
-      // التعامل مع استجابة الـ API حسب الـ response الفعلي
-      if (result.result === true && result.data) {
-        // المنتجات موجودة في data.products
-        const productsData = result.data.products || [];
-        const paginationData = result.data.pagination;
-        
-        // ترتيب المنتجات حسب الاختيار
-        const sortedProducts = [...productsData];
-        switch (sortBy) {
-          case "price_asc":
-            sortedProducts.sort((a, b) => (a.pricing?.final_price || a.pricing?.price || 0) - (b.pricing?.final_price || b.pricing?.price || 0));
-            break;
-          case "price_desc":
-            sortedProducts.sort((a, b) => (b.pricing?.final_price || b.pricing?.price || 0) - (a.pricing?.final_price || a.pricing?.price || 0));
-            break;
-          case "newest":
-            sortedProducts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            break;
-          case "popular":
-            sortedProducts.sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0));
-            break;
-          default:
-            break;
-        }
-        
-        setProducts(sortedProducts);
-        
-        // تعيين معلومات الترقيم
-        if (paginationData) {
-          setLastPage(paginationData.last_page || 1);
-          setTotalProducts(paginationData.total || productsData.length);
-        } else {
-          setLastPage(1);
-          setTotalProducts(productsData.length);
-        }
-      } else {
-        setProducts([]);
-        setTotalProducts(0);
-        setLastPage(1);
-      }
-    } catch (error) {
-      console.error("Error fetching search results:", error);
-      toast.error("حدث خطأ أثناء جلب نتائج البحث");
-      setProducts([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // إعادة الترتيب عند تغيير خيار الترتيب
+  // ✅ إعادة الترتيب عند تغيير خيار الترتيب (فلتر محلي)
   useEffect(() => {
     if (products.length > 0) {
       const sortedProducts = [...products];
@@ -193,13 +259,13 @@ function SearchContent() {
       }
       setProducts(sortedProducts);
     }
-  }, [sortBy]);
+  }, [sortBy, products.length]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
+      isSearchChangeRef.current = true;
       router.push(`/search?q=${encodeURIComponent(searchInput.trim())}`);
-      setCurrentPage(1);
     }
   };
 
@@ -208,10 +274,19 @@ function SearchContent() {
   };
 
   const handlePageChange = (page: number) => {
+    console.log(`🔄 Changing to page ${page}`);
     if (page >= 1 && page <= lastPage) {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  // ✅ عرض معلومات Pagination
+  const getPaginationInfo = () => {
+    if (totalProducts === 0) return '';
+    const from = (currentPage - 1) * perPage + 1;
+    const to = Math.min(currentPage * perPage, totalProducts);
+    return `عرض ${from} - ${to} من ${totalProducts} نتيجة`;
   };
 
   if (isLoading) {
@@ -253,7 +328,7 @@ function SearchContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ابحث عن منتجات..."
-              className="w-full px-6 py-3 pr-12  border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent"
+              className="w-full px-6 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent"
             />
             <button
               type="submit"
@@ -278,7 +353,7 @@ function SearchContent() {
           <select
             value={sortBy}
             onChange={handleSortChange}
-            className="px-4 py-2 border border-gray-200 rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#EC221F]"
+            className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#EC221F]"
           >
             <option value="newest">الأحدث</option>
             <option value="popular">الأكثر مبيعاً</option>
@@ -290,6 +365,11 @@ function SearchContent() {
         {/* قائمة المنتجات */}
         {products.length > 0 ? (
           <>
+            {/* ✅ عرض معلومات Pagination */}
+            <div className="text-sm text-gray-500 mb-4">
+              {getPaginationInfo()}
+            </div>
+
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product) => {
                 const cardData = transformProductForCard(product);
@@ -317,53 +397,15 @@ function SearchContent() {
               })}
             </div>
             
-            {/* الترقيم (Pagination) */}
+            {/* ✅ استخدام مكون Pagination الموحد */}
             {lastPage > 1 && (
-              <div className="flex justify-center gap-2 mt-12">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-2 border border-gray-200 rounded-[8px]  disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, lastPage) }, (_, i) => {
-                    let pageNum: number;
-                    if (lastPage <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= lastPage - 2) {
-                      pageNum = lastPage - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-10 h-10 rounded-[8px]  transition ${
-                          currentPage === pageNum
-                            ? "bg-[#EC221F] text-white"
-                            : "border border-gray-200 hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
-                
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === lastPage}
-                  className="p-2 border border-gray-200 rounded-[8px]  disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
+              <div className="mt-12">
+                <Pagination
+                  currentPage={currentPage}
+                  lastPage={lastPage}
+                  onPageChange={handlePageChange}
+                  total={totalProducts}
+                />
               </div>
             )}
           </>
