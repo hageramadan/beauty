@@ -94,7 +94,7 @@ export default function DeliveryAddressForm({
   const isFetchingRef = useRef(false);
   const hasFetchedAddressesRef = useRef(false);
   
-  const API_URL = 'https://dukanah.admin.t-carts.com/api';
+  const API_URL = 'https://admin.souqkaber.com/api';
 
   const getFieldValue = (value: string): string => {
     return value && value.trim() !== "" ? value.trim() : "1";
@@ -462,7 +462,7 @@ export default function DeliveryAddressForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المحافظة <span className="text-[#EC221F]">*</span>
+                المحافظة <span className="text-[#23A6F0]">*</span>
               </label>
               <Select
                 value={addressData.governorate}
@@ -482,7 +482,7 @@ export default function DeliveryAddressForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المدينة <span className="text-[#EC221F]">*</span>
+                المدينة <span className="text-[#23A6F0]">*</span>
               </label>
               <Select
                 value={addressData.city}
@@ -527,7 +527,7 @@ export default function DeliveryAddressForm({
                   value={addressData.street}
                   onChange={(e) => updateAddress("street", e.target.value)}
                   placeholder="مثال: شارع النيل"
-                  className="w-full pr-10 p-3 border border-gray-200 rounded-xl focus:border-black focus:outline-none"
+                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
                 />
               </div>
             </div>
@@ -543,7 +543,7 @@ export default function DeliveryAddressForm({
                   value={addressData.apartmentNo}
                   onChange={(e) => updateAddress("apartmentNo", e.target.value)}
                   placeholder="رقم الشقة"
-                  className="w-full pr-10 p-3 border border-gray-200 rounded-xl focus:border-black focus:outline-none"
+                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
                 />
               </div>
             </div>
@@ -556,7 +556,7 @@ export default function DeliveryAddressForm({
                   value={addressData.floorNo}
                   onChange={(e) => updateAddress("floorNo", e.target.value)}
                   placeholder="رقم الدور"
-                  className="w-full pr-10 p-3 border border-gray-200 rounded-xl focus:border-black focus:outline-none"
+                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
                 />
               </div>
             </div>
@@ -568,7 +568,7 @@ export default function DeliveryAddressForm({
               <button
                 onClick={handleManualSave}
                 disabled={isSavingAddress || !addressData.governorate || !addressData.city}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#2DA5F3] hover:bg-[#3fadf7] transition disabled:opacity-50"
               >
                 {isSavingAddress ? (
                   <>
@@ -588,7 +588,7 @@ export default function DeliveryAddressForm({
           {/* ✅ رسالة للضيف عند اختيار المدينة */}
           {isGuest && addressData.city && (
             <div className="pt-2 mt-2">
-              <div className="p-3 bg-green-50 rounded-xl border border-green-200">
+              <div className="p-3 bg-green-50  rounded-[8px]  border border-green-200">
                 <p className="text-sm font-medium text-green-800">
                   ✅ تم اختيار المدينة: {addressData.city}
                 </p>
@@ -601,7 +601,7 @@ export default function DeliveryAddressForm({
 
           {saveError && (
             <div className="pt-2 mt-2">
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200">
+              <div className="p-3  bg-blue-50   rounded-[8px]  border border-red-200">
                 <p className="text-sm font-medium text-red-800">{saveError}</p>
               </div>
             </div>
@@ -609,7 +609,7 @@ export default function DeliveryAddressForm({
 
           {!isGuest && addressSaved && (
             <div className="pt-2 mt-2">
-              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="p-3 bg-blue-50  rounded-[8px]  border border-blue-200">
                 <p className="text-sm font-medium text-blue-800">تم حفظ عنوانك بنجاح</p>
               </div>
             </div>
@@ -624,7 +624,7 @@ export default function DeliveryAddressForm({
             <span className="absolute bottom-[-10px] left-[50%] bg-white px-2">أو</span>
           </div>
           
-          <div className="mb-5 p-4 bg-gray-50 rounded-xl">
+          <div className="mb-5 p-4 bg-gray-50  rounded-[8px] ">
             <div className="flex items-center gap-2 cursor-pointer mb-3">
               <Checkbox
                 id="useSavedAddress"
@@ -653,7 +653,7 @@ export default function DeliveryAddressForm({
                 ) : (
                   <>
                     {selectedAddressDetails ? (
-                      <div className="p-4 bg-white rounded-xl border-2 border-[#EC221F] relative">
+                      <div className="p-4 bg-white  rounded-[8px]  border-2 border-[#23A6F0] relative">
                         <button
                           onClick={clearSelectedAddress}
                           className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition"
@@ -680,9 +680,9 @@ export default function DeliveryAddressForm({
                       savedAddresses.map((address) => (
                         <label
                           key={address.id}
-                          className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          className={`flex items-start gap-3 p-3  rounded-[8px]  border cursor-pointer transition-all ${
                             selectedSavedAddressId === address.id
-                              ? "border-[#EC221F] bg-red-50"
+                              ? "border-[#23A6F0]  bg-blue-50 "
                               : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectSavedAddress(address.id)}
@@ -692,7 +692,7 @@ export default function DeliveryAddressForm({
                             name="savedAddress"
                             checked={selectedSavedAddressId === address.id}
                             onChange={() => handleSelectSavedAddress(address.id)}
-                            className="mt-0.5 w-4 h-4 text-[#EC221F]"
+                            className="mt-0.5 w-4 h-4 text-[#23A6F0]"
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-800">{address.street}</p>

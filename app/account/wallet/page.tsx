@@ -26,7 +26,7 @@ export default function WalletPage() {
       }
 
       // 2. عنوان الـ API - استبدل YOUR_API_URL بالعنوان الحقيقي
-      const apiUrl ="https://dukanah.admin.t-carts.com/api";
+      const apiUrl ="https://admin.souqkaber.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
         headers: {
@@ -88,7 +88,7 @@ export default function WalletPage() {
               <span>رجوع إلى حسابي</span>
             </Link>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <div className=" bg-blue-50  border border-red-200 rounded-2xl p-6 text-center">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchWalletBalance}

@@ -32,10 +32,11 @@ export interface ColorOption {
   code: string;
 }
 
-/** A single size option returned by the API */
+/** ✅ SizeOption مع ID و type */
 export interface SizeOption {
   id: number;
   value: string;
+  type?: 'ram' | 'hard-disk';
 }
 
 /** A single brand option returned by the API */
@@ -48,7 +49,7 @@ export interface BrandOption {
 export interface AppliedFilters {
   categoryIds?: number[];
   colors?: string[];
-  sizes?: string[];
+  attribute_values?: number[];  // ✅ تغيير من sizes إلى attribute_values
   brands?: number[];
   minPrice?: number;
   maxPrice?: number;
@@ -72,7 +73,7 @@ type PriceRange = [number, number];
 interface FiltersSelectionState {
   selectedCategories: number[];
   selectedColors: string[];
-  selectedSizes: string[];
+  selectedAttributeIds: number[];  // ✅ تخزين IDs بدلاً من القيم النصية
   selectedBrands: number[];
   tempPriceRange: PriceRange;
   appliedPriceRange: PriceRange | undefined;
@@ -94,7 +95,7 @@ const WHITE_COLOR_NAMES = new Set(['أبيض', 'white']);
 const initialFiltersState: FiltersSelectionState = {
   selectedCategories: [],
   selectedColors: [],
-  selectedSizes: [],
+  selectedAttributeIds: [],  // ✅ تغيير من selectedSizes
   selectedBrands: [],
   tempPriceRange: DEFAULT_PRICE_RANGE,
   appliedPriceRange: undefined,
@@ -102,8 +103,6 @@ const initialFiltersState: FiltersSelectionState = {
 
 // ============================================================================
 // Pure helpers
-// (Kept outside the component: they don't depend on props/state, so they are
-// not re-created on every render, and they can be unit-tested in isolation.)
 // ============================================================================
 
 /** Adds or removes a value from an array — used by every checkbox toggle. */
@@ -118,15 +117,12 @@ function isWhiteColor(name: string, code: string): boolean {
 
 /**
  * Builds the filters object sent to the parent component.
- *
- * This single function replaces the logic that was previously duplicated
- * between the "instant filters" useEffect and `applyPriceFilter`.
  */
 function buildAppliedFilters(state: FiltersSelectionState): AppliedFilters {
   const filters: AppliedFilters = {
     categoryIds: state.selectedCategories.length ? state.selectedCategories : undefined,
     colors: state.selectedColors.length ? state.selectedColors : undefined,
-    sizes: state.selectedSizes.length ? state.selectedSizes : undefined,
+    attribute_values: state.selectedAttributeIds.length ? state.selectedAttributeIds : undefined,  // ✅ إرسال IDs
     brands: state.selectedBrands.length ? state.selectedBrands : undefined,
   };
 
@@ -140,18 +136,17 @@ function buildAppliedFilters(state: FiltersSelectionState): AppliedFilters {
 
 // ============================================================================
 // Reducer
-// All filter-selection state lives here. Grouping it removes 6+ separate
-// useState calls and makes "reset everything" a single dispatch.
 // ============================================================================
 
 type FiltersAction =
   | { type: 'TOGGLE_CATEGORY'; payload: number }
   | { type: 'TOGGLE_COLOR'; payload: string }
-  | { type: 'TOGGLE_SIZE'; payload: string }
+  | { type: 'TOGGLE_ATTRIBUTE'; payload: number }  // ✅ تغيير من TOGGLE_SIZE
   | { type: 'TOGGLE_BRAND'; payload: number }
   | { type: 'SET_TEMP_PRICE_RANGE'; payload: PriceRange }
   | { type: 'APPLY_PRICE_FILTER' }
-  | { type: 'RESET_ALL' };
+  | { type: 'RESET_ALL' }
+  | { type: 'APPLY_ALL_FILTERS' }; // ✅ إضافة نوع جديد لتطبيق كل الفلاتر دفعة واحدة
 
 function filtersReducer(state: FiltersSelectionState, action: FiltersAction): FiltersSelectionState {
   switch (action.type) {
@@ -159,14 +154,20 @@ function filtersReducer(state: FiltersSelectionState, action: FiltersAction): Fi
       return { ...state, selectedCategories: toggleInArray(state.selectedCategories, action.payload) };
     case 'TOGGLE_COLOR':
       return { ...state, selectedColors: toggleInArray(state.selectedColors, action.payload) };
-    case 'TOGGLE_SIZE':
-      return { ...state, selectedSizes: toggleInArray(state.selectedSizes, action.payload) };
+    case 'TOGGLE_ATTRIBUTE':  // ✅ تغيير من TOGGLE_SIZE
+      return { ...state, selectedAttributeIds: toggleInArray(state.selectedAttributeIds, action.payload) };
     case 'TOGGLE_BRAND':
       return { ...state, selectedBrands: toggleInArray(state.selectedBrands, action.payload) };
     case 'SET_TEMP_PRICE_RANGE':
       return { ...state, tempPriceRange: action.payload };
     case 'APPLY_PRICE_FILTER':
       return { ...state, appliedPriceRange: state.tempPriceRange };
+    case 'APPLY_ALL_FILTERS':
+      // ✅ تطبيق كل الفلاتر دفعة واحدة
+      return { 
+        ...state, 
+        appliedPriceRange: state.tempPriceRange 
+      };
     case 'RESET_ALL':
       return initialFiltersState;
     default:
@@ -176,8 +177,6 @@ function filtersReducer(state: FiltersSelectionState, action: FiltersAction): Fi
 
 // ============================================================================
 // Data-loading hook
-// Extracted so the component body only deals with UI/state, and so this
-// fetching logic can be reused or tested on its own.
 // ============================================================================
 
 interface FilterOptionsState {
@@ -217,7 +216,6 @@ function useFilterOptions(): FilterOptionsState {
       }
     })();
 
-    // Avoid setting state after unmount (e.g. mobile drawer closed before fetch resolves)
     return () => {
       isMounted = false;
     };
@@ -249,11 +247,6 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
 
 /**
  * Generic checkbox list used for categories, sizes, and brands.
- * These three sections were previously near-identical copy/paste blocks;
- * this component is the single implementation they all share.
- *
- * Wrapped in React.memo so toggling one section (e.g. colors) does not
- * force the other lists to re-render.
  */
 interface CheckboxFilterListProps<T, K extends string | number> {
   items: T[];
@@ -263,6 +256,7 @@ interface CheckboxFilterListProps<T, K extends string | number> {
   onToggle: (key: K) => void;
   loadingMessage: string;
   maxHeightClassName?: string;
+  getBadgeColor?: (item: T) => string;
 }
 
 function CheckboxFilterListInner<T, K extends string | number>({
@@ -273,15 +267,19 @@ function CheckboxFilterListInner<T, K extends string | number>({
   onToggle,
   loadingMessage,
   maxHeightClassName = 'max-h-64',
+  getBadgeColor,
 }: CheckboxFilterListProps<T, K>) {
   if (items.length === 0) {
     return <p className="text-sm text-gray-400">{loadingMessage}</p>;
   }
 
   return (
-    <div className={`space-y-2 overflow-y-auto ${maxHeightClassName}`}>
+    <div className={`space-y-2  ${maxHeightClassName}`}>
       {items.map((item) => {
         const key = getKey(item);
+        const label = getLabel(item);
+        const badgeColor = getBadgeColor?.(item);
+        
         return (
           <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
             <input
@@ -290,7 +288,13 @@ function CheckboxFilterListInner<T, K extends string | number>({
               onChange={() => onToggle(key)}
               className="rounded text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-600">{getLabel(item)}</span>
+            {badgeColor && (
+              <span 
+                className="w-3 h-3 rounded-full flex-shrink-0" 
+                style={{ backgroundColor: badgeColor }}
+              />
+            )}
+            <span className="text-sm text-gray-600">{label}</span>
           </label>
         );
       })}
@@ -298,11 +302,9 @@ function CheckboxFilterListInner<T, K extends string | number>({
   );
 }
 
-// React.memo erases generic type parameters; this cast restores them so
-// callers still get full type-checking on `items`, `getKey`, etc.
 const CheckboxFilterList = memo(CheckboxFilterListInner) as typeof CheckboxFilterListInner;
 
-/** Color swatch grid — kept separate from CheckboxFilterList because its markup is genuinely different (swatches, not checkboxes). */
+/** Color swatch grid */
 interface ColorSwatchListProps {
   colors: ColorOption[];
   selectedColors: string[];
@@ -361,25 +363,56 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
 
   const [tempMinPrice, tempMaxPrice] = state.tempPriceRange;
 
-  // Recomputed only when a value that actually affects the output changes.
+  // ✅ في الموبايل: لا نطبق الفلاتر تلقائياً، ننتظر زر التطبيق
+  // في الديسكتوب: نطبق الفلاتر فوراً
   const appliedFilters = useMemo<AppliedFilters>(
     () => buildAppliedFilters(state),
-    [state.selectedCategories, state.selectedColors, state.selectedSizes, state.selectedBrands, state.appliedPriceRange],
+    [
+      state.selectedCategories,
+      state.selectedColors,
+      state.selectedAttributeIds,
+      state.selectedBrands,
+      state.appliedPriceRange,
+    ],
   );
 
-  // Single notification point for the parent. This replaces the two
-  // near-identical useEffect blocks from the original implementation:
-  // any change to instant filters OR a manual price-filter "apply"
-  // updates `appliedFilters`, which triggers exactly one onFilterChange call.
-  //
-  // `onFilterChange` is intentionally left out of the dependency array to
-  // preserve the original behavior (only fire on filter-state changes, not
-  // on every parent re-render). Ideally the parent memoizes this callback
-  // with useCallback so it can safely be added later.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // ✅ دالة تطبيق الفلاتر (تُستخدم للموبايل والديسكتوب)
+  const applyFilters = useCallback(() => {
+    // تطبيق الفلاتر الحالية
+    dispatch({ type: 'APPLY_ALL_FILTERS' });
+    
+    // إرسال الفلاتر إلى المكون الأب
+    const filtersToApply = buildAppliedFilters({
+      ...state,
+      appliedPriceRange: state.tempPriceRange,
+    });
+    onFilterChange(filtersToApply);
+    
+    // إغلاق الفلتر إذا كان في الموبايل
+    if (isMobile && onClose) {
+      onClose();
+    }
+  }, [state, onFilterChange, isMobile, onClose]);
+
+  // ✅ للديسكتوب: تطبيق الفلاتر فوراً عند التغيير
   useEffect(() => {
-    onFilterChange(appliedFilters);
-  }, [appliedFilters]);
+    if (!isMobile) {
+      // في الديسكتوب نطبق الفلاتر فوراً
+      const filters = buildAppliedFilters({
+        ...state,
+        appliedPriceRange: state.tempPriceRange,
+      });
+      onFilterChange(filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.selectedCategories,
+    state.selectedColors,
+    state.selectedAttributeIds,
+    state.selectedBrands,
+    state.tempPriceRange,
+    isMobile,
+  ]);
 
   // ---- Instant filter toggles ----
   const handleCategoryToggle = useCallback((id: number) => {
@@ -390,8 +423,8 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
     dispatch({ type: 'TOGGLE_COLOR', payload: code });
   }, []);
 
-  const handleSizeToggle = useCallback((value: string) => {
-    dispatch({ type: 'TOGGLE_SIZE', payload: value });
+  const handleAttributeToggle = useCallback((id: number) => {
+    dispatch({ type: 'TOGGLE_ATTRIBUTE', payload: id });
   }, []);
 
   const handleBrandToggle = useCallback((id: number) => {
@@ -417,22 +450,52 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
     }
   };
 
+  // ✅ تطبيق فلتر السعر فقط (للديسكتوب)
   const handleApplyPriceFilter = useCallback(() => {
-    dispatch({ type: 'APPLY_PRICE_FILTER' });
-  }, []);
+    if (!isMobile) {
+      dispatch({ type: 'APPLY_PRICE_FILTER' });
+    }
+  }, [isMobile]);
 
   const handleResetFilters = useCallback(() => {
     dispatch({ type: 'RESET_ALL' });
+    // إرسال الفلاتر الفارغة إلى المكون الأب
+    onFilterChange({});
     if (onClose && isMobile) onClose();
-  }, [onClose, isMobile]);
+  }, [onFilterChange, onClose, isMobile]);
+
+  // ✅ دالة للحصول على لون الخلفية حسب النوع
+  const getSizeBadgeColor = (size: SizeOption): string => {
+    if (size.type === 'ram') return '#3B82F6'; // أزرق للرام
+    if (size.type === 'hard-disk') return '#10B981'; // أخضر للهارد ديسك
+    return '#9CA3AF'; // رمادي للافتراضي
+  };
+
+  // ✅ دالة للحصول على النص المعروض مع بادئة
+  const getSizeLabel = (size: SizeOption): string => {
+    if (size.type === 'ram') return `RAM: ${size.value}`;
+    if (size.type === 'hard-disk') return `HDD: ${size.value}`;
+    return size.value;
+  };
+
+  // ✅ حساب عدد الفلاتر المختارة
+  const getSelectedFiltersCount = useCallback(() => {
+    let count = 0;
+    if (state.selectedCategories.length) count += state.selectedCategories.length;
+    if (state.selectedColors.length) count += state.selectedColors.length;
+    if (state.selectedAttributeIds.length) count += state.selectedAttributeIds.length;
+    if (state.selectedBrands.length) count += state.selectedBrands.length;
+    if (state.tempPriceRange[0] > MIN_PRICE || state.tempPriceRange[1] < MAX_PRICE) count++;
+    return count;
+  }, [state]);
 
   return (
     <div
       className={`
-        border rounded-xl p-4
+        border rounded-[8px] p-4
         ${
           isMobile
-            ? 'w-full max-h-[calc(100vh-80px)] overflow-y-auto my-0 border-0 rounded-none'
+            ? 'w-full max-h-[calc(100vh-80px)] my-0 border-0 rounded-none'
             : 'sticky top-[10%] mx-auto my-3 w-[340px]'
         }
       `}
@@ -486,14 +549,17 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                 className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="mt-4">
-              <button
-                onClick={handleApplyPriceFilter}
-                className="w-[32.89px] bg-[#0A0500] text-white py-2 transition-colors font-semibold flex items-center justify-center gap-2"
-              >
-                <FaArrowLeft className="w-5 h-5" />
-              </button>
-            </div>
+            {/* ✅ إخفاء زر تطبيق السعر في الموبايل لأنه سيتم تطبيق كل الفلاتر دفعة واحدة */}
+            {!isMobile && (
+              <div className="mt-4">
+                <button
+                  onClick={handleApplyPriceFilter}
+                  className="w-[32.89px] bg-[#2DA5F3] text-white py-2 transition-colors font-semibold flex items-center justify-center gap-2"
+                >
+                  <FaArrowLeft className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </FilterSection>
@@ -521,16 +587,17 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         />
       </FilterSection>
 
-      {/* ===== فلتر المقاسات ===== */}
-      <FilterSection title="المقاسات">
+      {/* ===== ✅ فلتر المواصفات (RAM / HDD) ===== */}
+      <FilterSection title="المواصفات (RAM / HDD)">
         <CheckboxFilterList
           items={sizes}
-          selectedValues={state.selectedSizes}
-          getKey={(size) => size.value}
-          getLabel={(size) => size.value}
-          onToggle={handleSizeToggle}
-          loadingMessage="جاري تحميل المقاسات..."
+          selectedValues={state.selectedAttributeIds}
+          getKey={(size) => size.id}
+          getLabel={getSizeLabel}
+          onToggle={handleAttributeToggle}
+          loadingMessage="جاري تحميل المواصفات..."
           maxHeightClassName="max-h-64"
+          getBadgeColor={getSizeBadgeColor}
         />
       </FilterSection>
 
@@ -546,6 +613,23 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
           maxHeightClassName="max-h-48"
         />
       </FilterSection>
+
+      {/* ✅ زر تطبيق الفلاتر (يظهر فقط في الموبايل) */}
+      {isMobile && (
+        <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
+          <button
+            onClick={applyFilters}
+            className="w-full bg-[#2D93CA] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#2479a8] flex items-center justify-center gap-2"
+          >
+            تطبيق 
+            {/* {getSelectedFiltersCount() > 0 && (
+              <span className="bg-white text-[#2D93CA] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {getSelectedFiltersCount()}
+              </span>
+            )} */}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

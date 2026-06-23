@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { PromoCodeInput } from "./PromoCodeInput";
+import { FaArrowAltCircleLeft, FaArrowLeft } from "react-icons/fa";
 
 interface CartSummaryProps {
   subtotal: number;
@@ -91,8 +92,8 @@ const SummaryRow = ({
   };
 
   const getValueClassName = () => {
-    if (isDiscount) return "text-[#EC221F] font-bold";
-    if (isTotal) return "text-[20px] font-bold text-[#EC221F]";
+    if (isDiscount) return "text-[#23A6F0] font-bold";
+    if (isTotal) return "text-[20px] font-bold ";
     return "font-semibold text-gray-800";
   };
 
@@ -110,9 +111,12 @@ const SummaryRow = ({
 };
 
 const CheckoutButton = () => (
-  <Link href="/checkout" className="block w-full">
-    <button className="w-full mt-5 bg-black text-white py-2 rounded-xl font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-gray-800">
+  <Link href="/checkout" className="flex items-center justify-center gap-2 mt-4 w-full bg-[#2DA5F3] text-white py-2  rounded-[8px]  font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-[#3fabf3]">
+    <button className="">
       إكمال الطلب
+
     </button>
+    <FaArrowLeft className="w-4 h-4"/>
+
   </Link>
 );

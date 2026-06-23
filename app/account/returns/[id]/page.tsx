@@ -104,7 +104,7 @@ interface ReturnDetails {
 }
 
 // ========== إعدادات API ==========
-const API_URL = 'https://dukanah.admin.t-carts.com/api';
+const API_URL = 'https://admin.souqkaber.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -212,7 +212,7 @@ const formatDate = (dateString: string): string => {
 const cleanImageUrl = (url: string): string => {
   if (!url) return PLACEHOLDER_IMAGE;
   if (url.startsWith("/storage")) {
-    return `https://dukanah.admin.t-carts.com${url}`;
+    return `https://admin.souqkaber.com${url}`;
   }
   return url;
 };
@@ -330,7 +330,7 @@ export default function ReturnDetailsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC221F] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
           <p className="text-gray-500 mt-4">جاري تحميل تفاصيل المرتجع...</p>
         </div>
       </div>
@@ -363,11 +363,11 @@ export default function ReturnDetailsPage() {
       <div className="container mx-auto mb-3 px-4 md:px-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-          <Link href="/account" className="hover:text-[#EC221F] transition">حسابي</Link>
+          <Link href="/account" className="hover:text-[#23A6F0] transition">حسابي</Link>
           <ChevronRight className="w-4 h-4" />
-          <Link href="/account/returns" className="hover:text-[#EC221F] transition">المرتجعات</Link>
+          <Link href="/account/returns" className="hover:text-[#23A6F0] transition">المرتجعات</Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#EC221F] font-medium">تفاصيل المرتجع</span>
+          <span className="text-[#23A6F0] font-medium">تفاصيل المرتجع</span>
         </div>
         
         <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل المرتجع</h1>
@@ -387,7 +387,7 @@ export default function ReturnDetailsPage() {
                           {returnData.returnNumber}
                         </p>
                         <IoCopyOutline 
-                          className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#EC221F]'}`}
+                          className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#23A6F0]'}`}
                           onClick={copyReturnNumber}
                         />
                       </div>
@@ -398,7 +398,7 @@ export default function ReturnDetailsPage() {
                       <div className="flex gap-1 sm:gap-2 items-center">
                         <p className="text-gray-600 text-xs sm:text-sm">{returnData.order.order_number}</p>
                         <IoCopyOutline 
-                          className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#EC221F] transition"
+                          className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#23A6F0] transition"
                           onClick={copyOrderNumber}
                         />
                       </div>
@@ -438,7 +438,7 @@ export default function ReturnDetailsPage() {
                   
                   return (
                     <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
-                      <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
+                      <div className="w-20 h-20 bg-gray-100  rounded-[8px]  overflow-hidden flex-shrink-0 relative">
                         <Image
                           src={displayImage}
                           alt={item.title}
@@ -490,7 +490,7 @@ export default function ReturnDetailsPage() {
                             </div>
                           </div>
                           <div className="text-left">
-                            <p className="font-bold text-[#EC221F]">EGP {item.total_price.toFixed(2)}</p>
+                            <p className="font-bold text-[#23A6F0]">EGP {item.total_price.toFixed(2)}</p>
                             {item.discount_amount > 0 && (
                               <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
                             )}
@@ -516,13 +516,13 @@ export default function ReturnDetailsPage() {
                 {returnData.order.coupon_discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">خصم الكوبون</span>
-                    <span className="font-bold text-[#EC221F]">-EGP {returnData.order.coupon_discount_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#23A6F0]">-EGP {returnData.order.coupon_discount_amount.toFixed(2)}</span>
                   </div>
                 )}
                 {returnData.order.total_discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">الخصم الكلي</span>
-                    <span className="font-bold text-[#EC221F]">-EGP {returnData.order.total_discount_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#23A6F0]">-EGP {returnData.order.total_discount_amount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -537,7 +537,7 @@ export default function ReturnDetailsPage() {
                 )}
                 <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
                   <span className="text-lg font-bold text-gray-800">المبلغ المسترد</span>
-                  <span className="text-xl font-bold text-[#EC221F]">EGP {totalRefund.toFixed(2)}</span>
+                  <span className="text-xl font-bold text-[#23A6F0]">EGP {totalRefund.toFixed(2)}</span>
                 </div>
                 {returnData.refund_method && returnData.status === "refunded" && (
                   <div className="flex justify-end">
@@ -582,7 +582,7 @@ export default function ReturnDetailsPage() {
             
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
-              <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-xl">
+              <div className="flex items-center gap-3 p-2 border border-gray-300  rounded-[8px] ">
                 <div className="w-10 h-10 bg-white rounded-[8px] flex items-center justify-center shadow-sm">
                   <GrMoney />
                 </div>
@@ -600,7 +600,7 @@ export default function ReturnDetailsPage() {
               <textarea
                 value={returnNotes || "لا توجد ملاحظات"}
                 onChange={(e) => setReturnNotes(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#EC221F] resize-none bg-gray-50"
+                className="w-full p-3 border border-gray-200  rounded-[8px]  focus:outline-none focus:border-[#23A6F0] resize-none bg-gray-50"
                 rows={3}
                 readOnly
               />
@@ -609,7 +609,7 @@ export default function ReturnDetailsPage() {
             {/* <div className="flex gap-3 mt-3 md:mt-6">
               <Link 
                 href={`/account/orders/${returnData.order.id}`}
-                className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-xl font-medium hover:bg-gray-50 transition text-center"
+                className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover:bg-gray-50 transition text-center"
               >
                 عرض الطلب
               </Link>

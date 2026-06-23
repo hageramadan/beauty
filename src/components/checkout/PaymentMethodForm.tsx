@@ -58,9 +58,9 @@ export default function PaymentMethodForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* محفظة - الخيار الأول والافتراضي */}
         <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "wallet"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           } ${!isWalletAvailable ? "opacity-60 cursor-not-allowed" : ""}`}
         >
@@ -70,7 +70,7 @@ export default function PaymentMethodForm({
             value="wallet"
             checked={paymentMethod === "wallet"}
             onChange={() => handlePaymentChange("wallet")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
             disabled={!isWalletAvailable}
           />
           <Wallet className="w-5 h-5 text-orange-600" />
@@ -86,9 +86,9 @@ export default function PaymentMethodForm({
 
         {/* الدفع عند الاستلام */}
         <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "cash"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -98,7 +98,7 @@ export default function PaymentMethodForm({
             value="cash"
             checked={paymentMethod === "cash"}
             onChange={() => handlePaymentChange("cash")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
           />
           <DollarSign className="w-5 h-5 text-green-600" />
           <div>
@@ -108,9 +108,9 @@ export default function PaymentMethodForm({
 
         {/* بطاقة ائتمان */}
         {/* <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "card"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -120,7 +120,7 @@ export default function PaymentMethodForm({
             value="card"
             checked={paymentMethod === "card"}
             onChange={() => handlePaymentChange("card")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
           />
           <CreditCard className="w-5 h-5 text-blue-600" />
           <div>
@@ -130,9 +130,9 @@ export default function PaymentMethodForm({
 
         {/* مدى (Mada) */}
         {/* <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "mada"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -142,7 +142,7 @@ export default function PaymentMethodForm({
             value="mada"
             checked={paymentMethod === "mada"}
             onChange={() => handlePaymentChange("mada")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
           />
           <Landmark className="w-5 h-5 text-purple-600" />
           <div>

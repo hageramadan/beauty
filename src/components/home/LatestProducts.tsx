@@ -7,7 +7,7 @@ import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getNewProducts, ProductData } from "@/services/api";
 
-// ✅ إضافة الواجهات المطلوبة
+// ✅ تعريف واجهات الفاريانتات
 interface VariantAttribute {
   id: number;
   attribute_type: {
@@ -47,19 +47,28 @@ interface Product {
   rating?: number;
   reviewsCount?: number;
   isBestSeller?: boolean;
+  // ✅ إضافة خصائص الفاريانتات
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
+  variantId?: number | null;
 }
 
-// ✅ دالة استخراج الألوان من جميع الـ variants (وليس فقط الأول)
-const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
+// ✅ دالة استخراج الألوان من جميع الـ variants
+const extractColorsFromVariants = (
+  variants: ProductVariant[],
+): Array<{ color: string; name: string }> => {
   const colorMap = new Map<string, string>();
-  
+
   if (!variants || variants.length === 0) return [];
-  
+
   variants.forEach((variant) => {
     if (variant.attributes && Array.isArray(variant.attributes)) {
       variant.attributes.forEach((attr: VariantAttribute) => {
-        // إذا كان الـ attribute من نوع "اللون"
-        if (attr.attribute_type?.name === "اللون" && attr.value && attr.meta?.color) {
+        if (
+          attr.attribute_type?.name === "اللون" &&
+          attr.value &&
+          attr.meta?.color
+        ) {
           if (!colorMap.has(attr.value)) {
             colorMap.set(attr.value, attr.meta.color);
           }
@@ -67,10 +76,10 @@ const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: s
       });
     }
   });
-  
+
   return Array.from(colorMap.entries()).map(([name, color]) => ({
     name: name,
-    color: color
+    color: color,
   }));
 };
 
@@ -80,9 +89,9 @@ const transformProduct = (product: ProductData): Product => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith('/storage')) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
-    return `https://dukanah.admin.t-carts.com${url}`;
+    return `https://admin.souqkaber.com${url}`;
   };
   
   const mainImage = product.images && product.images.length > 0 
@@ -102,10 +111,16 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
-  // ✅ استخراج الألوان من جميع الـ variants باستخدام الدالة الجديدة
+  // ✅ استخراج الألوان من جميع الـ variants ديناميكياً
   let colors: Array<{ color: string; name: string }> = [];
+  let hasVariants = false;
+  let variants: ProductVariant[] = [];
+  let variantId: number | null = null;
   
   if (product.has_variants && product.variants && product.variants.length > 0) {
+    hasVariants = true;
+    variants = product.variants as ProductVariant[];
+    variantId = product.variants[0].id;
     colors = extractColorsFromVariants(product.variants as ProductVariant[]);
   }
 
@@ -122,6 +137,10 @@ const transformProduct = (product: ProductData): Product => {
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
     isBestSeller: (product.avg_rating || 0) >= 4.5,
+    // ✅ إضافة معلومات الفاريانتات
+    hasVariants: hasVariants,
+    variants: variants,
+    variantId: variantId,
   };
 };
 
@@ -177,7 +196,7 @@ export function LatestProducts() {
       console.error('Error fetching products:', err);
       if (!isMounted.current) return;
       setError('فشل في تحميل المنتجات');
-      setProducts([]); // عدم استخدام بيانات افتراضية
+      setProducts([]);
     } finally {
       if (!isMounted.current) return;
       setIsInitialLoading(false);
@@ -221,7 +240,7 @@ export function LatestProducts() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2D93CA] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
                 جاري تحميل أحدث المنتجات...
@@ -242,7 +261,7 @@ export function LatestProducts() {
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#EC221F] text-white rounded-[8px]  hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#2D93CA] text-white rounded-lg hover:bg-[#d11d1a] transition"
             >
               إعادة المحاولة
             </button>
@@ -253,20 +272,30 @@ export function LatestProducts() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-white">
+    <section className="py-6 md:py-12 bg-white" id="new">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
-          <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#112B40' }}>
+          <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
             أحدث المنتجات
           </h2>
           <Link 
             href="/products" 
-            className="text-[#EC221F] text-[16px] font-bold hover:underline transition-all duration-300"
+            className="text-[#2D93CA] text-[14px] font-bold hover:underline transition-all duration-300"
           >
             عرض المزيد
           </Link>
         </div>
+
+        {/* ✅ مؤشر تحميل عند تحميل المزيد */}
+        {isLoadingMore && (
+          <div className="flex justify-center py-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#2D93CA] rounded-full animate-spin"></div>
+              <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
+            </div>
+          </div>
+        )}
 
         {/* Products Grid - تعديل لضمان أحجام متساوية */}
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
@@ -292,23 +321,14 @@ export function LatestProducts() {
                 rating={product.rating}
                 reviewsCount={product.reviewsCount}
                 isBestSeller={product.isBestSeller}
+                // ✅ تمرير معلومات الفاريانتات
+                hasVariants={product.hasVariants || false}
+                variants={product.variants || []}
+                variantId={product.variantId || null}
               />
             </div>
           ))}
         </div>
-
-        {/* Loading More State */}
-        {isLoadingMore && (
-          <div className="flex justify-center items-center py-4 md:py-8">
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative">
-                <div className="w-8 h-8 border-3 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-8 h-8 border-3 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <p className="text-gray-400 text-xs">جاري التحميل...</p>
-            </div>
-          </div>
-        )}
 
         {/* Load More Button */}
         {showLoadMoreButton && !isLoadingMore && (
@@ -318,8 +338,8 @@ export function LatestProducts() {
               className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: 'transparent',
-                color: '#EC221F',
-                border: '2px solid #EC221F',
+                color: '#2D93CA',
+                border: '2px solid #2D93CA',
                 borderRadius: '8px'
               }}
             >

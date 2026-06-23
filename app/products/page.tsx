@@ -12,6 +12,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { FilterIcon } from "lucide-react";
 import { X } from "lucide-react";
 import Link from "next/link";
+import { VscSettings } from "react-icons/vsc";
 
 // ✅ إضافة الواجهات المطلوبة
 interface VariantAttribute {
@@ -40,10 +41,11 @@ interface ProductVariant {
   attributes: VariantAttribute[];
 }
 
+// ✅ تحديث واجهة FiltersState لاستخدام attribute_values بدلاً من sizes
 interface FiltersState {
   categoryIds?: number[];
   colors?: string[];
-  sizes?: string[];
+  attribute_values?: number[];  // ✅ تغيير من sizes إلى attribute_values
   brands?: number[];
   minPrice?: number;
   maxPrice?: number;
@@ -145,8 +147,9 @@ export default function ProductsPage() {
       if (filters.colors && filters.colors.length > 0) {
         filterParams.colors = filters.colors;
       }
-      if (filters.sizes && filters.sizes.length > 0) {
-        filterParams.sizes = filters.sizes;
+      // ✅ تغيير من sizes إلى attribute_values
+      if (filters.attribute_values && filters.attribute_values.length > 0) {
+        filterParams.attribute_values = filters.attribute_values;
       }
       if (filters.brands && filters.brands.length > 0) {
         filterParams.brands = filters.brands;
@@ -198,9 +201,37 @@ export default function ProductsPage() {
     };
   }, [loadProducts]);
 
+  // ✅ معالج تغيير الفلاتر - يستقبل الفلاتر من ProductFilters
   const handleFilterChange = (newFilters: any) => {
+    console.log('🔍 New filters received:', newFilters);
+    
+    // ✅ تحويل الفلاتر إلى الصيغة المطلوبة
+    const updatedFilters: FiltersState = {};
+    
+    if (newFilters.categoryIds) {
+      updatedFilters.categoryIds = newFilters.categoryIds;
+    }
+    if (newFilters.colors) {
+      updatedFilters.colors = newFilters.colors;
+    }
+    // ✅ استخدام attribute_values بدلاً من sizes
+    if (newFilters.attribute_values) {
+      updatedFilters.attribute_values = newFilters.attribute_values;
+    }
+    if (newFilters.brands) {
+      updatedFilters.brands = newFilters.brands;
+    }
+    if (newFilters.minPrice !== undefined) {
+      updatedFilters.minPrice = newFilters.minPrice;
+    }
+    if (newFilters.maxPrice !== undefined) {
+      updatedFilters.maxPrice = newFilters.maxPrice;
+    }
+    
+    console.log('✅ Updated filters state:', updatedFilters);
+    
     isFilterChangeRef.current = true;
-    setFilters(newFilters);
+    setFilters(updatedFilters);
     setCurrentPage(1);
     setIsMobileFilterOpen(false);
   };
@@ -240,9 +271,9 @@ export default function ProductsPage() {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/placeholder-image.jpg";
       if (url.startsWith("/storage")) {
-        return `https://dukanah.admin.t-carts.com${url}`;
+        return `https://admin.souqkaber.com${url}`;
       }
-      return `https://dukanah.admin.t-carts.com/storage${url}`;
+      return `https://admin.souqkaber.com/storage${url}`;
     };
 
     return {
@@ -269,6 +300,9 @@ export default function ProductsPage() {
       rating: product.avg_rating || 0,
       reviewsCount: product.total_reviews || 0,
       isBestSeller: (product.avg_rating || 0) >= 4.5,
+      // ✅ إضافة hasVariants و variants
+      hasVariants: product.has_variants || false,
+      variants: product.variants || [],
     };
   };
 
@@ -278,8 +312,9 @@ export default function ProductsPage() {
       count += filters.categoryIds.length;
     if (filters.colors && filters.colors.length > 0)
       count += filters.colors.length;
-    if (filters.sizes && filters.sizes.length > 0)
-      count += filters.sizes.length;
+    // ✅ تغيير من sizes إلى attribute_values
+    if (filters.attribute_values && filters.attribute_values.length > 0)
+      count += filters.attribute_values.length;
     if (filters.brands && filters.brands.length > 0)
       count += filters.brands.length;
     if (filters.minPrice !== undefined && filters.minPrice > 0) count++;
@@ -302,7 +337,7 @@ export default function ProductsPage() {
         <div className="flex gap-4">
           <div className="flex-1">
             <div className="rounded-[8px] mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex  justify-between items-start sm:items-center gap-4">
                 <div className="flex items-end gap-1">
                   <Link href="/" className="text-[#726C6C] text-xl">
                     الرئيسية
@@ -318,15 +353,9 @@ export default function ProductsPage() {
                   onClick={() => {
                     setIsMobileFilterOpen(true);
                   }}
-                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-[8px] hover:bg-gray-200 transition-colors"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-[#2D93CA] rounded-[8px] hover:bg-gray-200 transition-colors"
                 >
-                  <FilterIcon className="w-5 h-5" />
-                  <span>فلتر</span>
-                  {activeFiltersCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {activeFiltersCount}
-                    </span>
-                  )}
+                  <VscSettings className="w-6 h-6 text-white" />
                 </button>
               </div>
             </div>
@@ -335,8 +364,6 @@ export default function ProductsPage() {
               <LoadingSpinner size="lg" text="جاري تحميل المنتجات..." />
             ) : products.length > 0 ? (
               <>
-                
-
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((product) => {
                     const cardData = transformProductForCard(product);
@@ -358,6 +385,15 @@ export default function ProductsPage() {
                           rating={cardData.rating}
                           reviewsCount={cardData.reviewsCount}
                           isBestSeller={cardData.isBestSeller}
+                          // ✅ تمرير hasVariants و variants إلى ProductCard
+                          hasVariants={cardData.hasVariants}
+                          variants={cardData.variants}
+                          // ✅ تمرير أول variant ID إذا كان موجود
+                          variantId={
+                            cardData.hasVariants && cardData.variants.length > 0
+                              ? cardData.variants[0].id
+                              : null
+                          }
                         />
                       </div>
                     );
@@ -387,26 +423,39 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* نافذة الفلتر المنزلقة من اليمين للموبايل */}
+      {/* ✅ نافذة الفلتر المنزلقة من الأسفل للموبايل - BOTTOM SHEET */}
       <div
         className={`
           fixed inset-0 z-50 md:hidden
           ${isMobileFilterOpen ? "block" : "hidden"}
         `}
       >
+        {/* ✅ الخلفية المعتمة */}
         <div
           className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
           onClick={() => setIsMobileFilterOpen(false)}
         />
 
+        {/* ✅ الفلتر يظهر من الأسفل وليس من الجانب */}
         <div
           className={`
-            absolute top-0 right-0 bottom-0 w-full bg-white shadow-xl
+            absolute bottom-0 left-0 right-0 
+            bg-white rounded-t-3xl shadow-2xl
             transition-transform duration-300 ease-out
-            ${isMobileFilterOpen ? "translate-x-0" : "translate-x-full"}
+            ${isMobileFilterOpen ? "translate-y-0" : "translate-y-full"}
           `}
+          style={{
+            maxHeight: "85vh", // ✅ زيادة الحد الأقصى قليلاً
+            height: "auto", // ✅ تغيير إلى auto عشان ياخد حجم المحتوى
+          }}
         >
-          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10">
+          {/* ✅ شريط السحب للأعلى (Drag Handle) */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+          </div>
+
+          {/* ✅ رأس الفلتر مع زر الإغلاق */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10 rounded-t-3xl">
             <h2 className="text-lg font-bold">تصفية المنتجات</h2>
             <button
               onClick={() => setIsMobileFilterOpen(false)}
@@ -416,7 +465,8 @@ export default function ProductsPage() {
             </button>
           </div>
 
-          <div className="h-[calc(100%-60px)] overflow-y-auto">
+          {/* ✅ محتوى الفلتر مع تمرير داخلي */}
+          <div className="overflow-y-auto pb-8" style={{ maxHeight: "calc(85vh - 120px)" }}>
             <ProductFilters
               onFilterChange={handleFilterChange}
               isMobile={true}

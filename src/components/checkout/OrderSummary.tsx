@@ -74,7 +74,7 @@ export default function OrderSummary({
               <span>خصم</span>
               <span className="text-xs ">(-{discountPercentage}%)</span>
             </span>
-            <span className="text-[#EC221F]">-EGP {discount.toFixed(2)}</span>
+            <span className="text-[#23A6F0]">-EGP {discount.toFixed(2)}</span>
           </div>
         )}
         
@@ -87,7 +87,7 @@ export default function OrderSummary({
                 {couponCode}
               </span>
             </span>
-            <span className="text-[#EC221F]">-EGP {couponDiscount.toFixed(2)}</span>
+            <span className="text-[#23A6F0]">-EGP {couponDiscount.toFixed(2)}</span>
           </div>
         )}
         
@@ -103,7 +103,7 @@ export default function OrderSummary({
         
         <div className="flex justify-between pt-3 border-t border-gray-200">
           <span className="text-lg font-bold text-gray-900">الإجمالي</span>
-          <span className="text-xl font-bold text-[#EC221F]">
+          <span className="text-lg font-bold ">
             EGP {total?.toFixed(2) || "0.00"}
           </span>
         </div>

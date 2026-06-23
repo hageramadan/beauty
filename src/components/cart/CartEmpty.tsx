@@ -21,7 +21,7 @@ export function CartEmpty() {
         </p>
         <Link
           href="/products"
-          className="inline-block bg-[#EC221F] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#d41d1a] transition-all duration-300 shadow-md hover:shadow-lg"
+          className="inline-block bg-[#23A6F0] text-white px-8 py-3  rounded-[8px]  font-semibold hover:bg-[#2facf5]  transition-all duration-300 shadow-md hover:shadow-lg"
         >
           تسوق الآن
         </Link>
@@ -37,9 +37,9 @@ const PageHeader = ({ title }: { title: string }) => (
   <div className="page-with-padding">
     <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-      <Link href="/" className="hover:text-[#EC221F]">الرئيسية</Link>
+      <Link href="/" className="hover:text-[#23A6F0]">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />
-      <span className="text-[#EC221F]">{title}</span>
+      <span className="text-[#23A6F0]">{title}</span>
     </div>
   </div>
 );

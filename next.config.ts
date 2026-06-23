@@ -25,6 +25,24 @@ const nextConfig: NextConfig = {
         pathname: '/storage/tenant_dukanah/category_image/**',
       },
       {
+          protocol: 'https',
+          hostname: 'dukanah.admin.t-carts.com',
+          port: '',
+          pathname: '/storage/tenant_dukanah/profile/**',
+      },
+      {
+          protocol: 'https',
+          hostname: 'dukanah.admin.com',
+          port: '',
+          pathname: '/storage/tenant_dukanah/profile/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'alfareed.admin.t-carts.com',
+        port: '',
+        pathname: '/storage/**',
+      },
+      {
         protocol: 'https',
         hostname: 'dukanah.admin.t-carts.com',
         port: '',
@@ -48,6 +66,12 @@ const nextConfig: NextConfig = {
         hostname: 'dukanah.admin.t-carts.com',
         port: '',
         pathname: '/uploads/**', // يسمح بمسارات uploads
+      },
+      {
+        protocol: 'https',
+        hostname: 'admin.souqkaber.com',
+        port: '',
+        pathname: '/**', // يسمح بمسارات uploads
       },
     ],
  

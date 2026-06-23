@@ -23,8 +23,10 @@ interface User {
   email?: string;
   phone?: string;
   image?: string;
+  country_code?: string 
 }
 
+// نوع بيانات سياق المصادقة
 // نوع بيانات سياق المصادقة
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -36,12 +38,13 @@ interface AuthContextType {
   registerWithPhone: (name: string, phone: string, password: string, country_code: string) => Promise<{ success: boolean; message: string }>;
   logoutUser: () => Promise<void>;
   verifyOTPWithEmail: (otp: string, email: string) => Promise<{ success: boolean; message: string; token?: string }>;
-  verifyOTPWithPhone: (otp: string, phone: string) => Promise<{ success: boolean; message: string; token?: string }>;
+  // ✅ تحديث هذه الدالة لتقبل 3 معاملات
+  verifyOTPWithPhone: (otp: string, phone: string, country_code: string) => Promise<{ success: boolean; message: string; token?: string }>;
   resendOTPToEmail: (email: string) => Promise<{ success: boolean; message: string }>;
-  resendOTPToPhone: (phone: string) => Promise<{ success: boolean; message: string }>;
+  // ✅ تحديث هذه الدالة لتقبل 2 معاملات
+  resendOTPToPhone: (phone: string, country_code: string) => Promise<{ success: boolean; message: string }>;
   updateUserData: () => Promise<void>;
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
@@ -134,9 +137,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ✅ إعادة تحميل السلة
         await refetchCart();
         
-        return { success: true, message: result.message };
+         return { success: true, message: result.message || "تم تسجيل الدخول بنجاح" };
       } else {
-        return { success: false, message: result.message };
+        return { success: false, message: result.message || "فشل تسجيل الدخول. يرجى التحقق من بياناتك" };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -160,9 +163,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ✅ إعادة تحميل السلة
         await refetchCart();
         
-        return { success: true, message: result.message };
+        return { success: true, message: result.message || "تم تسجيل الدخول بنجاح" };
       } else {
-        return { success: false, message: result.message };
+        return { success: false,  message: result.message || "فشل تسجيل الدخول. يرجى التحقق من بياناتك"  };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -214,7 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // التحقق من OTP للبريد الإلكتروني
   const handleVerifyOTPWithEmail = useCallback(async (otp: string, email: string): Promise<{ success: boolean; message: string; token?: string }> => {
     try {
-      const response = await fetch("https://dukanah.admin.t-carts.com/api/auth/verify-otp", {
+      const response = await fetch("https://admin.souqkaber.com/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -249,43 +252,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [clearGuestModeAndToken, refetchCart]);
 
-  // التحقق من OTP للهاتف
-  const handleVerifyOTPWithPhone = useCallback(async (otp: string, phone: string): Promise<{ success: boolean; message: string; token?: string }> => {
-    try {
-      const response = await fetch("https://dukanah.admin.t-carts.com/api/auth/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ otp, phone }),
-      });
+ // في ملف AuthContext، غيّر هذه الدالة:
+const handleVerifyOTPWithPhone = useCallback(async (
+  otp: string, 
+  phone: string,
+  country_code: string  // ✅ أضف هذا المعامل الثالث
+): Promise<{ success: boolean; message: string; token?: string }> => {
+  try {
+    const response = await fetch("https://admin.souqkaber.com/api/auth/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // ✅ أرسل phone و country_code بشكل منفصل في الـ body
+      body: JSON.stringify({ 
+        otp, 
+        phone,
+        country_code 
+      }),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (result.result && result.errNum === 200) {
-        if (result.data?.token) {
-          saveToken(result.data.token);
-        }
-        if (result.data?.user) {
-          saveUserData({ user: result.data.user });
-          setUser(result.data.user);
-          setIsAuthenticated(true);
-          
-          // ✅ حذف guest_token ومسح وضع الضيف
-          clearGuestModeAndToken();
-          
-          // ✅ إعادة تحميل السلة
-          await refetchCart();
-        }
-        return { success: true, message: result.message, token: result.data?.token };
-      } else {
-        return { success: false, message: result.message || "رمز التحقق غير صحيح" };
+    if (result.result && result.errNum === 200) {
+      if (result.data?.token) {
+        saveToken(result.data.token);
       }
-    } catch (error) {
-      console.error('OTP verification error:', error);
-      return { success: false, message: 'حدث خطأ أثناء التحقق' };
+      if (result.data?.user) {
+        saveUserData({ user: result.data.user });
+        setUser(result.data.user);
+        setIsAuthenticated(true);
+        
+        clearGuestModeAndToken();
+        await refetchCart();
+      }
+      return { success: true, message: result.message, token: result.data?.token };
+    } else {
+      return { success: false, message: result.message || "رمز التحقق غير صحيح" };
     }
-  }, [clearGuestModeAndToken, refetchCart]);
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    return { success: false, message: 'حدث خطأ أثناء التحقق' };
+  }
+}, [clearGuestModeAndToken, refetchCart]);
 
   // إعادة إرسال OTP للبريد الإلكتروني
   const handleResendOTPToEmail = useCallback(async (email: string): Promise<{ success: boolean; message: string }> => {
@@ -303,29 +312,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // إعادة إرسال OTP للهاتف
-  const handleResendOTPToPhone = useCallback(async (phone: string): Promise<{ success: boolean; message: string }> => {
-    try {
-      const response = await fetch("https://dukanah.admin.t-carts.com/api/auth/resend-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone }),
-      });
+  // أيضاً غيّر هذه الدالة لتقبل country_code
+const handleResendOTPToPhone = useCallback(async (
+  phone: string,
+  country_code: string  // ✅ أضف هذا المعامل
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await fetch("https://admin.souqkaber.com/api/auth/resend-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // ✅ أرسل phone و country_code بشكل منفصل
+      body: JSON.stringify({ phone, country_code }),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (result.result && result.errNum === 200) {
-        return { success: true, message: result.message || "تم إرسال رمز جديد" };
-      } else {
-        return { success: false, message: result.message || "فشل إعادة إرسال الرمز" };
-      }
-    } catch (error) {
-      console.error('Resend OTP error:', error);
-      return { success: false, message: 'حدث خطأ أثناء إعادة الإرسال' };
+    if (result.result && result.errNum === 200) {
+      return { success: true, message: result.message || "تم إرسال رمز جديد" };
+    } else {
+      return { success: false, message: result.message || "فشل إعادة إرسال الرمز" };
     }
-  }, []);
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    return { success: false, message: 'حدث خطأ أثناء إعادة الإرسال' };
+  }
+}, []);
 
   // تسجيل الخروج
   const handleLogout = useCallback(async () => {
@@ -350,6 +363,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logoutUser: handleLogout,
     verifyOTPWithEmail: handleVerifyOTPWithEmail,
     verifyOTPWithPhone: handleVerifyOTPWithPhone,
+    
     resendOTPToEmail: handleResendOTPToEmail,
     resendOTPToPhone: handleResendOTPToPhone,
     updateUserData,

@@ -1,4 +1,4 @@
-const API_URL = "https://dukanah.admin.t-carts.com/api";
+const API_URL = "https://admin.souqkaber.com/api";
 
 // ========== واجهات (Interfaces) السلايدر ==========
 interface SliderResponse {
@@ -80,8 +80,8 @@ export async function getCategories(): Promise<CategoryData[]> {
 
     const result: CategoryResponse = await response.json();
     
-    if (result.result && result.errNum === 200) {
-      return result.data.categories;
+    if (result.result && result.errNum === 200 && result.data?.categories) {
+      return Array.isArray(result.data.categories) ? result.data.categories : [];
     } else {
       throw new Error(result.message || 'Failed to fetch categories');
     }
@@ -142,6 +142,23 @@ export interface ProductData {
   images: string[];
 }
 
+// ========== واجهات (Interfaces) الأقسام ==========
+interface SectionResponse {
+  result: boolean;
+  errNum: number;
+  message: string;
+  data: {
+    sections: SectionData[];
+  };
+}
+
+interface SectionData {
+  id: number;
+  name: string;
+  is_active: boolean;
+  products: ProductData[];
+}
+
 export async function getNewProducts(page: number = 1, perPage: number = 20): Promise<ProductData[]> {
   try {
     const response = await fetch(`${API_URL}/products/new-products?page=${page}&per_page=${perPage}`, {
@@ -165,6 +182,41 @@ export async function getNewProducts(page: number = 1, perPage: number = 20): Pr
     }
   } catch (error) {
     console.error('Error fetching new products:', error);
+    return [];
+  }
+}
+
+// ========== دالة جلب منتجات الخصومات ==========
+export async function getOffersProducts(page: number = 1, perPage: number = 20): Promise<ProductData[]> {
+  try {
+    const response = await fetch(`${API_URL}/sections?page=${page}&per_page=${perPage}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result: SectionResponse = await response.json();
+    
+    if (result.result && result.errNum === 200 && result.data?.sections) {
+      // ابحث عن قسم "أقوي الخصومات"
+      const discountsSection = result.data.sections.find(
+        (section: SectionData) => section.name === "اقوى الخصومات" || section.name === "أقوي الخصومات"
+      );
+      
+      // إذا وجد القسم أرجع منتجاته، وإلا ارجع منتجات أول قسم
+      const targetSection = discountsSection || result.data.sections[0];
+      return targetSection?.products || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error fetching offers products:', error);
     return [];
   }
 }
@@ -250,6 +302,7 @@ export interface ProductFilters {
   price_range?: [number, number];
   brands?: number[];
   sizes?: string[];
+   attribute_values?: number[]; 
   colors?: string[];
   categories?: number[];
   page?: number;
@@ -293,17 +346,16 @@ function buildFiltersQueryString(filters: ProductFilters): string {
     queryParts.push(`brands=[${filters.brands.join(',')}]`);
   }
   
-  if (filters.sizes && filters.sizes.length > 0) {
-    const formattedSizes = filters.sizes.map(s => `"${s}"`).join(',');
-    queryParts.push(`sizes=[${formattedSizes}]`);
+  // ✅ تغيير من sizes إلى attribute_values
+  if (filters.attribute_values && filters.attribute_values.length > 0) {
+    queryParts.push(`attribute_values=[${filters.attribute_values.join(',')}]`);
   }
   
   if (filters.colors && filters.colors.length > 0) {
-   const formattedColors = filters.colors
-  .map(c => `"${encodeURIComponent(c)}"`)
-  .join(',');
-
-queryParts.push(`colors=[${formattedColors}]`);
+    const formattedColors = filters.colors
+      .map(c => `"${encodeURIComponent(c)}"`)
+      .join(',');
+    queryParts.push(`colors=[${formattedColors}]`);
   }
   
   if (filters.categories && filters.categories.length > 0) {
@@ -459,8 +511,8 @@ export async function getAttributes(): Promise<Attribute[]> {
 
     const result: AttributesResponse = await response.json();
     
-    if (result.result && result.errNum === 200) {
-      return result.data.attributes;
+    if (result.result && result.errNum === 200 && result.data?.attributes) {
+      return Array.isArray(result.data.attributes) ? result.data.attributes : [];
     } else {
       throw new Error(result.message || 'Failed to fetch attributes');
     }
@@ -471,32 +523,97 @@ export async function getAttributes(): Promise<Attribute[]> {
 }
 
 export async function getColors(): Promise<{ id: number; name: string; code: string }[]> {
-  const attributes = await getAttributes();
-  const colorAttribute = attributes.find(attr => attr.slug === 'color');
-  
-  if (colorAttribute && colorAttribute.values) {
-    return colorAttribute.values.map(value => ({
-      id: value.id,
-      name: value.value,
-      code: value.meta?.color || '#000000'
-    }));
+  try {
+    const attributes = await getAttributes();
+    const colorAttribute = attributes.find(attr => attr.slug === 'color');
+    
+    if (colorAttribute && colorAttribute.values && Array.isArray(colorAttribute.values)) {
+      return colorAttribute.values.map(value => ({
+        id: value.id,
+        name: value.value === "-" ? `لون ${value.id}` : value.value,
+        code: value.meta?.color || '#000000'
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error in getColors:', error);
+    return [];
   }
-  
-  return [];
 }
 
-export async function getSizes(): Promise<{ id: number; value: string }[]> {
-  const attributes = await getAttributes();
-  const sizeAttribute = attributes.find(attr => attr.slug === 'size');
-  
-  if (sizeAttribute && sizeAttribute.values) {
-    return sizeAttribute.values.map(value => ({
-      id: value.id,
-      value: value.value
-    }));
+// ========== دالة جديدة لجلب الرام (RAM) ==========
+export async function getRam(): Promise<{ id: number; value: string }[]> {
+  try {
+    const attributes = await getAttributes();
+    const ramAttribute = attributes.find(attr => attr.slug === 'ram');
+    
+    if (ramAttribute && ramAttribute.values && Array.isArray(ramAttribute.values)) {
+      return ramAttribute.values.map(value => ({
+        id: value.id,
+        value: value.value
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error in getRam:', error);
+    return [];
   }
-  
-  return [];
+}
+
+// ========== دالة جديدة لجلب الهارد ديسك (Hard Disk) ==========
+export async function getHardDisk(): Promise<{ id: number; value: string }[]> {
+  try {
+    const attributes = await getAttributes();
+    const hardDiskAttribute = attributes.find(attr => attr.slug === 'hard-disk');
+    
+    if (hardDiskAttribute && hardDiskAttribute.values && Array.isArray(hardDiskAttribute.values)) {
+      return hardDiskAttribute.values.map(value => ({
+        id: value.id,
+        value: value.value
+      }));
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error in getHardDisk:', error);
+    return [];
+  }
+}
+
+// ========== دالة getSizes المحدثة ==========
+// ============================================================================
+// دالة getSizes - تجمع RAM و Hard Disk مع IDs
+// ============================================================================
+
+export async function getSizes(): Promise<{ id: number; value: string; type: 'ram' | 'hard-disk' }[]> {
+  try {
+    const [ram, hardDisk] = await Promise.all([getRam(), getHardDisk()]);
+    
+    const sizes: { id: number; value: string; type: 'ram' | 'hard-disk' }[] = [];
+    
+    ram.forEach(item => {
+      sizes.push({ 
+        id: item.id,      // ✅ ID من الـ API (مثل 18, 19, 20)
+        value: item.value, 
+        type: 'ram' 
+      });
+    });
+    
+    hardDisk.forEach(item => {
+      sizes.push({ 
+        id: item.id,      // ✅ ID من الـ API (مثل 21, 22, 23)
+        value: item.value, 
+        type: 'hard-disk' 
+      });
+    });
+    
+    return sizes;
+  } catch (error) {
+    console.error('Error in getSizes:', error);
+    return [];
+  }
 }
 
 export function encodeColor(colorCode: string): string {
@@ -524,7 +641,8 @@ export async function getBrands(): Promise<any[]> {
     const result: any = await response.json();
     
     if (result.result && result.errNum === 200) {
-      return result.data.brands || [];
+      const brands = result.data?.brands || [];
+      return Array.isArray(brands) ? brands : [];
     } else {
       throw new Error(result.message || 'Failed to fetch brands');
     }
@@ -602,7 +720,8 @@ export function extractSizesFromProduct(product: ProductData): string[] {
     product.variants.forEach((variant: any) => {
       if (variant.attributes) {
         variant.attributes.forEach((attr: any) => {
-          if (attr.attribute_type?.name === 'مقاس') {
+          // البحث عن الذاكرة (RAM) أو هارد ديسك
+          if (attr.attribute_type?.name === 'الذاكرة' || attr.attribute_type?.name === 'هارد ديسك') {
             const exists = sizes.includes(attr.value);
             if (!exists) {
               sizes.push(attr.value);
@@ -900,13 +1019,20 @@ export async function loginWithPhone(data: LoginWithPhoneRequest): Promise<AuthR
       },
       body: JSON.stringify(data),
     });
+    const results: AuthResponse = await response.json();
+    
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        return {
+        result: results.result || false,
+        errNum: results.errNum || response.status,
+        message: results.message || `فشل في تسجيل الدخول (${response.status})`,
+        data: results.data || null,
+      };
     }
 
-    const result: AuthResponse = await response.json();
-    return result;
+    // const result: AuthResponse = await response.json();
+    return results;
   } catch (error) {
     console.error('Error in loginWithPhone:', error);
     return {

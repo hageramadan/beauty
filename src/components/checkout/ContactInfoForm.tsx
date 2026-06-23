@@ -100,11 +100,11 @@ export default function ContactInfoForm({
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
       <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="text-[#EC221F]">👤</span>
+        <span className="text-[#23A6F0]">👤</span>
         معلومات الاتصال
       </h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-center">
         {/* حقل الاسم الكامل */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -116,7 +116,7 @@ export default function ContactInfoForm({
             onChange={handleNameChange}
             onBlur={handleNameBlur}
             placeholder="أدخل اسمك الكامل"
-            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition ${
+            className={`w-full px-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent transition ${
               nameError && isNameTouched
                 ? "border-red-500 focus:ring-red-500"
                 : "border-gray-200"
@@ -128,7 +128,10 @@ export default function ContactInfoForm({
         </div>
         
         {/* حقل رقم الجوال باستخدام PhoneInput المتطور */}
-        <div>
+        <div className="h-auto">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+             رقم الجوال <span className="text-red-500">*</span>
+          </label>
           <PhoneInput
             value={formData.phone || ""}
             onChange={handlePhoneChange}
@@ -151,7 +154,7 @@ export default function ContactInfoForm({
               onChange={handleEmailChange}
               onBlur={handleEmailBlur}
               placeholder="example@email.com"
-              className={`w-full pr-12 pl-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition ${
+              className={`w-full pr-12 pl-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent transition ${
                 emailError && isEmailTouched
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-200"

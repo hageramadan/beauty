@@ -80,7 +80,7 @@ export default function OrderTracker({
         className="w-full"
         dir="rtl"
       >
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 text-center">
+        <div className=" bg-blue-50  border border-red-200  rounded-[8px]  p-4 md:p-6 text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -104,7 +104,7 @@ export default function OrderTracker({
         className="w-full"
         dir="rtl"
       >
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 text-center">
+        <div className=" bg-blue-50  border border-red-200  rounded-[8px]  p-4 md:p-6 text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -189,7 +189,7 @@ export default function OrderTracker({
                         isCompleted
                           ? "border-[#2D93CA] bg-[#2D93CA]/10"
                           : isCurrent
-                          ? "border-[#EC221F]"
+                          ? "border-[#23A6F0]"
                           : "border-gray-300"
                       }
                     `}
@@ -209,7 +209,7 @@ export default function OrderTracker({
                     ) : (
                       <step.icon
                         className={`w-5 h-5 md:w-6 md:h-6 ${
-                          isCurrent ? "text-[#EC221F]" : "text-gray-400"
+                          isCurrent ? "text-[#23A6F0]" : "text-gray-400"
                         }`}
                       />
                     )}
@@ -229,7 +229,7 @@ export default function OrderTracker({
                   <motion.p
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-[10px] md:text-xs text-[#EC221F] font-medium mt-0.5"
+                    className="text-[10px] md:text-xs text-[#23A6F0] font-medium mt-0.5"
                   >
                     الحالية
                   </motion.p>

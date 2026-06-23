@@ -111,7 +111,7 @@ export default function CheckoutForm({
       <button
         onClick={handleSubmit}
         disabled={isSubmitting || !formData.deliveryMethod}
-        className={`w-full md:mb-4 text-white py-3 rounded-xl font-semibold text-lg transition ${
+        className={`w-full md:mb-4 text-white py-3  rounded-[8px]  font-semibold text-lg transition ${
           isSubmitting || !formData.deliveryMethod
             ? "bg-gray-400 cursor-not-allowed opacity-70"
             : "bg-[#000000] hover:bg-gray-800"

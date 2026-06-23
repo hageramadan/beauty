@@ -126,7 +126,7 @@ export default function AddAddress({
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
 
-  const API_URL = "https://dukanah.admin.t-carts.com/api";
+  const API_URL = "https://admin.souqkaber.com/api";
 
   // --- جلب المحافظات من الـ API ---
   useEffect(() => {

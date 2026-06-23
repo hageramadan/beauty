@@ -1,4 +1,3 @@
-// components/home/YouMayAlsoLike.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -6,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
-import { getMostSellingProducts, getNewProducts, ProductData, getAllProducts } from "@/services/api";
+import { getOffersProducts, ProductData } from "@/services/api";
 
 // ✅ تعريف واجهات الفاريانتات
 interface VariantAttribute {
@@ -87,7 +86,6 @@ const extractColorsFromVariants = (
 
 // ✅ تحويل البيانات من API إلى شكل المنتج المطلوب مع دعم الفاريانتات
 const transformProduct = (product: ProductData): Product => {
-  // معالجة الصور بشكل صحيح
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
@@ -106,7 +104,6 @@ const transformProduct = (product: ProductData): Product => {
       ? cleanImageUrl(product.images[1])
       : mainImage;
 
-  // حساب الخصم بشكل ديناميكي
   let discount: number | undefined;
   let originalPrice: number | undefined;
 
@@ -144,7 +141,7 @@ const transformProduct = (product: ProductData): Product => {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: (product.avg_rating || 0) >= 4.5,
+    isBestSeller: false,
     // ✅ إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,
@@ -152,17 +149,7 @@ const transformProduct = (product: ProductData): Product => {
   };
 };
 
-// دالة لخلط المنتجات عشوائياً
-const shuffleProducts = (products: Product[]): Product[] => {
-  const shuffled = [...products];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-export function YouMayAlsoLike() {
+export function BestDiscounts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(8);
@@ -172,11 +159,9 @@ export function YouMayAlsoLike() {
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
 
-  // استخدام useRef لمنع التحديثات المتكررة
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
-  // جلب المنتجات من API (منتجات عشوائية من الأكثر مبيعاً)
   const fetchProducts = useCallback(
     async (page: number, append: boolean = false) => {
       if (fetchingRef.current) return;
@@ -190,33 +175,7 @@ export function YouMayAlsoLike() {
           setIsLoadingMore(true);
         }
 
-        // جلب المنتجات من API (الأكثر مبيعاً أو الأحدث)
-        let productsData: ProductData[] = [];
-
-        try {
-          // محاولة جلب المنتجات الأكثر مبيعاً أولاً
-          productsData = await getMostSellingProducts(page, 12);
-
-          // إذا لم تكن هناك منتجات، جلب المنتجات الجديدة
-          if (productsData.length === 0) {
-            productsData = await getNewProducts(page, 12);
-          }
-
-          // إذا كان لا يزال لا توجد منتجات، جلب جميع المنتجات
-          if (productsData.length === 0) {
-            const { products: allProducts } = await getAllProducts({
-              page: 1,
-              per_page: 12,
-            });
-            productsData = allProducts;
-          }
-        } catch (err) {
-          console.error(
-            "Error fetching from most selling, trying new products:",
-            err
-          );
-          productsData = await getNewProducts(page, 12);
-        }
+        const productsData = await getOffersProducts(page, 12);
 
         if (!isMounted.current) return;
 
@@ -224,12 +183,7 @@ export function YouMayAlsoLike() {
           setHasMore(false);
         }
 
-        let transformedProducts = productsData.map(transformProduct);
-
-        // خلط المنتجات عشوائياً لظهور منتجات مختلفة في كل مرة
-        if (page === 1 && !append) {
-          transformedProducts = shuffleProducts(transformedProducts);
-        }
+        const transformedProducts = productsData.map(transformProduct);
 
         if (append) {
           setProducts((prev) => [...prev, ...transformedProducts]);
@@ -254,13 +208,12 @@ export function YouMayAlsoLike() {
     []
   );
 
-  // استخدام useEffect منفصل للتحميل الأولي
   useEffect(() => {
     isMounted.current = true;
 
     const timeoutId = setTimeout(() => {
       fetchProducts(1, false);
-    }, 100); // تأخير بسيط لتجنب التحميل المتزامن مع أحدث المنتجات
+    }, 0);
 
     return () => {
       isMounted.current = false;
@@ -278,21 +231,22 @@ export function YouMayAlsoLike() {
 
   const visibleProducts = products.slice(0, displayCount);
   const showLoadMoreButton =
-    hasMore && products.length >= displayCount && products.length < totalProducts;
+    hasMore &&
+    products.length >= displayCount &&
+    products.length < totalProducts;
 
-  // عرض السبينر الرئيسي أثناء التحميل الأولي
   if (isInitialLoading) {
     return (
-      <section className="py-6 md:py-12 bg-gray-50">
+      <section className="py-6 md:py-12 bg-white">
         <div className="container-custom">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#23A6F0] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2DA5F3] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
-                جاري تحميل المنتجات...
+                جاري تحميل أقوى الخصومات...
               </p>
             </div>
           </div>
@@ -301,16 +255,15 @@ export function YouMayAlsoLike() {
     );
   }
 
-  // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-6 md:py-12 bg-gray-50">
+      <section className="py-6 md:py-12 bg-white">
         <div className="container-custom">
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#23856D] text-white rounded-lg hover:bg-[#1a6b58] transition"
             >
               إعادة المحاولة
             </button>
@@ -321,19 +274,23 @@ export function YouMayAlsoLike() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-gray-50">
+    <section className="py-6 md:py-12 bg-white" id="discount">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
-            قد يعجبك أيضاً
-          </h2>
+          <div>
+            <h2
+              className="text-lg md:text-xl font-bold"
+              style={{ color: "#112B40" }}
+            >
+              أقوي الخصومات
+            </h2>
+          </div>
           <Link
             href="/products"
-            className="text-[#23A6F0] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
+            className="text-[#2D93CA] text-[14px] font-bold hover:underline transition-all duration-300"
           >
             عرض المزيد
-            <ChevronLeft className="w-4 h-4" />
           </Link>
         </div>
 
@@ -341,7 +298,7 @@ export function YouMayAlsoLike() {
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#2DA5F3] rounded-full animate-spin"></div>
               <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
             </div>
           </div>
@@ -352,12 +309,21 @@ export function YouMayAlsoLike() {
           {visibleProducts.map((product, index) => (
             <div
               key={product.id}
-              className="animate-in fade-in zoom-in duration-500 flex justify-center w-full"
+              className="animate-in fade-in zoom-in duration-500 flex justify-center w-full relative"
               style={{
                 animationFillMode: "both",
                 animationDelay: `${index * 100}ms`,
               }}
             >
+              {/* عرض نسبة الخصم الديناميكية من API - فقط إذا كان هناك خصم */}
+              {product.discount && product.discount > 0 && (
+                <div className="absolute top-3 right-3 z-20">
+                  <p className="text-[9px] sm:text-xs font-bold text-[#195073] bg-[#FFDB00] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+                    {product.discount}% OFF
+                  </p>
+                </div>
+              )}
+
               <ProductCard
                 id={product.id}
                 name={product.name}
@@ -370,7 +336,7 @@ export function YouMayAlsoLike() {
                 colors={product.colors}
                 rating={product.rating}
                 reviewsCount={product.reviewsCount}
-                isBestSeller={product.isBestSeller}
+                isBestSeller={false}
                 // ✅ تمرير معلومات الفاريانتات
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
@@ -388,8 +354,8 @@ export function YouMayAlsoLike() {
               className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: "transparent",
-                color: "#23A6F0",
-                border: "2px solid #23A6F0",
+                color: "#2DA5F3",
+                border: "2px solid #2DA5F3",
                 borderRadius: "8px",
               }}
             >
@@ -401,7 +367,7 @@ export function YouMayAlsoLike() {
         {/* No Products Message */}
         {products.length === 0 && !isInitialLoading && (
           <div className="text-center py-12">
-            <p className="text-gray-500">لا توجد منتجات حالياً</p>
+            <p className="text-gray-500">لا توجد خصومات حالياً</p>
           </div>
         )}
       </div>

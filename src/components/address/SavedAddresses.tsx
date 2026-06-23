@@ -94,7 +94,7 @@ export default function SavedAddresses({
 
   if (!addresses || addresses.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center" id="saved-addresses-container">
+      <div className="bg-white  rounded-[8px]  shadow-sm p-8 text-center" id="saved-addresses-container">
         <div className="text-gray-400 mb-3">
           <svg
             className="w-16 h-16 mx-auto"
@@ -132,7 +132,7 @@ export default function SavedAddresses({
 
         {/* ✅ عرض العناوين في الصفحة الحالية */}
         {currentAddresses.map((address) => (
-          <div key={address.id} className="rounded-xl p-2 bg-[#f5f5f5e1]">
+          <div key={address.id} className=" rounded-[8px]  p-2 bg-[#f5f5f5e1]">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
                 <div className="flex items-center">
@@ -152,7 +152,7 @@ export default function SavedAddresses({
                 </button>
                 <button
                   onClick={() => handleDeleteClick(address.id)}
-                  className="text-red-500 hover:text-red-700 transition p-2 hover:bg-red-50 rounded-full"
+                  className="text-red-500 hover:text-red-700 transition p-2 hover: bg-blue-50  rounded-full"
                   aria-label="حذف العنوان"
                 >
                   <FaRegTrashAlt />

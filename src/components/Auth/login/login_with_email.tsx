@@ -104,7 +104,7 @@ export default function LoginWithEmail() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="••••••••"
                   disabled={isLoading}
-                  className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 text-sm  py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                 />

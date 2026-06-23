@@ -62,7 +62,7 @@ const ReviewCard = ({ review }: { review: ReviewData }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white  rounded-[8px]  p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
       {/* معلومات المستخدم والتقييم */}
       <div className="flex items-center justify-between mb-4">
         <div className="gap-3">
@@ -176,7 +176,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
         <div className="container-custom">
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-12 h-12 border-4 border-[#23A6F0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-500">جاري تحميل التقييمات...</p>
             </div>
           </div>
@@ -202,15 +202,15 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           <div className="flex gap-3 items-center">
             {/* خيارات الترتيب */}
             <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#EC221F] focus:ring-offset-0">
+              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#23A6F0] focus:ring-offset-0">
                 <SelectValue placeholder="ترتيب حسب" />
               </SelectTrigger>
-              <SelectContent className="bg-white rounded-xl shadow-lg border-gray-100">
+              <SelectContent className="bg-white  rounded-[8px]  shadow-lg border-gray-100">
                 {sortOptions.map((option) => (
                   <SelectItem
                     key={option.value}
                     value={option.value}
-                    className="cursor-pointer hover:bg-red-50 hover:text-[#EC221F] focus:bg-red-50 focus:text-[#EC221F]"
+                    className="cursor-pointer hover: bg-blue-50  hover:text-[#23A6F0] focus: bg-blue-50  focus:text-[#23A6F0]"
                   >
                     <div className="flex items-center gap-2">
                       <span>{option.label}</span>
@@ -232,9 +232,9 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           {/* قائمة التقييمات */}
           <div className="lg:col-span-2">
             {reviews.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <div className="text-center py-12 bg-gray-50  rounded-[8px] ">
                 <p className="text-gray-500">لا توجد تقييمات لهذا المنتج بعد</p>
-                <button className="mt-4 bg-[#EC221F] text-white px-6 py-2 rounded-full text-sm">
+                <button className="mt-4 bg-black text-white px-6 py-2 rounded-full text-sm">
                   كن أول من يقيم المنتج
                 </button>
               </div>
@@ -263,7 +263,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                         onClick={() => handlePageChange(i + 1)}
                         className={`w-8 h-8 rounded-[8px]  transition ${
                           currentPage === i + 1
-                            ? "bg-[#EC221F] text-white"
+                            ? "bg-black text-white"
                             : "border border-gray-200 hover:bg-gray-50"
                         }`}
                       >

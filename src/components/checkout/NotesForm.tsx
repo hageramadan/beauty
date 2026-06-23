@@ -15,7 +15,7 @@ export default function NotesForm({ notes, onNotesChange }: NotesFormProps) {
         onChange={(e) => onNotesChange(e.target.value)}
         rows={3}
         placeholder="قم بإدخال ملاحظاتك الإضافية.."
-        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent transition resize-none"
+        className="w-full px-4 py-3 border border-gray-200  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent transition resize-none"
       />
     </div>
   );

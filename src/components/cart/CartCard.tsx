@@ -31,7 +31,7 @@ const getColorCode = (colorName: string): string => {
     'ازرق فاتح': '#1e91eb',
     'ازرق داكن': '#252B42',
     'بيج': '#bdae8c',
-    'احمر': '#EC221F',
+    'احمر': '#23A6F0',
     'زيتوني': '#a4bfa8',
     'رمادي': '#454545',
     'بينك': '#d959c6',
@@ -86,7 +86,7 @@ export function CartItemCard({
     toast((t) => (
       <div className="flex flex-col gap-3 p-3" dir="rtl">
         <p className="text-gray-800 text-sm font-medium">
-          هل أنت متأكد من حذف <span className="font-bold text-red-500">{name}</span> من سلة التسوق؟
+          هل أنت متأكد من حذف <span className="font-bold text-blue-500">{name}</span> من سلة التسوق؟
         </p>
         <div className="flex justify-center gap-3">
           <button
@@ -94,7 +94,7 @@ export function CartItemCard({
               toast.dismiss(t.id);
               onRemove(id);
             }}
-            className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
+            className="px-4 py-1.5  bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
           >
             نعم، احذف
           </button>
@@ -154,7 +154,7 @@ export function CartItemCard({
       </div>
 
       {/* تنسيق الموبايل */}
-      <div className="md:hidden bg-white rounded-xl border border-gray-100 p-2 hover:shadow-md transition-shadow duration-300">
+      <div className="md:hidden bg-white  rounded-[8px]  border border-gray-100 p-2 hover:shadow-md transition-shadow duration-300">
         <div className="flex gap-2">
           <ProductImageMobile id={parseInt(productId)} image={image} name={name} />
           <div className="flex-1">
@@ -201,7 +201,7 @@ const ProductImageLarge = ({ id, image, name }: { id: number; image: string; nam
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
@@ -238,7 +238,7 @@ const ProductDetailsLarge = ({
 }) => (
   <div>
     <Link href={`/product/${id}`}>
-      <h1 className="text-lg font-semibold text-gray-800 hover:text-[#EC221F] transition">
+      <h1 className="text-lg font-semibold text-gray-800 hover:text-[#23A6F0] transition">
         {name}
       </h1>
     </Link>
@@ -291,7 +291,7 @@ const ProductPriceLarge = ({
     </div>
     {/* السعر الإجمالي (كبير وواضح) */}
     <div className="flex items-center gap-1">
-      <span className="text-xl font-bold text-[#EC221F]">
+      <span className="text-sm lg:text-lg font-bold ">
         {totalPrice.toLocaleString()} EGP
       </span>
       <span className="text-xs text-gray-400">(الإجمالي)</span>
@@ -312,7 +312,7 @@ const QuantityControlLarge = ({
     <button
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
-      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#EC221F] transition rounded-full hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#23A6F0] transition rounded-full hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <FaMinus className="w-3 h-3" />
     </button>
@@ -321,7 +321,7 @@ const QuantityControlLarge = ({
     </span>
     <button
       onClick={() => onUpdateQuantity(id, quantity + 1)}
-      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#EC221F] transition rounded-full hover:bg-white"
+      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#23A6F0] transition rounded-full hover:bg-white"
     >
       <FaPlus className="w-3 h-3" />
     </button>
@@ -345,8 +345,8 @@ const ActionButtonsLarge = ({
       disabled={isMutating}
       className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
         isSaved 
-          ? "text-[#EC221F] hover:text-[#c41f1c]" 
-          : "text-[#180100] hover:text-[#EC221F]"
+          ? "text-[#c41f1c] hover:text-[#c41f1c]" 
+          : "text-[#180100] hover:text-[#c41f1c]"
       }`}
     >
       <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
@@ -369,7 +369,7 @@ const ProductImageMobile = ({ id, image, name }: { id: number; image: string; na
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
@@ -406,7 +406,7 @@ const ProductDetailsMobile = ({
 }) => (
   <div className="flex-1">
     <Link href={`/product/${id}`}>
-      <h1 className="text-sm font-semibold text-gray-800 hover:text-[#EC221F] transition line-clamp-1">
+      <h1 className="text-sm font-semibold text-gray-800 hover:text-[#23A6F0] transition line-clamp-1">
         {name}
       </h1>
     </Link>
@@ -441,7 +441,7 @@ const ProductPriceMobile = ({
 }) => (
   <div className="flex flex-col">
     {/* السعر الإجمالي (كبير) */}
-    <div className="text-sm font-bold text-[#EC221F]">
+    <div className="text-sm font-bold text-[#23A6F0]">
       {totalPrice.toLocaleString()} EGP
     </div>
     {/* سعر الوحدة (صغير) */}
@@ -472,7 +472,7 @@ const QuantityControlMobile = ({
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
       className={`w-6 h-6 flex items-center justify-center rounded-full transition ${
-        quantity <= 1 ? "text-gray-300" : "text-gray-600 hover:text-[#EC221F]"
+        quantity <= 1 ? "text-gray-300" : "text-gray-600 hover:text-[#23A6F0]"
       }`}
     >
       <FaMinus className="w-2 h-2" />
@@ -482,7 +482,7 @@ const QuantityControlMobile = ({
     </span>
     <button
       onClick={() => onUpdateQuantity(id, quantity + 1)}
-      className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-[#EC221F] transition rounded-full"
+      className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-[#23A6F0] transition rounded-full"
     >
       <FaPlus className="w-2 h-2" />
     </button>
@@ -506,8 +506,8 @@ const ActionButtonsMobile = ({
       disabled={isMutating}
       className={`flex items-center gap-0.5 text-xs transition disabled:opacity-50 ${
         isSaved 
-          ? "text-[#EC221F]" 
-          : "text-gray-400 hover:text-[#EC221F]"
+          ? "text-[#23A6F0]" 
+          : "text-gray-400 hover:text-[#23A6F0]"
       }`}
     >
       <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""}`} />

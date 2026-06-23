@@ -97,45 +97,46 @@ export default function RegisterWithPhone() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!validateForm()) {
-      const firstError = Object.values(errors)[0];
-      if (firstError) {
-        toast.error(firstError);
-      }
-      return;
+  if (!validateForm()) {
+    const firstError = Object.values(errors)[0];
+    if (firstError) {
+      toast.error(firstError);
     }
+    return;
+  }
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    // استخدام API حقيقي عبر الـ Context
-    const result = await registerWithPhone(
-      formData.name,
-      formData.phoneNumber,
-      formData.password,
-      formData.countryCode
-    );
+  // استخدام API حقيقي عبر الـ Context
+  const result = await registerWithPhone(
+    formData.name,
+    formData.phoneNumber,
+    formData.password,
+    formData.countryCode
+  );
 
-    if (result.success) {
-      toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ✅", {
-        duration: 4000,
-        position: "top-center",
-      });
+  if (result.success) {
+    toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ✅", {
+      duration: 4000,
+      position: "top-center",
+    });
 
-      // التوجيه إلى صفحة التحقق أو تسجيل الدخول
-      setTimeout(() => {
-        router.push("/auth/login?registered=true");
-      }, 2000);
-    } else {
-      toast.error(result.message || "حدث خطأ أثناء إنشاء الحساب", {
-        duration: 4000,
-        position: "top-center",
-      });
-    }
+    // ✅ التوجيه مباشرة إلى صفحة OTP للهاتف
+    const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
+    setTimeout(() => {
+      router.push(`/auth/verify-otp/phone?phone=${encodeURIComponent(fullPhone)}&isRegister=true`);
+    }, 1500);
+  } else {
+    toast.error(result.message || "حدث خطأ أثناء إنشاء الحساب", {
+      duration: 4000,
+      position: "top-center",
+    });
+  }
 
-    setIsSubmitting(false);
-  };
+  setIsSubmitting(false);
+};
 
   const clearFieldError = (field: keyof typeof errors) => {
     if (errors[field]) {
@@ -159,7 +160,7 @@ export default function RegisterWithPhone() {
         }}
       /> */}
 
-      <div className="page-with-padding bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center min-h-screen">
+      <div className=" bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-md mx-auto">
             {/* بطاقة تسجيل حساب جديد */}
@@ -191,7 +192,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="أدخل اسمك"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2 pr-10 border text-sm rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.name ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -203,7 +204,7 @@ export default function RegisterWithPhone() {
                 </div>
 
                 {/* البريد الإلكتروني (اختياري) */}
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">
                     البريد الإلكتروني <span className="text-gray-400 text-xs">(اختياري)</span>
                   </label>
@@ -227,7 +228,7 @@ export default function RegisterWithPhone() {
                   {errors.email && (
                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                   )}
-                </div>
+                </div> */}
 
                 {/* رقم الهاتف */}
                 <div className="mb-6">
@@ -261,7 +262,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="•••••••• (6 أحرف على الأقل)"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 text-sm  py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.password ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -298,7 +299,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="••••••••"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2 text-sm  pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.confirmPassword ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -323,7 +324,7 @@ export default function RegisterWithPhone() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-black text-white rounded-[8px] hover:bg-gray-800 transition font-medium ${
+                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#2DA5F3] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
                     isLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -344,7 +345,7 @@ export default function RegisterWithPhone() {
                     <button
                       type="button"
                       onClick={() => router.push("/auth/login")}
-                      className="text-[#ff3c27] font-medium hover:underline"
+                      className="text-[#23A6F0] font-medium hover:underline"
                     >
                       تسجيل الدخول
                     </button>

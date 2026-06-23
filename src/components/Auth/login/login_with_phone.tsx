@@ -18,6 +18,7 @@ export default function LoginWithPhone() {
     phoneNumber: "",
     countryCode: "+20",
     password: "",
+    email: "",
   });
 
   const [errors, setErrors] = useState<{
@@ -59,14 +60,9 @@ export default function LoginWithPhone() {
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    // التحقق من رقم الهاتف
-    const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
-    const phoneRegex = /^\+?[0-9]{10,15}$/;
-    
+    // ✅ التحقق من رقم الهاتف - فقط أن الحقل ليس فارغاً (بدون التحقق من الصيغة)
     if (!formData.phoneNumber) {
       newErrors.phone = "رقم الهاتف مطلوب";
-    } else if (!phoneRegex.test(fullPhone.replace(/\s/g, ""))) {
-      newErrors.phone = "رقم الهاتف غير صحيح (10-15 رقم)";
     }
 
     // التحقق من كلمة المرور
@@ -97,19 +93,21 @@ export default function LoginWithPhone() {
     const result = await loginWithPhone(
       formData.phoneNumber,
       formData.password,
-      formData.countryCode
+      formData.countryCode,
+      
+      
     );
 
     if (result.success) {
-      toast.success("تم تسجيل الدخول بنجاح! جاري توجيهك... 🎉", {
-        duration: 2000,
+      toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ✅", {
+        duration: 3000,
         position: "top-center",
       });
       
-      // التوجيه إلى الصفحة الرئيسية
+      // ✅ التوجيه إلى صفحة OTP بعد تسجيل الدخول
+      const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
       setTimeout(() => {
-        router.push("/");
-        router.refresh(); // تحديث الصفحة لتحديث حالة المستخدم
+        router.push(`/auth/verify-otp/phone?phone=${encodeURIComponent(fullPhone)}&isLogin=true`);
       }, 1500);
     } else {
       toast.error(result.message || "فشل تسجيل الدخول. يرجى التحقق من بياناتك", {
@@ -143,7 +141,7 @@ export default function LoginWithPhone() {
         }}
       /> */}
       
-      <div className="page-with-padding bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center min-h-screen">
+      <div className="bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-md mx-auto">
             {/* بطاقة تسجيل الدخول */}
@@ -164,7 +162,7 @@ export default function LoginWithPhone() {
                     value={`${formData.countryCode}${formData.phoneNumber}`}
                     onChange={handlePhoneChange}
                     required={true}
-                   
+                    
                   />
                   {errors.phone && (
                     <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
@@ -187,7 +185,7 @@ export default function LoginWithPhone() {
                       }}
                       placeholder="••••••••"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full text-sm px-4 py-2 pr-10 pl-10 border rounded-[8px]  focus:border-black outline-none transition-colors ${
                         errors.password ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -207,21 +205,21 @@ export default function LoginWithPhone() {
                 </div>
 
                 {/* رابط نسيت كلمة المرور */}
-                <div className="text-left mb-6">
+                {/* <div className="text-left mb-6">
                   <button
                     type="button"
                     onClick={() => router.push("/auth/forgot-password")}
-                    className="text-sm text-[#ff3c27] hover:underline"
+                    className="text-sm text-[#23A6F0] hover:underline"
                   >
                     نسيت كلمة المرور؟
                   </button>
-                </div>
+                </div> */}
 
                 {/* زر تسجيل الدخول */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-black text-white rounded-[8px] hover:bg-gray-800 transition font-medium ${
+                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#2DA5F3] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
                     isLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -242,7 +240,7 @@ export default function LoginWithPhone() {
                     <button
                       type="button"
                       onClick={() => router.push("/auth/register/phone")}
-                      className="text-[#ff3c27] font-medium hover:underline"
+                      className="text-[#23A6F0] font-medium hover:underline"
                     >
                       إنشاء حساب جديد
                     </button>

@@ -47,7 +47,7 @@ export default function SuccessPopup({
             </div>
             <h3 className="text-xl font-bold text-gray-800">تم إتمام طلبك بنجاح</h3>
             <p className="text-gray-500 text-sm mt-2">
-              شكراً لتسوقك مع <span className="font-semibold text-[#EC221F]">متجرك</span>، 
+              شكراً لتسوقك مع <span className="font-semibold text-[#23A6F0]">متجرك</span>، 
               طلبك قيد التحضير الآن.
             </p>
           </div>
@@ -55,7 +55,7 @@ export default function SuccessPopup({
           {/* محتوى البوب اب */}
           <div className="p-6 space-y-4">
             {/* رقم الطلب */}
-            <div className="bg-gray-50 rounded-xl p-4 text-center">
+            <div className="bg-gray-50  rounded-[8px]  p-4 text-center">
               <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
               <p className="text-2xl font-bold text-gray-800">{orderNumber}</p>
             </div>
@@ -70,7 +70,7 @@ export default function SuccessPopup({
                 onClose();
                 router.push("/");
               }}
-              className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-medium hover:bg-[#2c2c2c] transition shadow-sm"
+              className="flex-1 bg-[#000000] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2c2c2c] transition shadow-sm"
             >
               العودة للرئيسية
             </button>
@@ -79,7 +79,7 @@ export default function SuccessPopup({
                 onClose();
                 router.push("/account/orders");
               }}
-              className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition"
+              className="flex-1 border border-gray-300 text-gray-700 py-3  rounded-[8px]  font-medium hover:bg-gray-50 transition"
             >
               طلباتي
             </button>

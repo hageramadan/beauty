@@ -6,21 +6,19 @@ import { CategoriesSection } from "@/components/home/CategoriesSection";
 import { Hero } from "@/components/home/HeroCover";
 import { LatestProducts, } from "@/components/home/LatestProducts";
 
+import { BestDiscounts } from "@/components/home/BestDiscounts";
 
 
 
 export default function Home() {
   return (
    <div>
-    <Hero />
-    <CategoriesSection />
-   <LatestProducts />
-   {/* <AdsHome1/> */}
-   <AdsSection variant="light" /> 
-   <BestProducts/>
-   {/* <AdsHome/>    */}
-   <AdsSection variant="dark" /> 
-   <BestProducts/>
+     <Hero />
+      <CategoriesSection />
+      <BestProducts />
+      <LatestProducts />
+      <AdsHome />
+      <BestDiscounts/>
    </div>
   );
 }

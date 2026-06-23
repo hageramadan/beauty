@@ -1,195 +1,230 @@
-"use client";
-
+'use client'
 import Image from "next/image";
 import Link from "next/link";
-import { PiLineVerticalThin } from "react-icons/pi";
-import { ChevronDown } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { MdEmail, MdPhone } from "react-icons/md";
+import { useState, useEffect } from "react";
 import { getCategories } from "@/services/api";
 
+interface Category {
+  id: number;
+  name: string;
+  href: string;
+}
+
 export function Footer() {
-  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
-  const [footerCategories, setFooterCategories] = useState<
-    { id: number; name: string }[]
-  >([]);
-
-  const categoriesRef = useRef<HTMLDivElement>(null);
-
-  // Fetch categories from API
+  // جلب الفئات من API
   useEffect(() => {
     const fetchCategories = async () => {
-      const categories = await getCategories();
-
-      setFooterCategories(
-        categories.map((category) => ({
-          id: category.id,
-          name: category.name,
-        }))
-      );
+      try {
+        setLoadingCategories(true);
+        const categoriesData = await getCategories();
+        
+        const transformedCategories: Category[] = categoriesData.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          href: `/products?categories=[${cat.id}]`
+        }));
+        
+        setCategories(transformedCategories);
+      } catch (error) {
+        console.error('Error fetching categories for footer:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
     };
-
+    
     fetchCategories();
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        showCategoriesDropdown &&
-        categoriesRef.current &&
-        !categoriesRef.current.contains(event.target as Node)
-      ) {
-        setShowCategoriesDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showCategoriesDropdown]);
-
-  // Close on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showCategoriesDropdown) {
-        setShowCategoriesDropdown(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [showCategoriesDropdown]);
+  // ✅ دالة للتمرير السلس إلى الأقسام
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const targetElement = document.getElementById(targetId);
+    
+    if (targetElement) {
+      // ✅ حساب موضع العنصر مع مراعاة الـ Navbar الثابت
+      const navbarHeight = document.querySelector('header')?.getBoundingClientRect().height || 80;
+      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+      
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   return (
-    <footer className="border-t mt-auto bg-[#141718] text-white pt-6 md:pt-10">
-      <div className="container mx-auto px-4 py-4 md:py-8">
-        {/* القسم العلوي */}
-        <div className="flex flex-wrap md:flex-row flex-col items-center justify-center md:justify-between gap-8 mb-8">
-          
-          {/* اللوجو */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <h1 className="text-[#FFFFFF] text-xl md:text-2xl font-bold">
-                LoGo
-              </h1>
-              <PiLineVerticalThin className="w-6 h-8 text-[#E8ECEF]" />
-              <p className="text-white/70 text-sm leading-relaxed">
-                متجرك المثالي هنا كل ما تريد
-              </p>
-            </div>
+    <footer className=" border-t mt-auto bg-[#112B40] text-white pt-5">
+      <div className="container mx-auto px-4 py-12 bg-[#112B40]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* About */}
+          <div>
+            <h3 className="text-[#23A6F0] text-[84px] font-bold mb-4">
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={2000}
+                height={800}
+                className="object-contain w-48 h-48"
+              />
+            </h3>
           </div>
 
-          {/* روابط */}
-          <div className="flex md:flex-row flex-col justify-center gap-7 items-center text-[14px]">
-            <Link
-              href="/"
-              className="font-bold hover:text-[#EC221F] transition-colors"
-            >
-              الرئيسية
-            </Link>
-
-            {/* Categories Dropdown */}
-            <div className="relative" ref={categoriesRef}>
-              <button
-                onClick={() =>
-                  setShowCategoriesDropdown(!showCategoriesDropdown)
-                }
-                onMouseEnter={() => setShowCategoriesDropdown(true)}
-                className="flex items-center gap-1 hover:text-[#EC221F] transition-colors"
-              >
-                الفئات
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${
-                    showCategoriesDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showCategoriesDropdown && (
-                <div
-                  className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-[8px]  border shadow-xl z-50"
-                  onMouseLeave={() => setShowCategoriesDropdown(false)}
+          {/* Quick Links - Categories from API */}
+          <div>
+            <h3 className="font-bold text-lg mb-4">الاقسام</h3>
+            <ul className="space-y-4 text-sm">
+              {/* ✅ رابط الجديد مع تمرير سلس */}
+              <li>
+                <Link
+                  href="#new"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  onClick={(e) => handleSmoothScroll(e, 'new')}
                 >
-                  <div className="absolute -bottom-1.5 right-4 w-3 h-3 rotate-45 bg-white border-r border-b"></div>
-
-                  <div className="py-2">
-                    {footerCategories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/products?categories=[${category.id}]`}
-                        className="block px-4 py-2 text-[14px] transition-colors hover:bg-gray-50 text-right"
-                        style={{ color: "#112B40" }}
-                        onClick={() => setShowCategoriesDropdown(false)}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#EC221F")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = "#112B40")
-                        }
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
+                  الجديد
+                </Link>
+              </li>
+              {/* ✅ رابط الخصومات مع تمرير سلس */}
+              <li>
+                <Link
+                  href="#discount"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  onClick={(e) => handleSmoothScroll(e, 'discount')}
+                >
+                  الخصومات
+                </Link>
+              </li>
+              {/* ✅ عرض الفئات من API */}
+              {loadingCategories ? (
+                <li className="text-muted-foreground text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-white rounded-full animate-spin"></div>
+                    جاري التحميل...
                   </div>
-                </div>
+                </li>
+              ) : categories.length > 0 ? (
+                categories.map((category) => (
+                  <li key={category.id}>
+                    <Link
+                      href={category.href}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="text-muted-foreground text-sm">لا توجد فئات</li>
               )}
-            </div>
-
-            <Link
-              href="/contact"
-              className="hover:text-[#EC221F] transition-colors"
-            >
-              تواصل معنا
-            </Link>
+            </ul>
           </div>
-        </div>
 
-        {/* footer bottom */}
-        <div className="border-t border-white/20 pt-6 md:pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            
-            <p className="text-white/60 font-bold text-sm">
-              © جميع الحقوق محفوظة | 2025
-            </p>
+          {/* Contact Info */}
+          <div>
+            <h3 className="font-bold text-lg mb-4">المساعدة</h3>
+            <ul className="space-y-4 text-sm">
+              <li>
+                <Link
+                  href="/terms"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  الشروط والاحكام
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  سياسة الخصوصية
+                </Link>
+              </li>
+            </ul>
+          </div>
 
-            <div className="flex gap-6">
-              <Link href="/terms" className="hover:text-[#EC221F] text-white">
-                الشروط والأحكام
+          {/* Social Links */}
+          <div>
+            <h3 className="font-bold text-lg mb-4">تواصل معنا</h3>
+            <ul className="space-y-4 text-sm">
+              <li className="flex items-center gap-3">
+                <MdPhone className="h-5 w-5 text-primary" />
+                <div >
+                  <p>اتصل بنا</p>
+                  <span className="text-muted-foreground">0987654333</span>
+                </div>
+              </li>
+              <li className="flex items-center gap-3">
+                <MdEmail className="h-5 w-5 text-primary" />
+                <div>
+                  <p>البريد الإلكتروني</p>
+                  <span className="text-muted-foreground">
+                    ecommerce@gmail.com
+                  </span>
+                </div>
+              </li>
+            </ul>
+            <div className="flex gap-4 mt-5 md:mt-7 mb-[3rem]">
+              <Link href="#">
+                <Image
+                  src="/images/social/linkedin.png"
+                  alt="LinkedIn"
+                  className="w-[24px] h-[24px]"
+                  width={20000}
+                  height={20000}
+                />
               </Link>
-              <Link href="/privacy" className="hover:text-[#EC221F] text-white">
-                سياسة الخصوصية
+               <Link href="#">
+                <Image
+                  src="/images/social/snap.png"
+                  alt="Snapchat"
+                  className="w-[24px] h-[24px]"
+                  width={2000}
+                  height={2000}
+                />
               </Link>
-            </div>
-
-            {/* social */}
-            <div className="flex gap-4">
-              <Link href="https://www.instagram.com/tcarstofficial/">
+              <Link href="#">
                 <Image
                   src="/images/social/insta.png"
                   alt="Instagram"
-                  width={26}
-                  height={26}
+                  className="w-[24px] h-[24px]"
+                  width={2000}
+                  height={2000}
                 />
               </Link>
-              <Link href="https://www.facebook.com/tcarstofficial/">
+              <Link href="#">
                 <Image
                   src="/images/social/face.png"
                   alt="Facebook"
-                  width={26}
-                  height={26}
+                  className="w-[24px] h-[24px]"
+                  width={2000}
+                  height={2000}
                 />
               </Link>
-              <Link href="https://wa.me/201055099236">
+              <Link href="#">
                 <Image
                   src="/images/social/wats.png"
                   alt="WhatsApp"
-                  width={26}
-                  height={26}
+                  className="w-[24px] h-[24px]"
+                  width={2000}
+                  height={2000}
+                />
+              </Link>
+               <Link href="#">
+                <Image
+                  src="/images/social/tiktok.png"
+                  alt="TikTok"
+                  className="w-[24px] h-[24px]"
+                  width={2000}
+                  height={2000}
                 />
               </Link>
             </div>
           </div>
         </div>
+
       </div>
     </footer>
   );

@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
                   }}
                   placeholder="•••••••• (6 أحرف على الأقل)"
                   disabled={isLoading}
-                  className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 text-sm  py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.new_password ? "border-red-500" : "border-gray-300"
                   } ${isLoading ? "opacity-50" : ""}`}
                 />
@@ -161,7 +161,7 @@ export default function ResetPasswordPage() {
                   }}
                   placeholder="••••••••"
                   disabled={isLoading}
-                  className={`w-full px-4 py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 py-2 text-sm  pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.new_password_confirmation ? "border-red-500" : "border-gray-300"
                   } ${isLoading ? "opacity-50" : ""}`}
                 />

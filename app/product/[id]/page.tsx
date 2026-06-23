@@ -28,7 +28,7 @@ const transformProductData = (apiProduct: ProductData) => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
@@ -38,7 +38,7 @@ const transformProductData = (apiProduct: ProductData) => {
   
   // إذا لم يكن هناك ألوان، أضف ألوان افتراضية
   const finalColors = colors.length > 0 ? colors : [
-    { name: "أحمر", code: "#EC221F" },
+    { name: "أحمر", code: "#23A6F0" },
     { name: "أزرق", code: "#252B42" },
     { name: "أخضر", code: "#23856D" },
   ];
@@ -123,7 +123,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <p className="text-red-500 text-xl mb-4">{error || "المنتج غير موجود"}</p>
         <button 
           onClick={() => window.location.href = '/'}
-          className="bg-[#EC221F] text-white px-6 py-2 rounded-[8px] "
+          className="bg-black text-white px-6 py-2 rounded-[8px] "
         >
           العودة إلى الرئيسية
         </button>

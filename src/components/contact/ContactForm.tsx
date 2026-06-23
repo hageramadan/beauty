@@ -56,7 +56,7 @@ export default function ContactForm() {
       };
 
 
-      const response = await fetch("https://dukanah.admin.t-carts.com/api/contact-us", {
+      const response = await fetch("https://admin.souqkaber.com/api/contact-us", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +73,7 @@ export default function ContactForm() {
           name: "",
           email: "",
           phone: "",
-          country_code: "+966",
+          country_code: "+20",
           message: "",
         });
         setTimeout(() => setIsSubmitted(false), 5000);
@@ -91,13 +91,13 @@ export default function ContactForm() {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm h-fit">
       {isSubmitted && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+        <div className="mb-6 p-4 bg-green-50 border border-green-200  rounded-[8px]  text-green-700 text-sm">
           تم إرسال رسالتك بنجاح! سنقوم بالرد عليك قريباً.
         </div>
       )}
 
       {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="mb-6 p-4  bg-blue-50  border border-red-200  rounded-[8px]  text-red-700 text-sm">
           {errorMessage}
         </div>
       )}

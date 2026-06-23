@@ -42,7 +42,7 @@ export default function AccountPage() {
         return;
       }
 
-      const apiUrl = "https://dukanah.admin.t-carts.com/api";
+      const apiUrl = "https://admin.souqkaber.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
         headers: {
@@ -238,7 +238,7 @@ export default function AccountPage() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover:bg-red-50 transition text-red-600"
+                className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover: bg-red-50  transition text-red-600"
               >
                 <FaSignOutAlt className="w-4 h-4" />
                 <span>تسجيل الخروج</span>
@@ -251,7 +251,7 @@ export default function AccountPage() {
             <h2 className="text-lg font-bold text-gray-800">المحفظة</h2>
             <Link
               href="/account/wallet"
-              className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-200"
+              className="flex items-center justify-between bg-white  rounded-[8px]  p-4 hover:shadow-md transition-shadow border border-gray-200"
             >
               <div className="flex items-center gap-4">
                 <div className="bg-gray-100 p-2 rounded-full">
@@ -272,7 +272,7 @@ export default function AccountPage() {
               <Link
                 key={item.id}
                 href={item.href}
-                className="flex items-center justify-between bg-white rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-200"
+                className="flex items-center justify-between bg-white  rounded-[8px]  p-4 hover:shadow-md transition-shadow border border-gray-200"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-gray-100 p-2 rounded-full">

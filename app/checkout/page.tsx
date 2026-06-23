@@ -21,7 +21,7 @@ import PaymentMethodForm from "@/components/checkout/PaymentMethodForm";
 import NotesForm from "@/components/checkout/NotesForm";
 import OrderSummary from "@/components/checkout/OrderSummary";
 
-const API_URL = "https://dukanah.admin.t-carts.com/api";
+const API_URL = "https://admin.souqkaber.com/api";
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
@@ -237,7 +237,7 @@ const transformCartItems = (cart: any): CartItem[] => {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/images/placeholder.jpg";
       if (url.startsWith("/storage")) {
-        return `https://dukanah.admin.t-carts.com${url}`;
+        return `https://admin.souqkaber.com${url}`;
       }
       return url;
     };
@@ -775,7 +775,7 @@ const prepareOrderData = useCallback(() => {
         <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
         <Link
           href="/products"
-          className="bg-[#EC221F] text-white px-6 py-2 rounded-[8px] "
+          className="bg-black text-white px-6 py-2 rounded-[8px] "
         >
           تسوق الآن
         </Link>
@@ -791,11 +791,11 @@ const prepareOrderData = useCallback(() => {
             إتمام الطلب
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/cart" className="hover:text-[#EC221F] transition">
+            <Link href="/cart" className="hover:text-[#23A6F0] transition">
               سلة التسوق
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#EC221F] font-medium">إتمام الطلب</span>
+            <span className="text-[#23A6F0] font-medium">إتمام الطلب</span>
           </div>
           
         
@@ -845,7 +845,7 @@ const prepareOrderData = useCallback(() => {
 
             {/* ✅ خيار إنشاء حساب للضيف */}
             {isGuest && (
-              <div className="bg-white rounded-xl p-4 border border-gray-200 mb-2 md:mb-4">
+              <div className="bg-white  rounded-[8px]  p-4 border border-gray-200 mb-2 md:mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
@@ -860,7 +860,7 @@ const prepareOrderData = useCallback(() => {
                   </div>
                   <button
                     onClick={handleOpenAccountPopup}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                    className={`px-4 py-2  rounded-[8px]  text-sm font-medium transition ${
                       createAccount
                         ? "bg-green-100 text-green-700 border border-green-300"
                         : "bg-black text-white hover:bg-gray-800"
@@ -885,7 +885,7 @@ const prepareOrderData = useCallback(() => {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="w-full bg-black text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
+              className="w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3  rounded-[8px]  font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
@@ -992,7 +992,7 @@ function AccountPopup({
                 value={accountData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="أدخل اسمك الكامل"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] transition ${
                   errors.name ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1014,7 +1014,7 @@ function AccountPopup({
                 value={accountData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="example@email.com"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] transition ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1036,7 +1036,7 @@ function AccountPopup({
                 value={accountData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 placeholder="01012345678"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] transition ${
                   errors.phone ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1057,7 +1057,7 @@ function AccountPopup({
                 value={accountData.password}
                 onChange={(e) => handleChange("password", e.target.value)}
                 placeholder="••••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-10 py-2.5 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] transition ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1085,7 +1085,7 @@ function AccountPopup({
                 value={accountData.password_confirmation}
                 onChange={(e) => handleChange("password_confirmation", e.target.value)}
                 placeholder="••••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-10 py-2.5 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] transition ${
                   errors.password_confirmation ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1106,13 +1106,13 @@ function AccountPopup({
         <div className="p-6 border-t border-gray-100 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
+            className="flex-1 py-2.5 border border-gray-300  rounded-[8px]  font-medium hover:bg-gray-50 transition"
           >
             إلغاء
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 bg-[#EC221F] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
+            className="flex-1 bg-black text-white py-2.5  rounded-[8px]  font-medium hover:bg-[#d41c19] transition"
           >
             إنشاء الحساب
           </button>
@@ -1166,7 +1166,7 @@ function SuccessPopup({
         </div>
 
         <div className="p-1">
-          <div className="bg-gray-50 rounded-xl p-2 text-center mb-2">
+          <div className="bg-gray-50  rounded-[8px]  p-2 text-center mb-2">
             <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
             <p className="text-xl font-bold text-gray-800">#{orderNumber}</p>
           </div>
@@ -1175,7 +1175,7 @@ function SuccessPopup({
            <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
           <button
             onClick={onGoToHome}
-            className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
+            className="w-full  py-2 md:py-3  rounded-[8px]  font-medium border border-[#2DA5F3] text-[#2DA5F3]  transition"
           >
             العودة إلى الرئيسية
           </button>
@@ -1183,7 +1183,7 @@ function SuccessPopup({
           {!isGuest && (
             <button
               onClick={onGoToOrders}
-              className="w-full bg-[#EC221F] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
+              className="w-full bg-[#2DA5F3] text-white py-2  rounded-[8px]  font-medium hover:bg-[#d41c19] transition"
             >
               متابعة الطلبات
             </button>

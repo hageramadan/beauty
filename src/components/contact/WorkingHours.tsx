@@ -11,7 +11,7 @@ export default function WorkingHours({ hours }: WorkingHoursProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
       <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 bg-[#EC221F] rounded-full"></span>
+        <span className="w-1 h-5 bg-black rounded-full"></span>
         ساعات العمل
       </h3>
       <div className="space-y-2">
@@ -29,7 +29,7 @@ export default function WorkingHours({ hours }: WorkingHoursProps) {
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">الجمعة</span>
-          <span className="font-medium text-[#EC221F]">
+          <span className="font-medium text-[#23A6F0]">
             {hours.friday.isClosed ? "مغلق" : "متاح"}
           </span>
         </div>

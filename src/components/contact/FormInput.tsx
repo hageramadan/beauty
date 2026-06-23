@@ -20,12 +20,12 @@ export default function FormInput({
   required = false,
   rows = 3,
 }: FormInputProps) {
-  const baseClassName = "w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-[#EC221F] focus:outline-none focus:ring-1 focus:ring-[#EC221F] transition bg-white";
+  const baseClassName = "w-full px-4 py-3 border border-gray-200  rounded-[8px]  focus:border-[#23A6F0] focus:outline-none focus:ring-1 focus:ring-[#23A6F0] transition bg-white";
   
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && <span className="text-[#EC221F]">*</span>}
+        {label} {required && <span className="text-[#f02323]">*</span>}
       </label>
       {type === "textarea" ? (
         <textarea

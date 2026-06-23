@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Heart, Truck, RefreshCw, Ruler, Info, AlertCircle } from "lucide-react";
+import { Heart, Truck, RefreshCw, Ruler, Info, HardDrive, MemoryStick } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,7 +68,8 @@ interface ProductDetailsProps {
 export function ProductDetails({ product }: ProductDetailsProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState("");
-  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedRam, setSelectedRam] = useState("");
+  const [selectedHardDisk, setSelectedHardDisk] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<
     "info" | "measurements" | "shipping"
@@ -86,27 +87,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // ✅ التحقق من وجود مقاسات في المنتج
-  const hasSizes = (): boolean => {
-    if (!product.has_variants) return true; // منتج عادي بدون variants
-    
-    if (!product.variants || product.variants.length === 0) return false;
-    
-    // البحث عن أي attribute نوعه مقاس
-    for (const variant of product.variants) {
-      if (!variant.attributes) continue;
-      const hasSizeAttr = variant.attributes.some(attr => 
-        attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس"
-      );
-      if (hasSizeAttr) return true;
-    }
-    return false;
-  };
-
-  const productHasSizes = hasSizes();
-  const canAddToCart = !product.has_variants || (selectedVariant !== null);
-
-  // ✅ استخراج الألوان من الـ variants (حتى لو كل الألوان في فاريانت واحد)
+  // ✅ استخراج الألوان من الـ variants
   const getAvailableColorsFromVariants = (): { name: string; code: string; variants: ProductVariant[] }[] => {
     if (!product.variants || product.variants.length === 0) {
       return product.colors.map(c => ({ ...c, variants: [] }));
@@ -117,98 +98,128 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     product.variants.forEach((variant) => {
       if (!variant.attributes) return;
       
-      // البحث عن كل attributes اللي نوعها "اللون"
-      variant.attributes.forEach((attr) => {
-        if (attr.attribute_type?.name === "اللون" && attr.value) {
-          const colorName = attr.value;
-          const colorCode = attr.meta?.color || "#000000";
-          
-          if (!colorMap.has(colorName)) {
-            colorMap.set(colorName, {
-              name: colorName,
-              code: colorCode,
-              variants: [variant] // نفس الفاريانت لكل الألوان
-            });
-          } else {
-            // لو اللون موجود، نضيف الفاريانت لو مش موجود
-            const existing = colorMap.get(colorName)!;
-            if (!existing.variants.find(v => v.id === variant.id)) {
-              existing.variants.push(variant);
-            }
-          }
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "لون"
+      );
+      
+      if (colorAttr && colorAttr.value) {
+        const colorName = colorAttr.value;
+        const colorCode = colorAttr.meta?.color || "#000000";
+        
+        if (!colorMap.has(colorName)) {
+          colorMap.set(colorName, {
+            name: colorName,
+            code: colorCode,
+            variants: []
+          });
         }
-      });
+        
+        colorMap.get(colorName)!.variants.push(variant);
+      }
     });
     
     return Array.from(colorMap.values());
   };
 
-  // ✅ الحصول على المقاسات المتاحة للون المحدد
-  const getAvailableSizesForColor = (colorName: string): string[] => {
+  // ✅ الحصول على خيارات الرام المتاحة للون المحدد
+  const getAvailableRamForColor = (colorName: string): string[] => {
     if (!product.variants || product.variants.length === 0) {
-      return product.sizes;
+      return [];
     }
     
-    const sizes = new Set<string>();
+    const ramOptions = new Set<string>();
     
     product.variants.forEach((variant) => {
       if (!variant.attributes) return;
       
-      // هل هذا الفاريانت فيه اللون المطلوب؟
-      const hasColor = variant.attributes.some(attr => 
-        attr.attribute_type?.name === "اللون" && attr.value === colorName
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "لون"
       );
       
-      if (hasColor) {
-        // جيب المقاسات من نفس الفاريانت
-        variant.attributes.forEach((attr) => {
-          if ((attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس") && attr.value) {
-            sizes.add(attr.value);
-          }
-        });
+      const ramAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "الذاكرة"
+      );
+      
+      if (colorAttr?.value === colorName && ramAttr?.value) {
+        ramOptions.add(ramAttr.value);
       }
     });
     
-    return Array.from(sizes);
+    return Array.from(ramOptions);
   };
 
-  // ✅ الحصول على الـ variant المناسب للون والمقاس المختارين
-  const getSelectedVariant = (colorName: string, sizeName: string): ProductVariant | null => {
+  // ✅ الحصول على خيارات الهارد ديسك المتاحة للون والرام المحددين
+  const getAvailableHardDiskForColorAndRam = (colorName: string, ramValue: string): string[] => {
+    if (!product.variants || product.variants.length === 0) {
+      return [];
+    }
+    
+    const hardDiskOptions = new Set<string>();
+    
+    product.variants.forEach((variant) => {
+      if (!variant.attributes) return;
+      
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "لون"
+      );
+      
+      const ramAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "الذاكرة"
+      );
+      
+      const hardDiskAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "هارد ديسك"
+      );
+      
+      if (colorAttr?.value === colorName && 
+          ramAttr?.value === ramValue && 
+          hardDiskAttr?.value) {
+        hardDiskOptions.add(hardDiskAttr.value);
+      }
+    });
+    
+    return Array.from(hardDiskOptions);
+  };
+
+  // ✅ الحصول على الـ variant المناسب
+  const getSelectedVariant = (colorName: string, ramValue: string, hardDiskValue: string): ProductVariant | null => {
     if (!product.variants || product.variants.length === 0) return null;
     
-    // البحث عن فاريانت يحتوي على اللون والمقاس معاً
     const variant = product.variants.find(variant => {
       if (!variant.attributes) return false;
       
-      const hasColor = variant.attributes.some(attr => 
-        attr.attribute_type?.name === "اللون" && attr.value === colorName
+      const colorAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "لون"
       );
       
-      const hasSize = variant.attributes.some(attr => 
-        (attr.attribute_type?.name === "مقاس" || attr.attribute_type?.name === "المقاس") && attr.value === sizeName
+      const ramAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "الذاكرة"
       );
       
-      return hasColor && hasSize;
+      const hardDiskAttr = variant.attributes.find(attr => 
+        attr.attribute_type?.name === "هارد ديسك"
+      );
+      
+      return colorAttr?.value === colorName && 
+             ramAttr?.value === ramValue && 
+             hardDiskAttr?.value === hardDiskValue;
     });
     
     return variant || null;
   };
 
-  // ✅ استخراج جميع الصور المتاحة للعرض
+  // ✅ استخراج جميع الصور المتاحة
   const getAllImages = (): string[] => {
     const images: string[] = [];
     
-    // أضف صورة الـ variant إذا وجدت
     if (selectedVariant && selectedVariant.variant_image) {
       images.push(selectedVariant.variant_image);
     }
     
-    // أضف الصور العادية للمنتج
     if (product.images && product.images.length > 0) {
       images.push(...product.images);
     }
     
-    // إزالة التكرارات
     return [...new Map(images.map(img => [img, img])).values()];
   };
 
@@ -223,18 +234,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return "/images/placeholder.jpg";
   };
 
-  // ✅ دالة التعامل مع حركة الماوس للـ Zoom
+  // ✅ دوال الـ Zoom
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageContainerRef.current) return;
-
     const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
-    
     let x = (e.clientX - left) / width;
     let y = (e.clientY - top) / height;
-    
     x = Math.min(Math.max(x, 0), 1);
     y = Math.min(Math.max(y, 0), 1);
-    
     setZoomPosition({ x, y });
   };
 
@@ -245,16 +252,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!imageContainerRef.current) return;
-    
     const touch = e.touches[0];
     const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
-    
     let x = (touch.clientX - left) / width;
     let y = (touch.clientY - top) / height;
-    
     x = Math.min(Math.max(x, 0), 1);
     y = Math.min(Math.max(y, 0), 1);
-    
     setZoomPosition({ x, y });
   };
 
@@ -263,44 +266,53 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   };
 
   const availableColors = product.has_variants ? getAvailableColorsFromVariants() : [];
-  const availableSizes = selectedColor ? getAvailableSizesForColor(selectedColor) : [];
+  const availableRam = selectedColor ? getAvailableRamForColor(selectedColor) : [];
+  const availableHardDisk = (selectedColor && selectedRam) 
+    ? getAvailableHardDiskForColorAndRam(selectedColor, selectedRam) 
+    : [];
 
   // ✅ تعيين أول لون متاح
   useEffect(() => {
     if (availableColors.length > 0 && !selectedColor) {
       setSelectedColor(availableColors[0].name);
     }
-  }, [availableColors]);
+  }, [availableColors.length]);
 
-  // ✅ عند تغيير اللون، إعادة تعيين المقاس
+  // ✅ عند تغيير اللون، إعادة تعيين الرام والهارد ديسك
   useEffect(() => {
     if (selectedColor) {
-      const sizes = getAvailableSizesForColor(selectedColor);
-      if (sizes.length > 0) {
-        if (selectedSize && sizes.includes(selectedSize)) {
-          // ابق على نفس المقاس
-        } else {
-          setSelectedSize(sizes[0]);
-        }
+      const ramOptions = getAvailableRamForColor(selectedColor);
+      if (ramOptions.length > 0) {
+        setSelectedRam(ramOptions[0]);
       } else {
-        setSelectedSize("");
+        setSelectedRam("");
       }
+      setSelectedHardDisk("");
     }
   }, [selectedColor]);
 
-  // ✅ تحديث الـ variant عند تغيير اللون أو المقاس
+  // ✅ عند تغيير الرام، إعادة تعيين الهارد ديسك
   useEffect(() => {
-    if (selectedColor && selectedSize) {
-      const variant = getSelectedVariant(selectedColor, selectedSize);
+    if (selectedColor && selectedRam) {
+      const hardDiskOptions = getAvailableHardDiskForColorAndRam(selectedColor, selectedRam);
+      if (hardDiskOptions.length > 0) {
+        setSelectedHardDisk(hardDiskOptions[0]);
+      } else {
+        setSelectedHardDisk("");
+      }
+    }
+  }, [selectedRam]);
+
+  // ✅ تحديث الـ variant
+  useEffect(() => {
+    if (selectedColor && selectedRam && selectedHardDisk) {
+      const variant = getSelectedVariant(selectedColor, selectedRam, selectedHardDisk);
       setSelectedVariant(variant);
       setSelectedImage(0);
-    } else if (selectedColor && !selectedSize) {
+    } else {
       setSelectedVariant(null);
     }
-  }, [selectedColor, selectedSize]);
-
-  const displayColors = product.has_variants ? availableColors : product.colors;
-  const displaySizes = product.has_variants ? availableSizes : product.sizes;
+  }, [selectedColor, selectedRam, selectedHardDisk]);
 
   // ✅ السعر الحالي
   const currentPrice = selectedVariant 
@@ -312,45 +324,36 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const isProductFavorite = isFavorite(product.id.toString());
   const itemInCartQuantity = getItemQuantity(product.id);
 
-  // ✅ إضافة إلى السلة مع التحقق من وجود مقاسات
-  // components/products/ProductDetails.tsx
-// ✅ تحديث دالة handleAddToCart فقط
-
-// ✅ إضافة إلى السلة (دعم الضيوف)
-const handleAddToCart = async () => {
-  if (isAddingToCart) return;
-  
-  // ✅ التحقق من وجود مقاسات للمنتج
-  if (product.has_variants && !productHasSizes) {
-    toast.error("عذراً، لا توجد مقاسات متاحة لهذا المنتج حالياً. لا يمكنك إضافته إلى السلة.", {
-      duration: 4000,
-      position: "top-center",
-      icon: "⚠️",
-    });
-    return;
-  }
-  
-  if (product.has_variants && !selectedVariant) {
-    toast.error("الرجاء اختيار اللون والمقاس أولاً");
-    return;
-  }
-  
-  setIsAddingToCart(true);
-  
-  try {
-    const variantId = selectedVariant?.id || null;
-    const success = await addItem(product.id, quantity, variantId);
+  // ✅ إضافة إلى السلة (دعم الضيوف - بدون تسجيل دخول)
+  const handleAddToCart = async () => {
+    if (isAddingToCart) return;
     
-    if (success) {
-      setQuantity(1);
+    if (product.has_variants && !selectedVariant) {
+      toast.error("الرجاء اختيار اللون والرام والهارد ديسك أولاً");
+      return;
     }
-  } catch (error) {
-    console.error("❌ خطأ في الإضافة إلى السلة:", error);
-    toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
-  } finally {
-    setIsAddingToCart(false);
-  }
-};
+    
+    setIsAddingToCart(true);
+    
+    try {
+      const variantId = selectedVariant?.id || null;
+      const success = await addItem(product.id, quantity, variantId);
+      
+      if (success) {
+        setQuantity(1);
+        // toast.success(`تم إضافة "${product.name}" إلى السلة`, {
+        //   duration: 2000,
+        //   position: "top-center",
+        //   icon: "🛒",
+        // });
+      }
+    } catch (error) {
+      console.error("❌ خطأ في الإضافة إلى السلة:", error);
+      toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -375,7 +378,7 @@ const handleAddToCart = async () => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
@@ -392,7 +395,7 @@ const handleAddToCart = async () => {
     return (
       <div className="container-custom py-8">
         <div className="animate-pulse">
-          <div className="h-96 bg-gray-200 rounded-[8px]  mb-4"></div>
+          <div className="h-96 bg-gray-200 rounded-lg mb-4"></div>
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-1/4"></div>
         </div>
@@ -402,18 +405,18 @@ const handleAddToCart = async () => {
 
   return (
     <div className="container-custom">
-      <div className="flex gap-1 md:gap-2 mb-3">
-        <Link href="/" className="text-[#726C6C] text-sm md:text-[18px]">الرئيسية</Link>
+      <div className="flex gap-2 mb-3">
+        <Link href="/" className="text-[#726C6C] text-[16px]">الرئيسية</Link>
         <span className="text-[#333333] font-bold">/</span>
-        <Link href="/products" className="text-[#726C6C] font-bold text-sm md:text-[18px] whitespace-nowrap">
+        <Link href="/products" className="text-[#726C6C] font-bold text-[16px]">
           {product.brand || "المنتجات"}
         </Link>
-        <span className="text-[#180100] font-bold text-[18px]">/</span>
-        <p className="text-[#180100] font-bold text-sm md:text-[18px] whitespace-nowrap">{product.name}</p>
+        <span className="text-[#180100] font-bold text-[16px]">/</span>
+        <p className="text-[#180100] font-bold text-[16px]">{product.name}</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        {/* قسم الصور */}
+        {/* ===== قسم الصور ===== */}
         <div className="space-y-2">
           <div
             ref={imageContainerRef}
@@ -438,7 +441,7 @@ const handleAddToCart = async () => {
             <div className="absolute inset-0 z-10" />
 
             {discountPercentage > 0 && (
-              <span className="absolute top-2 right-2 bg-[#EC221F] text-white text-xs font-bold px-1.5 py-0.5 rounded-full z-20">
+              <span className="absolute top-2 right-2 bg-black text-white text-xs font-bold px-1.5 py-0.5 rounded-full z-20">
                 {discountPercentage}% خصم
               </span>
             )}
@@ -451,9 +454,9 @@ const handleAddToCart = async () => {
                   key={index}
                   onClick={() => setSelectedImage(index)}
                   className={`
-                    relative aspect-[4/3] bg-gray-100 rounded-[8px]  overflow-hidden
+                    relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden
                     border-2 transition-all duration-200
-                    ${selectedImage === index ? "border-[#EC221F]" : "border-transparent hover:border-gray-300"}
+                    ${selectedImage === index ? "border-[#23A6F0]" : "border-transparent hover:border-gray-300"}
                   `}
                 >
                   <Image
@@ -469,7 +472,7 @@ const handleAddToCart = async () => {
           )}
         </div>
 
-        {/* معلومات المنتج */}
+        {/* ===== معلومات المنتج ===== */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-0">
@@ -480,14 +483,14 @@ const handleAddToCart = async () => {
             </div>
 
             <div className="flex gap-0 flex-col">
-              <span className="text-xl md:text-3xl font-bold text-[#C01A13] flex items-center gap-1">
+              <span className="text-xl md:text-2xl font-bold text-[#C01A13] flex items-center gap-1">
                 {currentPrice.toLocaleString()}
-                <span className="text-xl">EGP</span>
+                <span className="text-lg">EGP</span>
               </span>
               {originalPrice && originalPrice !== currentPrice && (
-                <span className="text-base text-[#00000080] line-through flex items-center gap-1">
+                <span className="text-sm text-[#00000080] line-through flex items-center gap-1">
                   {originalPrice.toLocaleString()}
-                  <span className="text-sm">EGP</span>
+                  <span className="text-xs">EGP</span>
                 </span>
               )}
             </div>
@@ -495,11 +498,11 @@ const handleAddToCart = async () => {
 
           {/* التقييم */}
           <div className="flex items-center gap-2">
-           {product.reviewsCount > 0 &&( <div className="flex items-center bg-[#EDF0F8] text-[#3A4980] font-bold text-sm rounded-full px-2 py-1 justify-center gap-1">
+            <div className="flex items-center bg-[#EDF0F8] text-[#3A4980] font-bold text-sm rounded-full px-2 py-1 justify-center gap-1">
               <IoChatboxEllipsesOutline className="w-4 h-4" />
-              <span> {product.reviewsCount || 0} </span>
+              <span> {product.reviewsCount} </span>
               <p>تقييم</p>
-            </div>)}
+            </div>
             {product.avg_rating > 0 && (
               <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-sm rounded-full px-2 py-1 justify-center gap-1">
                 <FaRegStar className="w-3 h-3" />
@@ -508,26 +511,15 @@ const handleAddToCart = async () => {
             )}
           </div>
 
-          {/* ✅ رسالة تحذير في حالة عدم وجود مقاسات */}
-          {product.has_variants && !productHasSizes && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              <div className="text-sm text-amber-700">
-                <p className="font-semibold">لا توجد مقاسات متاحة</p>
-                <p className="text-xs">عذراً، لا توجد مقاسات متاحة لهذا المنتج حالياً. لا يمكنك إضافته إلى السلة.</p>
-              </div>
-            </div>
-          )}
-
-          {/* اختيار اللون */}
-          {product.has_variants && displayColors.length > 0 && (
+          {/* ===== اختيار اللون ===== */}
+          {product.has_variants && availableColors.length > 0 && (
             <>
               <div>
                 <div className="flex justify-between items-center my-2">
                   <span className="text-[14px] font-bold text-[#333333]">اللون</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {displayColors.map((color) => (
+                  {availableColors.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setSelectedColor(color.name)}
@@ -551,84 +543,98 @@ const handleAddToCart = async () => {
             </>
           )}
 
-          {/* اختيار المقاس - لو موجود */}
-          {product.has_variants && productHasSizes && displaySizes.length > 0 && (
+          {/* ===== اختيار الرام (RAM) ===== */}
+          {product.has_variants && availableRam.length > 0 && (
             <div>
               <div className="flex justify-between items-center my-2">
-                <span className="text-[14px] font-bold text-[#333333]">المقاس</span>
+                <span className="text-[14px] font-bold text-[#333333] flex items-center gap-2">
+                  <MemoryStick className="w-4 h-4" />
+                  الرام (RAM)
+                </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {displaySizes.map((size) => (
+                {availableRam.map((ram) => (
                   <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
+                    key={ram}
+                    onClick={() => setSelectedRam(ram)}
                     className={`
-                      flex items-center justify-center rounded-[8px] w-[70px] px-2 h-[32px] text-sm font-medium transition-all duration-200
-                      ${selectedSize === size 
-                        ? "bg-[#EDF0F8] text-[#3A4980]" 
+                      flex items-center justify-center rounded-[8px] px-3 py-1.5 text-sm font-medium transition-all duration-200
+                      ${selectedRam === ram 
+                        ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]" 
                         : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
                       }
                     `}
                   >
-                    {size}
+                    {ram}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ✅ رسالة عند وجود ألوان ولكن لا توجد مقاسات */}
-          {product.has_variants && displayColors.length > 0 && !productHasSizes && (
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
-              <p className="text-sm text-gray-500">
-                هذا المنتج غير متوفر حالياً. يرجى التحقق لاحقاً.
-              </p>
-            </div>
-          )}
-
-          {/* الكمية - تظهر فقط لو فيه مقاسات أو منتج عادي */}
-          {(canAddToCart || !product.has_variants) && productHasSizes !== false && (
+          {/* ===== اختيار الهارد ديسك (Hard Disk) ===== */}
+          {product.has_variants && availableHardDisk.length > 0 && (
             <div>
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex items-center rounded-full bg-[#F3F3F3] h-[44px] w-[140px] justify-center">
+              <div className="flex justify-between items-center my-2">
+                <span className="text-[14px] font-bold text-[#333333] flex items-center gap-2">
+                  <HardDrive className="w-4 h-4" />
+                  الهارد ديسك (Hard Disk)
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableHardDisk.map((hardDisk) => (
                   <button
-                    onClick={decreaseQuantity}
-                    className="w-8 h-8 flex items-center justify-center text-[#A3A3A3] transition"
+                    key={hardDisk}
+                    onClick={() => setSelectedHardDisk(hardDisk)}
+                    className={`
+                      flex items-center justify-center rounded-[8px] px-3 py-1.5 text-sm font-medium transition-all duration-200
+                      ${selectedHardDisk === hardDisk 
+                        ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]" 
+                        : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
+                      }
+                    `}
                   >
-                    <FaMinus className="w-3 h-3" />
+                    {hardDisk}
                   </button>
-                  <span className="w-12 text-center text-[18px] font-bold text-[#222222]">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={increaseQuantity}
-                    className="w-8 h-8 flex items-center justify-center text-[#3A4980] font-bold transition"
-                  >
-                    <FaPlus className="w-3 h-3 font-bold" />
-                  </button>
-                </div>
-                {selectedVariant && selectedVariant.quantity !== null && selectedVariant.quantity < 5 && selectedVariant.quantity > 0 && (
-                  <span className="text-xs text-orange-600">
-                    ⚠️ متبقي {selectedVariant.quantity} فقط
-                  </span>
-                )}
+                ))}
               </div>
             </div>
           )}
+
+          {/* ===== الكمية ===== */}
+          <div>
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex items-center rounded-full bg-[#F3F3F3] h-[44px] w-[140px] justify-center">
+                <button
+                  onClick={decreaseQuantity}
+                  className="w-8 h-8 flex items-center justify-center text-[#A3A3A3] transition"
+                >
+                  <FaMinus className="w-3 h-3" />
+                </button>
+                <span className="w-12 text-center text-[18px] font-bold text-[#222222]">
+                  {quantity}
+                </span>
+                <button
+                  onClick={increaseQuantity}
+                  className="w-8 h-8 flex items-center justify-center text-[#3A4980] font-bold transition"
+                >
+                  <FaPlus className="w-3 h-3 font-bold" />
+                </button>
+              </div>
+              {selectedVariant && selectedVariant.quantity !== null && selectedVariant.quantity < 5 && selectedVariant.quantity > 0 && (
+                <span className="text-xs text-orange-600">
+                  ⚠️ متبقي {selectedVariant.quantity} فقط
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* الأزرار */}
           <div className="flex flex-col">
             <button
               onClick={handleAddToCart}
-              disabled={isAddingToCart || cartLoading || (product.has_variants && (!selectedVariant || !productHasSizes))}
-              className={`
-                flex-1 text-[14px] px-4 py-2.5 rounded-[8px] font-bold transition-all duration-300 
-                flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
-                ${(product.has_variants && (!selectedVariant || !productHasSizes)) 
-                  ? "bg-gray-400 text-white cursor-not-allowed" 
-                  : "bg-[#0A0500] text-white hover:bg-[#2b2b2b]"
-                }
-              `}
+              disabled={isAddingToCart || cartLoading || (product.has_variants && !selectedVariant)}
+              className="flex-1 bg-[#0A0500] text-[14px] text-white px-4 py-2.5 rounded-[8px] font-bold hover:bg-[#2b2b2b] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
@@ -636,7 +642,7 @@ const handleAddToCart = async () => {
                   جاري الإضافة...
                 </>
               ) : (
-                (product.has_variants && !productHasSizes) ? "غير متوفر حالياً" : "أضف إلى السلة"
+                "أضف إلى السلة"
               )}
             </button>
             
@@ -647,7 +653,7 @@ const handleAddToCart = async () => {
                 className={`
                   flex-1 md:px-4 py-2.5 rounded-[8px] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-sm
                   ${isProductFavorite 
-                    ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" 
+                    ? " bg-blue-50  text-red-600 border border-red-200 hover:bg-red-100" 
                     : "border border-[#0A0500] hover:bg-[#f3f1f1]"
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
@@ -657,7 +663,7 @@ const handleAddToCart = async () => {
                   className="w-4 h-4" 
                   fill={isProductFavorite ? "#ef4444" : "none"}
                 />
-                {isProductFavorite ? "تمت الإضافة" : "أضف إلى المفضلة"}
+                {isProductFavorite ? "تمت الإضافة إلى المفضلة" : "أضف إلى المفضلة"}
               </button>
               <button className="w-10 h-10 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
                 <BsShare className="w-4 h-4 font-bold" />
@@ -673,7 +679,7 @@ const handleAddToCart = async () => {
                 className="flex justify-between items-center w-full py-2 text-right"
               >
                 <span className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Info className="w-4 h-4 text-[#EC221F]" />
+                  <Info className="w-4 h-4 text-[#23A6F0]" />
                   معلومات المنتج
                 </span>
                 <span className="text-xl">{activeTab === "info" ? "−" : "+"}</span>
@@ -681,9 +687,49 @@ const handleAddToCart = async () => {
               {activeTab === "info" && (
                 <div className="pt-1 pb-2 text-gray-600 text-xs leading-relaxed space-y-1">
                   <p>{product.description}</p>
-                  <p><strong>رمز المنتج:</strong> {product.sku || "غير متوفر"}</p>
-                  <p><strong>القسم:</strong> {typeof product.category === 'object' ? product.category : product.category}</p>
-                  <p><strong>الماركة:</strong> {typeof product.brand === 'object' ? product.brand : product.brand || "بدون ماركة"}</p>
+                  <p><strong>رمز المنتج:</strong> {product.sku}</p>
+                  <p><strong>القسم:</strong> {product.category}</p>
+                  <p><strong>الماركة:</strong> {product.brand || "بدون ماركة"}</p>
+                  {selectedVariant && (
+                    <>
+                      <p><strong>الرام:</strong> {selectedRam}</p>
+                      <p><strong>الهارد ديسك:</strong> {selectedHardDisk}</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-100">
+              <button
+                onClick={() => setActiveTab(activeTab === "shipping" ? "info" : "shipping")}
+                className="flex justify-between items-center w-full py-2 text-right"
+              >
+                <span className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
+                  <Truck className="w-4 h-4 text-[#23A6F0]" />
+                  التسليم والإرجاع والاستبدال
+                </span>
+                <span className="text-xl">{activeTab === "shipping" ? "−" : "+"}</span>
+              </button>
+              {activeTab === "shipping" && (
+                <div className="pt-1 pb-2 text-gray-600 text-xs space-y-2">
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-0.5 flex items-center gap-1 text-xs">
+                      <Truck className="w-3 h-3" /> التوصيل
+                    </h4>
+                    <p>• التوصيل خلال 3-5 أيام عمل</p>
+                    <p>• توصيل مجاني للطلبات فوق 1000 جنيه</p>
+                    <p>• رسوم التوصيل 50 جنيه للطلبات الأقل من 1000 جنيه</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-0.5 flex items-center gap-1 text-xs">
+                      <RefreshCw className="w-3 h-3" /> الإرجاع والاستبدال
+                    </h4>
+                    <p>• يمكن إرجاع المنتج خلال 14 يوم من تاريخ الاستلام</p>
+                    <p>• يجب أن يكون المنتج بحالته الأصلية مع الفاتورة</p>
+                    <p>• استرداد كامل المبلغ خلال 7-14 يوم</p>
+                    <p>• خدمة الاستبدال مجانية لأول مرة</p>
+                  </div>
                 </div>
               )}
             </div>

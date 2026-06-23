@@ -10,11 +10,52 @@ import Pagination from "@/components/products/Pagination";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-const API_URL = 'https://dukanah.admin.t-carts.com/api';
+const API_URL = 'https://admin.souqkaber.com/api';
 
-// ✅ متغيرات لمنع التكرار على مستوى الدالة
-let isFetching = false;
-let lastFetchTime = 0;
+// ✅ تعريف واجهات
+interface VariantAttribute {
+  id: number;
+  attribute_type: {
+    id: number;
+    name: string;
+  };
+  value: string;
+  meta: {
+    color?: string;
+  } | null;
+}
+
+interface ProductVariant {
+  id: number;
+  sku: string | null;
+  price: number;
+  has_discount: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  price_after_discount: number;
+  quantity: number | null;
+  is_active: boolean;
+  variant_image: string | null;
+  attributes: VariantAttribute[];
+}
+
+interface TransformedProduct {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  hoverImage: string;
+  href: string;
+  originalPrice?: number;
+  discount?: number;
+  colors?: Array<{ color: string; name: string }>;
+  rating?: number;
+  reviewsCount?: number;
+  isBestSeller?: boolean;
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
+  variantId?: number | null;
+}
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
@@ -24,36 +65,41 @@ const getToken = (): string | null => {
   return null;
 };
 
-// دالة جلب نتائج البحث باستخدام endpoint /products?search=
-const searchProducts = async (query: string, page: number = 1, perPage: number = 12) => {
-  // ✅ منع التكرار في نفس الثانية
-  const now = Date.now();
-  if (isFetching || (now - lastFetchTime < 300)) {
-    console.log("⏳ Skipping duplicate search request");
-    return {
-      result: true,
-      data: {
-        products: [],
-        pagination: {
-          current_page: 1,
-          last_page: 1,
-          per_page: perPage,
-          total: 0,
-          from: 0,
-          to: 0,
-          next_page: null,
-          previous_page: null
+// ✅ دالة استخراج الألوان من جميع الـ variants
+const extractColorsFromVariants = (
+  variants: ProductVariant[],
+): Array<{ color: string; name: string }> => {
+  const colorMap = new Map<string, string>();
+
+  if (!variants || variants.length === 0) return [];
+
+  variants.forEach((variant) => {
+    if (variant.attributes && Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr: VariantAttribute) => {
+        if (
+          attr.attribute_type?.name === "اللون" &&
+          attr.value &&
+          attr.meta?.color
+        ) {
+          if (!colorMap.has(attr.value)) {
+            colorMap.set(attr.value, attr.meta.color);
+          }
         }
-      }
-    };
-  }
-  
-  isFetching = true;
-  lastFetchTime = now;
-  
+      });
+    }
+  });
+
+  return Array.from(colorMap.entries()).map(([name, color]) => ({
+    name: name,
+    color: color,
+  }));
+};
+
+// ✅ دالة جلب نتائج البحث المعدلة
+const searchProducts = async (query: string, page: number = 1, perPage: number = 10) => {
   try {
     const token = getToken();
-    console.log(`🟢 Searching products for "${query}" page ${page}`);
+    console.log(`🟢 Searching products for "${query}" page ${page} with ${perPage} per page`);
     
     const response = await fetch(
       `${API_URL}/products?page=${page}&per_page=${perPage}&search=${encodeURIComponent(query)}`,
@@ -67,36 +113,53 @@ const searchProducts = async (query: string, page: number = 1, perPage: number =
     
     const data = await response.json();
     console.log(`📥 Search response for page ${page}:`, data);
+    
+    // ✅ التأكد من أن البيانات بالشكل الصحيح
+    if (data.result === true && data.data) {
+      return {
+        result: true,
+        data: {
+          products: data.data.products || [],
+          pagination: {
+            current_page: data.data.pagination?.current_page || page,
+            last_page: data.data.pagination?.last_page || 1,
+            per_page: data.data.pagination?.per_page || perPage,
+            total: data.data.pagination?.total || 0,
+            from: data.data.pagination?.from || 0,
+            to: data.data.pagination?.to || 0,
+            next_page: data.data.pagination?.next_page || null,
+            previous_page: data.data.pagination?.previous_page || null
+          }
+        }
+      };
+    }
+    
     return data;
   } catch (error) {
     console.error("Search error:", error);
     throw error;
-  } finally {
-    isFetching = false;
   }
 };
 
-// دالة تحويل المنتج لنفس صيغة ProductCard
-const transformProductForCard = (product: any) => {
+// ✅ دالة تحويل المنتج لنفس صيغة ProductCard مع دعم الفاريانتات
+const transformProductForCard = (product: any): TransformedProduct => {
   let colors: Array<{ color: string; name: string }> = [];
+  let hasVariants = false;
+  let variants: ProductVariant[] = [];
+  let variantId: number | null = null;
   
-  // جلب الألوان من المتغيرات إذا وجدت
+  // ✅ استخراج المعلومات من الفاريانتات
   if (product.has_variants && product.variants && product.variants.length > 0) {
-    const firstVariant = product.variants[0];
-    if (firstVariant.attributes) {
-      colors = firstVariant.attributes
-        .filter((attr: any) => attr.attribute_type?.name === "اللون")
-        .map((attr: any) => ({
-          color: attr.meta?.color || '#000000',
-          name: attr.value
-        }));
-    }
+    hasVariants = true;
+    variants = product.variants;
+    variantId = product.variants[0].id;
+    colors = extractColorsFromVariants(product.variants);
   }
 
   const cleanImageUrl = (url: string) => {
     if (!url) return '/placeholder-image.jpg';
     if (url.startsWith('/storage')) {
-      return `https://dukanah.admin.t-carts.com${url}`;
+      return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
@@ -124,6 +187,9 @@ const transformProductForCard = (product: any) => {
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
     isBestSeller: (product.avg_rating || 0) >= 4.5,
+    hasVariants: hasVariants,
+    variants: variants,
+    variantId: variantId,
   };
 };
 
@@ -135,30 +201,29 @@ function SearchContent() {
   
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [searchInput, setSearchInput] = useState(query);
   const [sortBy, setSortBy] = useState("newest");
   
-  const perPage = 12;
+  const perPage = 10; // ✅ 10 منتجات في كل صفحة
 
-  // ✅ استخدام ref لمنع التكرار
   const hasLoadedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isSearchChangeRef = useRef(false);
 
-  // ✅ دالة جلب نتائج البحث مع منع التكرار
   const fetchSearchResults = useCallback(async () => {
     if (!query) {
       setProducts([]);
       setTotalProducts(0);
       setLastPage(1);
       setIsLoading(false);
+      setIsFirstLoad(false);
       return;
     }
 
-    // ✅ إلغاء الطلب السابق
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -170,12 +235,12 @@ function SearchContent() {
       const result = await searchProducts(query, currentPage, perPage);
       
       if (!abortControllerRef.current?.signal.aborted) {
-        // التعامل مع استجابة الـ API
         if (result.result === true && result.data) {
           const productsData = result.data.products || [];
           const paginationData = result.data.pagination;
           
           console.log(`✅ Found ${productsData.length} products for page ${currentPage}`);
+          console.log(`📊 Pagination:`, paginationData);
           
           setProducts(productsData);
           
@@ -201,25 +266,24 @@ function SearchContent() {
       }
     } finally {
       if (!abortControllerRef.current?.signal.aborted) {
-        setIsLoading(false);
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsFirstLoad(false);
+        }, 200);
       }
     }
   }, [query, currentPage, perPage]);
 
-  // ✅ جلب النتائج عند تغيير البحث أو الصفحة
   useEffect(() => {
     if (query) {
-      if (isSearchChangeRef.current || hasLoadedRef.current) {
-        fetchSearchResults();
-      } else {
-        hasLoadedRef.current = true;
-        fetchSearchResults();
-      }
+      setIsFirstLoad(true);
+      fetchSearchResults();
     } else {
       setProducts([]);
       setTotalProducts(0);
       setLastPage(1);
       setIsLoading(false);
+      setIsFirstLoad(false);
     }
     
     return () => {
@@ -227,9 +291,8 @@ function SearchContent() {
         abortControllerRef.current.abort();
       }
     };
-  }, [query, currentPage, fetchSearchResults]);
+  }, [query, fetchSearchResults]);
 
-  // ✅ إعادة تعيين الصفحة عند تغيير البحث
   useEffect(() => {
     if (query) {
       isSearchChangeRef.current = true;
@@ -237,7 +300,12 @@ function SearchContent() {
     }
   }, [query]);
 
-  // ✅ إعادة الترتيب عند تغيير خيار الترتيب (فلتر محلي)
+  useEffect(() => {
+    if (currentPage > 1 && query) {
+      fetchSearchResults();
+    }
+  }, [currentPage, query, fetchSearchResults]);
+
   useEffect(() => {
     if (products.length > 0) {
       const sortedProducts = [...products];
@@ -265,6 +333,8 @@ function SearchContent() {
     e.preventDefault();
     if (searchInput.trim()) {
       isSearchChangeRef.current = true;
+      setIsLoading(true);
+      setIsFirstLoad(true);
       router.push(`/search?q=${encodeURIComponent(searchInput.trim())}`);
     }
   };
@@ -276,12 +346,12 @@ function SearchContent() {
   const handlePageChange = (page: number) => {
     console.log(`🔄 Changing to page ${page}`);
     if (page >= 1 && page <= lastPage) {
+      setIsLoading(true);
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  // ✅ عرض معلومات Pagination
   const getPaginationInfo = () => {
     if (totalProducts === 0) return '';
     const from = (currentPage - 1) * perPage + 1;
@@ -289,7 +359,7 @@ function SearchContent() {
     return `عرض ${from} - ${to} من ${totalProducts} نتيجة`;
   };
 
-  if (isLoading) {
+  if (isFirstLoad) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <LoadingSpinner size="lg" text="جاري البحث..." />
@@ -299,10 +369,10 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen page-with-padding">
-      <div className="container mx-auto px-4 pb-16">
+      <div className="container mx-auto px-4 pb-16  lg:px-9">
         {/* مسار الصفحة (Breadcrumb) */}
         <div className="flex items-center gap-1 mb-6 text-sm">
-          <Link href="/" className="text-[#726C6C] hover:text-[#EC221F] transition">
+          <Link href="/" className="text-[#726C6C] hover:text-[#23A6F0] transition">
             الرئيسية
           </Link>
           <span className="text-[#726C6C]">/</span>
@@ -310,7 +380,7 @@ function SearchContent() {
           {query && (
             <>
               <span className="text-[#726C6C]">/</span>
-              <span className="text-[#EC221F]">{query}</span>
+              <span className="text-[#23A6F0]">{query}</span>
             </>
           )}
         </div>
@@ -321,20 +391,24 @@ function SearchContent() {
             نتائج البحث
           </h1>
           
-          {/* شريط البحث */}
           <form onSubmit={handleSearch} className="relative max-w-2xl">
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ابحث عن منتجات..."
-              className="w-full px-6 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] focus:border-transparent"
+              className="w-full px-6 py-3 pr-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent"
             />
             <button
               type="submit"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#EC221F] transition"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#23A6F0] transition"
+              disabled={isLoading}
             >
-              <Search className="w-5 h-5" />
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+              ) : (
+                <Search className="w-5 h-5" />
+              )}
             </button>
           </form>
         </div>
@@ -343,17 +417,16 @@ function SearchContent() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <p className="text-gray-600">
             {totalProducts > 0 ? (
-              <>تم العثور على <span className="font-bold text-[#EC221F]">{totalProducts}</span> نتيجة لـ `{query}`</>
+              <>تم العثور على <span className="font-bold text-[#23A6F0]">{totalProducts}</span> نتيجة لـ `{query}`</>
             ) : (
-              <>لم يتم العثور على نتائج لـ `{query}`</>
+              !isLoading && <>لم يتم العثور على نتائج لـ `{query}`</>
             )}
           </p>
           
-          {/* ترتيب النتائج */}
           <select
             value={sortBy}
             onChange={handleSortChange}
-            className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#EC221F]"
+            className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0]"
           >
             <option value="newest">الأحدث</option>
             <option value="popular">الأكثر مبيعاً</option>
@@ -362,15 +435,23 @@ function SearchContent() {
           </select>
         </div>
 
+        {isLoading && products.length > 0 && (
+          <div className="flex justify-center py-8">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+              <span className="text-gray-500">جاري التحميل...</span>
+            </div>
+          </div>
+        )}
+
         {/* قائمة المنتجات */}
-        {products.length > 0 ? (
+        {!isLoading && products.length > 0 ? (
           <>
-            {/* ✅ عرض معلومات Pagination */}
             <div className="text-sm text-gray-500 mb-4">
               {getPaginationInfo()}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {products.map((product) => {
                 const cardData = transformProductForCard(product);
                 return (
@@ -391,13 +472,16 @@ function SearchContent() {
                       rating={cardData.rating}
                       reviewsCount={cardData.reviewsCount}
                       isBestSeller={cardData.isBestSeller}
+                      hasVariants={cardData.hasVariants || false}
+                      variants={cardData.variants || []}
+                      variantId={cardData.variantId || null}
                     />
                   </div>
                 );
               })}
             </div>
             
-            {/* ✅ استخدام مكون Pagination الموحد */}
+            {/* ✅ الباجينشن - يظهر فقط لو في اكتر من صفحة */}
             {lastPage > 1 && (
               <div className="mt-12">
                 <Pagination
@@ -410,29 +494,29 @@ function SearchContent() {
             )}
           </>
         ) : (
-          // حالة عدم وجود نتائج
-          <div className="text-center py-16">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-16 h-16 mx-auto" />
+          !isLoading && !isFirstLoad && (
+            <div className="text-center py-16">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-16 h-16 mx-auto" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد نتائج</h3>
+              <p className="text-gray-500">
+                لم نتمكن من العثور على منتجات مطابقة لـ `{query}`
+              </p>
+              <button
+                onClick={() => router.push("/")}
+                className="mt-4 text-[#23A6F0] hover:underline"
+              >
+                العودة إلى الرئيسية
+              </button>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد نتائج</h3>
-            <p className="text-gray-500">
-              لم نتمكن من العثور على منتجات مطابقة لـ `{query}`
-            </p>
-            <button
-              onClick={() => router.push("/")}
-              className="mt-4 text-[#EC221F] hover:underline"
-            >
-              العودة إلى الرئيسية
-            </button>
-          </div>
+          )
         )}
       </div>
     </div>
   );
 }
 
-// المكون الرئيسي مع Suspense
 export default function SearchPage() {
   return (
     <Suspense fallback={

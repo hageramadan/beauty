@@ -60,7 +60,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
   if (lastPage <= 1) {
     return (
       <div className="flex justify-center items-center gap-2 mt-12 mb-4">
-        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-black text-white font-medium">
+        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[1E75AB] text-white font-medium">
           {formatPageNumber(1)}
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
           className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
             currentPage === 1
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#23A6F0]'
           }`}
           aria-label="الصفحة السابقة"
         >
@@ -106,8 +106,8 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
               onClick={() => handlePageChange(page as number)}
               className={`w-12 h-12 rounded-full transition-all duration-200 font-medium ${
                 page === currentPage
-                  ? 'bg-black text-white border-2 border-black'
-                  : 'bg-white text-black border-2 border-gray-300 hover:border-black hover:bg-gray-50'
+                  ? 'bg-[#23A6F0] text-white border-2 border-[#23A6F0]'
+                  : 'bg-white text-[#23A6F0] border-2 border-gray-300 hover:border-[#23A6F0] hover:bg-gray-50'
               }`}
               aria-label={`الصفحة ${page}`}
               aria-current={page === currentPage ? 'page' : undefined}
@@ -124,7 +124,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
           className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
             currentPage === lastPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-black'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#23A6F0]'
           }`}
           aria-label="الصفحة التالية"
         >

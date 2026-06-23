@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import Pagination from '@/components/products/Pagination';
 
 // ========== إعدادات API ==========
-const API_URL = 'https://dukanah.admin.t-carts.com/api';
+const API_URL = 'https://admin.souqkaber.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -219,7 +219,7 @@ const fetchReturns = async (page: number = 1, perPage: number = 10): Promise<{ r
 const cleanImageUrl = (url: string): string => {
   if (!url) return "/images/placeholder-product.png";
   if (url.startsWith("/storage")) {
-    return `https://dukanah.admin.t-carts.com${url}`;
+    return `https://admin.souqkaber.com${url}`;
   }
   return url;
 };
@@ -415,7 +415,7 @@ export default function ReturnsPage() {
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC221F] mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
               <p className="text-gray-500 mt-4">جاري تحميل المرتجعات...</p>
             </div>
           </div>
@@ -429,7 +429,7 @@ export default function ReturnsPage() {
       <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#EC221F]" />
+          <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#23A6F0]" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">المرتجعات</h1>
          
         </div>
@@ -473,7 +473,7 @@ export default function ReturnsPage() {
               const totalRefund = returnItem.order?.total_amount || 0;
 
               return (
-                <div key={returnItem.id} className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div key={returnItem.id} className="bg-white  rounded-[8px]  sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                   {/* رأس المرتجع */}
                   <div 
                     className="p-4 sm:p-5 cursor-pointer hover:bg-gray-50 transition"
@@ -496,7 +496,7 @@ export default function ReturnsPage() {
                                 #{String(returnItem.id).padStart(5, '0')}
                               </p>
                               <IoCopyOutline 
-                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#EC221F] transition"
+                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#23A6F0] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyToClipboard(`#${String(returnItem.id).padStart(5, '0')}`, "رقم المرتجع");
@@ -509,13 +509,13 @@ export default function ReturnsPage() {
                             <h1 className="text-xs sm:text-sm">الطلب</h1>
                             <div className="flex gap-1 sm:gap-2 items-center">
                               <p 
-                                className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#EC221F] hover:underline transition"
+                                className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#23A6F0] hover:underline transition"
                                 onClick={(e) => handleOrderClick(returnItem.order?.id, e)}
                               >
                                 {returnItem.order?.order_number || "-"}
                               </p>
                               <IoCopyOutline 
-                                className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#EC221F] transition"
+                                className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#23A6F0] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyToClipboard(returnItem.order?.order_number || "", "رقم الطلب");
@@ -580,7 +580,7 @@ export default function ReturnsPage() {
                             <div key={idx} className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0">
                               {/* صورة المنتج */}
                               <div className="flex-shrink-0">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px] sm:rounded-xl overflow-hidden relative">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px] sm: rounded-[8px]  overflow-hidden relative">
                                   <Image 
                                     src={displayImage} 
                                     alt={item.title || item.name || "منتج"} 
@@ -646,7 +646,7 @@ export default function ReturnsPage() {
                           <div className="flex justify-between items-center flex-wrap gap-2">
                             <div className="text-right">
                               <p className="text-xs sm:text-sm text-gray-500">إجمالي المسترد</p>
-                              <p className="text-base sm:text-xl font-bold text-[#EC221F]">EGP {totalRefund.toFixed(2)}</p>
+                              <p className="text-base sm:text-xl font-bold text-[#23A6F0]">EGP {totalRefund.toFixed(2)}</p>
                             </div>
                           </div>
                           

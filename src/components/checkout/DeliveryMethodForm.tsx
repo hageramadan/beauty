@@ -11,9 +11,9 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             deliveryMethod === "pickup"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -21,7 +21,7 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
             type="radio"
             checked={deliveryMethod === "pickup"}
             onChange={() => onDeliveryMethodChange("pickup")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
           />
           <MapPin className="w-5 h-5 text-gray-600" />
           <div>
@@ -30,9 +30,9 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
         </label>
         
         <label
-          className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${
+          className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             deliveryMethod === "delivery"
-              ? "border-[#EC221F] bg-red-50"
+              ? "border-[#23A6F0]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -40,7 +40,7 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
             type="radio"
             checked={deliveryMethod === "delivery"}
             onChange={() => onDeliveryMethodChange("delivery")}
-            className="w-4 h-4 text-[#EC221F] focus:ring-[#EC221F]"
+            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
           />
           <Truck className="w-5 h-5 text-gray-600" />
           <div>

@@ -212,9 +212,9 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* <label className="block text-sm font-medium text-gray-700 mb-1">
         رقم الجوال {required && <span className="text-red-500">*</span>}
-      </label>
+      </label> */}
       
       <div>
         <div className="relative flex flex-row-reverse items-stretch">
@@ -227,12 +227,12 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
               required={required}
               placeholder={selectedCountry.placeholder}
               inputMode="numeric"
-              className={`w-full px-4 py-[11px] border rounded-l-xl rounded-r-none focus:outline-none  transition bg-white text-left font-mono text-base
+              className={`w-full px-4 h-full border rounded-l-xl focus:ring-black  focus:border-black rounded-r-none focus:outline-none  foucs:ring-2  transition bg-white text-left font-mono text-base
                 ${error && isTouched && localPhoneNumber 
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500 foucs:ring-2" 
                   : !error && localPhoneNumber && localPhoneNumber.length === selectedCountry.minLength
-                  ? "border-green-500 focus:border-green-500 focus:ring-green-500"
-                  : "border-gray-200 focus:border-[#EC221F] focus:ring-[#EC221F]"
+                  ? "border-green-500 focus:border-green-500 focus:ring-green-500 foucs:ring-2"
+                  : "border-gray-200 focus:border-[#000000] focus:ring-[#000000] foucs:ring-2"
                 }`}
               style={{
                 borderTopRightRadius: 0,
