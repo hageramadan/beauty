@@ -240,7 +240,7 @@ export function Hero() {
   }
 
   return (
-    <section className="relative w-full h-[70vh] overflow-hidden bg-gray-900">
+    <section className="relative w-full h-[60vh] lg:h-[70vh] overflow-hidden bg-gray-900">
       {/* Slides Container */}
       <div 
         ref={containerRef}
