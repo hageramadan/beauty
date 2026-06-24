@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
           </button>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">إنشاء كلمة مرور جديدة</h1>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">إنشاء كلمة مرور جديدة</h1>
             <p className="text-gray-500 text-sm">
               أدخل كلمة المرور الجديدة لحسابك
             </p>

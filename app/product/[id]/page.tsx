@@ -65,6 +65,7 @@ const transformProductData = (apiProduct: ProductData) => {
     // ✅ إضافة variants و has_variants (الأهم)
     variants: apiProduct.variants || [],
     has_variants: apiProduct.has_variants || false,
+     video: apiProduct.video || null,
   };
 };
 
@@ -123,7 +124,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <p className="text-red-500 text-xl mb-4">{error || "المنتج غير موجود"}</p>
         <button 
           onClick={() => window.location.href = '/'}
-          className="bg-black text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] "
         >
           العودة إلى الرئيسية
         </button>

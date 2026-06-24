@@ -226,7 +226,7 @@ export function Hero() {
           <p className="text-red-600">عذراً، حدث خطأ</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-[#1a7cb3] transition"
+            className="mt-4 px-4 py-2 bg-[#23A6F0] text-white rounded-lg hover:bg-[#1a7cb3] transition"
           >
             إعادة المحاولة
           </button>
@@ -266,7 +266,8 @@ export function Hero() {
               <Image
                 src={slides[currentSlide].image}
                 alt={slides[currentSlide].title}
-                fill
+                width={2000}
+                height={2000}
                 className="object-cover pointer-events-none"
                 priority
               />
@@ -276,12 +277,12 @@ export function Hero() {
             {/* Content */}
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
               <div className="container-custom text-center text-white gap-3 pointer-events-auto">
-                <h1 className="text-3xl md:text-5xl lg:text-[58px] font-bold mb-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
+                <h1 className="text-xl lg:text-[24px]  font-bold mb-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
                   {slides[currentSlide].title}
                 </h1>
                 
                 {slides[currentSlide].description && (
-                  <p className="text-base md:text-lg lg:text-[20px] mb-8 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
+                  <p className="text-base md:text-lg mb-8 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700 delay-100">
                     {slides[currentSlide].description}
                   </p>
                 )}
@@ -383,7 +384,7 @@ export function Hero() {
               onClick={() => goToSlide(index)}
               className={`transition-all duration-300 rounded-full ${
                 index === currentSlide
-                  ? "w-8 h-2 bg-black"
+                  ? "w-8 h-2 bg-[#23A6F0]"
                   : "w-2 h-2 bg-white/50 hover:bg-white/75"
               }`}
               aria-label={`Go to slide ${index + 1}`}

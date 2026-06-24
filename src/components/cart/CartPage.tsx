@@ -8,14 +8,13 @@ import { CartEmpty } from "./CartEmpty";
 import { useCartContext } from "@/contexts/CartContext";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
-import { ChevronRight, Info } from "lucide-react"; // ✅ إضافة Info
+import { ChevronRight, Info } from "lucide-react";
 
 export interface Ibrand {
   id: number;
   name: string;
 }
 
-// واجهة بيانات المنتج في السلة للعرض
 export interface CartItemDisplay {
   id: string;
   productId: string;
@@ -23,10 +22,13 @@ export interface CartItemDisplay {
   brand: Ibrand;
   price: number;
   originalPrice?: number;
-  image: string; // ستكون هذه صورة الـ variant أو الصورة الرئيسية
-  variantImage?: string | null; // صورة الـ variant المختارة
-  productImage?: string; // الصورة الرئيسية للمنتج
+  image: string;
+  variantImage?: string | null;
+  productImage?: string; 
   color: string;
+  colorHex?: string;
+  memory: string;    
+  storage: string;
   size: string;
   quantity: number;
   discount?: number;
@@ -34,48 +36,77 @@ export interface CartItemDisplay {
 }
 
 export function CartPage() {
-  const { cart, isLoading, updateQuantity, removeItem, refetchCart, isGuest } = useCartContext(); // ✅ إضافة isGuest
+  const { cart, isLoading, updateQuantity, removeItem, refetchCart, isGuest } = useCartContext();
   const [cartItems, setCartItems] = useState<CartItemDisplay[]>([]);
 
-  // ✅ عدد العناصر (المنتجات المختلفة) وليس الكميات
   const itemsCount = cart?.items?.length || 0;
 
-  // استخراج اللون والمقاس من الـ variant
-  const extractColorAndSize = (variant: any) => {
+  // ✅ استخراج اللون والذاكرة والهارد ديسك من الـ variant (مع تجاهل القيم غير الصالحة)
+  const extractAttributes = (variant: any) => {
     let color = "";
+    let colorHex = "";
+    let memory = "";
+    let storage = "";
     let size = "";
     
     if (variant && variant.attributes && Array.isArray(variant.attributes)) {
       for (const attr of variant.attributes) {
         const attrName = attr.attribute_type?.name;
-        if (attrName === "اللون") {
-          color = attr.value || "";
-        } else if (attrName === "مقاس" || attrName === "المقاس") {
-          size = attr.value || "";
+        const attrValue = attr.value || "";
+        
+        // ✅ دالة للتحقق من صحة القيمة
+        const isValidValue = (val: string) => val && val !== "-" && val.trim() !== "";
+        
+        if (attrName === "لون" || attrName === "اللون") {
+          // ✅ حفظ قيمة اللون فقط إذا كانت صالحة
+          if (isValidValue(attrValue)) {
+            color = attrValue;
+          } else {
+            // ✅ إذا كانت القيمة "-" ولكن يوجد Hex، استخدم "لون" كاسم
+            if (attr.meta?.color) {
+              color = "لون";
+              colorHex = attr.meta.color;
+            }
+          }
+          // ✅ حفظ الـ Hex دائماً
+          if (attr.meta?.color) {
+            colorHex = attr.meta.color;
+          }
+        } 
+        else if (attrName === "الذاكرة" || attrName === "الرام") {
+          if (isValidValue(attrValue)) {
+            memory = attrValue;
+          }
+        } 
+        else if (attrName === "هارد ديسك" || attrName === "التخزين" || attrName === "المساحة") {
+          if (isValidValue(attrValue)) {
+            storage = attrValue;
+          }
+        } 
+        else if (attrName === "مقاس" || attrName === "المقاس") {
+          if (isValidValue(attrValue)) {
+            size = attrValue;
+          }
         }
       }
     }
     
-    return { color, size };
+    return { color, colorHex, memory, storage, size };
   };
 
-  // الحصول على brand object
   const getBrandObject = (product: any): Ibrand => {
-    // إذا كان brand موجود كـ object كامل
     if (product.brand && typeof product.brand === 'object' && product.brand.id && product.brand.name) {
       return {
         id: product.brand.id,
         name: product.brand.name
       };
     }
-    // إذا كان brand مجرد اسم (string)
     if (product.brand && typeof product.brand === 'string') {
       return {
         id: 0,
         name: product.brand
       };
     }
-    // القيمة الافتراضية
     return {
       id: 0,
       name: "ماركة"
@@ -90,18 +121,23 @@ export function CartPage() {
     return url;
   };
 
-  // تحويل بيانات السلة من الـ API إلى الشكل المطلوب للعرض
   useEffect(() => {
     if (cart && cart.items && cart.items.length > 0) {
       const transformedItems: CartItemDisplay[] = cart.items.map((item) => {
-        const { color, size } = extractColorAndSize(item.variant);
+        const { color, colorHex, memory, storage, size } = extractAttributes(item.variant);
         
-        // ✅ الأولوية: صورة الـ variant إذا وجدت، وإلا استخدم الصورة الرئيسية للمنتج
         const variantImage = item.variant?.variant_image || null;
         const productMainImage = item.product.images?.[0] || "";
-        
-        // ✅ نختار الصورة التي نعرضها (الأولوية لصورة الـ variant)
         const displayImage = variantImage || productMainImage;
+        
+        let originalPrice: number | undefined = undefined;
+        
+        if (item.variant?.has_discount) {
+          originalPrice = item.variant.price;
+        } 
+        else if (item.product.pricing?.has_discount) {
+          originalPrice = item.product.pricing.price;
+        }
         
         return {
           id: item.id.toString(),
@@ -109,11 +145,14 @@ export function CartPage() {
           name: item.product.name,
           brand: getBrandObject(item.product),
           price: item.final_price,
-          originalPrice: item.product.pricing?.has_discount ? item.product.pricing.price : undefined,
-          image: cleanImageUrl(displayImage), // الصورة المعروضة (صورة اللون المختار أو الرئيسية)
-          variantImage: variantImage ? cleanImageUrl(variantImage) : null, // صورة الـ variant بشكل منفصل
-          productImage: cleanImageUrl(productMainImage), // الصورة الرئيسية للمنتج
+          originalPrice: originalPrice,
+          image: cleanImageUrl(displayImage),
+          variantImage: variantImage ? cleanImageUrl(variantImage) : null,
+          productImage: cleanImageUrl(productMainImage),
           color: color,
+          colorHex: colorHex,
+          memory: memory,
+          storage: storage,
           size: size,
           quantity: item.quantity,
           discount: item.discount_amount || undefined,
@@ -127,13 +166,11 @@ export function CartPage() {
     }
   }, [cart]);
 
-  // ✅ حساب المجاميع من السلة مباشرة
   const subtotal = cart?.subtotal || 0;
   const totalDiscount = cart?.discount_amount || 0;
   const deliveryFee = cart?.delivery_fee || 0;
   const total = cart?.total_amount || 0;
   
-  // ✅ استخراج بيانات الكوبون من السلة مباشرة
   const promoDiscount = cart?.coupon_discount || 0;
   const promoCode = cart?.applied_coupon_code || "";
 
@@ -150,12 +187,10 @@ export function CartPage() {
   };
 
   const applyPromoCode = async (code: string, discount: number) => {
-    // ✅ إعادة تحميل السلة للحصول على البيانات المحدثة من الـ API
     await refetchCart();
   };
 
   const removePromoCode = async () => {
-    // ✅ إعادة تحميل السلة للحصول على البيانات المحدثة من الـ API
     await refetchCart();
   };
 
@@ -176,10 +211,8 @@ export function CartPage() {
       <div className="container page-with-padding">
         <PageHeader title="سلة التسوق" itemCount={itemsCount} />
 
-       
-
         <div className="grid grid-cols-1 lg:grid-cols-3 md:gap-8 gap-4">
-          <div className="lg:col-span-2 space-y-4 bg-white rounded-[16px] p-4 mb-5">
+          <div className="lg:col-span-2 space-y-4 bg-white rounded-[16px] px-1 py-2 lg:p-4 mb-5">
             {cartItems.map((item) => (
               <CartItemCard
                 key={item.id}
@@ -209,10 +242,9 @@ export function CartPage() {
   );
 }
 
-// مكون عنوان الصفحة
 const PageHeader = ({ title, itemCount }: { title: string; itemCount: number }) => (
   <div className="mb-8">
-    <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
+    <h1 className="text-lg lg:text-xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
       <Link href="/" className="hover:text-[#23A6F0]">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />

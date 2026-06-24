@@ -779,7 +779,7 @@ export function Navbar() {
                 >
                   <Icon className="h-5 w-5" style={{ color: isActive ? '#23A6F0' : '#666' }} />
                   <span className="text-[10px]" style={{ color: isActive ? '#23A6F0' : '#666' }}>
-                    {item.name}
+                    تسجيل دخول
                   </span>
                 </Link>
               );

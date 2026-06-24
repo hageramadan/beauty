@@ -111,7 +111,7 @@ export default function VerifyForgotPasswordPage() {
           </button>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">التحقق من البريد الإلكتروني</h1>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">التحقق من البريد الإلكتروني</h1>
             <p className="text-gray-500 text-sm">
               أدخل الرقم المكون من 6 أرقام الذي أرسلناه إلى بريدك الإلكتروني
             </p>

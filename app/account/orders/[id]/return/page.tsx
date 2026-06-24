@@ -460,7 +460,7 @@ export default function OrderDetailsPage() {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-[8px] hover:bg-gray-800 transition">
+          <Link href="/account/orders" className="inline-block bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] hover:bg-[#36acf0] transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -501,7 +501,7 @@ export default function OrderDetailsPage() {
             <span className="text-[#23A6F0] font-medium">تفاصيل الطلب</span>
           </div>
           
-          <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
+          <h1 className="text-[20px] font-bold mb-2 md:text-xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* العمود الأيمن */}
@@ -738,7 +738,7 @@ export default function OrderDetailsPage() {
                 {!isRefunded && !isReturnPending && !isReturnRejected && order.status === "delivered" && (
                   <button 
                     onClick={handleReturnClick} 
-                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover: bg-blue-50  transition"
+                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover:bg-red-50  transition"
                   >
                     إرجاع
                   </button>
@@ -748,7 +748,7 @@ export default function OrderDetailsPage() {
                   <button 
                     onClick={openCancelModal}
                     disabled={isCancelling}
-                    className="flex-1 border-2 border-red-500 text-red-600 py-3  rounded-[8px]  font-medium hover: bg-blue-50  transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 border-2 border-red-500 text-red-600 py-3  rounded-[8px]  font-medium hover:bg-red-50  transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isCancelling ? (
                       <>
@@ -814,7 +814,7 @@ export default function OrderDetailsPage() {
               <button
                 onClick={confirmCancelOrder}
                 disabled={isCancelling}
-                className="flex-1 py-2.5  rounded-[8px]   bg-blue-50 0 text-white font-medium hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5  rounded-[8px]   bg-blue-500 text-white font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCancelling ? (
                   <>

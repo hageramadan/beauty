@@ -310,7 +310,7 @@ export function YouMayAlsoLike() {
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#23A6F0] text-white rounded-lg hover:bg-[#3bacee] transition"
             >
               إعادة المحاولة
             </button>

@@ -32,7 +32,7 @@ export function CartSummary({
   
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24 mb-5">
-      <h1 className="text-2xl font-bold text-[#180100] pb-2">
+      <h1 className="text-lg lg:text-xl font-bold text-[#180100] pb-2">
         ملخص الطلب
       </h1>
 

@@ -10,7 +10,7 @@ export default function ContactPage() {
       <div className="container mx-auto">
         {/* عنوان الصفحة */}
         <div className="text-center ">
-          <h1 className="text-lg md:text-2xl font-bold text-gray-800 mb-3">تواصل معنا</h1>
+          <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-3">تواصل معنا</h1>
           
         </div>
 

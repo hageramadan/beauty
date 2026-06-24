@@ -29,7 +29,7 @@ export default function PrivacyPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
               {/* Header */}
               <div className="text-center mb-8 pb-4 border-b border-gray-100">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">سياسة الخصوصية</h1>
+                <h1 className="text-xl md:text-xl font-bold text-gray-800 mb-3">سياسة الخصوصية</h1>
                 <p className="text-gray-500 text-sm">
                   نحن في <span className="font-semibold text-gray-700">******</span> نقدّر خصوصية عملائنا ونلتزم بحماية بياناتهم الشخصية. 
                   توضح هذه السياسة كيفية جمع واستخدام وحماية المعلومات التي نحصل عليها من خلال موقعنا الإلكتروني وتطبيق الجوال.

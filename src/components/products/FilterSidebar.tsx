@@ -554,7 +554,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
               <div className="mt-4">
                 <button
                   onClick={handleApplyPriceFilter}
-                  className="w-[32.89px] bg-[#2DA5F3] text-white py-2 transition-colors font-semibold flex items-center justify-center gap-2"
+                  className="w-[32.89px] bg-[#2DA5F3] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2"
                 >
                   <FaArrowLeft className="w-5 h-5" />
                 </button>

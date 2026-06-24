@@ -79,18 +79,18 @@ export default function RegisterWithPhone() {
     }
 
     // التحقق من كلمة المرور
-    if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
-    }
+    // if (!formData.password) {
+    //   newErrors.password = "كلمة المرور مطلوبة";
+    // } else if (formData.password.length < 6) {
+    //   newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+    // }
 
     // التحقق من تطابق كلمة المرور
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "تأكيد كلمة المرور مطلوب";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "كلمة المرور غير متطابقة";
-    }
+    // if (!formData.confirmPassword) {
+    //   newErrors.confirmPassword = "تأكيد كلمة المرور مطلوب";
+    // } else if (formData.password !== formData.confirmPassword) {
+    //   newErrors.confirmPassword = "كلمة المرور غير متطابقة";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -160,14 +160,14 @@ export default function RegisterWithPhone() {
         }}
       /> */}
 
-      <div className=" bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-md mx-auto">
             {/* بطاقة تسجيل حساب جديد */}
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
               {/* العنوان */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                <h1 className="text-xl font-bold text-gray-800 mb-2">
                   انشاء حساب
                 </h1>
                 <p className="text-gray-500 text-sm">
@@ -192,7 +192,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="أدخل اسمك"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 border text-sm rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2 pr-10 border text-base rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.name ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -247,7 +247,7 @@ export default function RegisterWithPhone() {
                 </div>
 
                 {/* كلمة المرور */}
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">
                     كلمة المرور <span className="text-red-500">*</span>
                   </label>
@@ -281,10 +281,10 @@ export default function RegisterWithPhone() {
                       {errors.password}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* تأكيد كلمة المرور */}
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">
                     تأكيد كلمة المرور <span className="text-red-500">*</span>
                   </label>
@@ -318,7 +318,7 @@ export default function RegisterWithPhone() {
                       {errors.confirmPassword}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* زر إنشاء الحساب */}
                 <button

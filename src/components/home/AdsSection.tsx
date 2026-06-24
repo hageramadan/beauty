@@ -200,25 +200,25 @@ export function AdsSection({ variant = 'dark' }: AdsSectionProps) {
               <div className="flex justify-center md:justify-start gap-1.5 md:gap-5">
                 <div className="text-center">
                   <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
-                    <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.days)}</span>
+                    <span className="text-[10px] md:text-xl font-bold">{formatNumber(timeLeft.days)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">أيام</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
-                    <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.hours)}</span>
+                    <span className="text-[10px] md:text-xl font-bold">{formatNumber(timeLeft.hours)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ساعات</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
-                    <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.minutes)}</span>
+                    <span className="text-[10px] md:text-xl font-bold">{formatNumber(timeLeft.minutes)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">دقائق</p>
                 </div>
                 <div className="text-center">
                   <div className="bg-white text-[#191C1F] rounded-[8px]  px-1 py-0.5 md:px-4 md:py-2 min-w-[35px] md:min-w-[70px]">
-                    <span className="text-[10px] md:text-3xl font-bold">{formatNumber(timeLeft.seconds)}</span>
+                    <span className="text-[10px] md:text-xl font-bold">{formatNumber(timeLeft.seconds)}</span>
                   </div>
                   <p className="text-[6px] md:text-xs text-gray-500 mt-0.5 md:mt-1">ثواني</p>
                 </div>

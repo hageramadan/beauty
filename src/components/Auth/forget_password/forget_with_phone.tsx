@@ -101,7 +101,7 @@ export default function ForgotWithPhone() {
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
               {/* العنوان */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                <h1 className="text-xl font-bold text-gray-800 mb-2">
                   التحقق من الهاتف
                 </h1>
                 <p className="text-gray-500 text-sm">

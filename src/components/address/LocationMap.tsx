@@ -13,7 +13,7 @@ const MapComponent = dynamic(
     loading: () => (
       <div className="bg-gray-100 rounded-[8px]  h-80 flex items-center justify-center">
         <div className="text-center">
-          <FaSpinner className="animate-spin text-4xl text-blue-500 mx-auto mb-3" />
+          <FaSpinner className="animate-spin text-2xl text-blue-500 mx-auto mb-3" />
           <p className="text-gray-600">جاري تحميل الخريطة...</p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function LocationMap(props: LocationMapProps) {
     return (
       <div className="bg-gray-100 rounded-[8px]  h-80 flex items-center justify-center">
         <div className="text-center">
-          <FaSpinner className="animate-spin text-4xl text-blue-500 mx-auto mb-3" />
+          <FaSpinner className="animate-spin text-2xl text-blue-500 mx-auto mb-3" />
           <p className="text-gray-600">جاري تحميل الخريطة...</p>
         </div>
       </div>

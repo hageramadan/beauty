@@ -11,7 +11,7 @@ import SocialLinks from "./SocialLinks";
 const iconMap: Record<string, React.ElementType> = {
   email: FaRegEnvelope,
   phone: RiCustomerService2Line,
-  whatsapp: FaWhatsapp,
+  whatsapp: IoChatbubbleEllipsesOutline,
   // يمكنك إضافة المزيد حسب الحاجة
 };
 
@@ -37,9 +37,8 @@ export default function ServicesSection() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await fetch('https://admin.souqkaber.com/api/contact-cards');
-        // أو استخدم الرابط الكامل إذا كان خارجي:
-        // const response = await fetch('{{url}}/contact-cards');
+        const response = await fetch('https://admin.souqkaber.com/api/contact-us');
+        
         
         if (!response.ok) {
           throw new Error('فشل في جلب البيانات');
@@ -49,7 +48,7 @@ export default function ServicesSection() {
         
         if (result.result && result.data) {
           // تصفية الخدمات النشطة فقط وترتيبها حسب sort_order
-          const activeServices = result.data
+          const activeServices = result.data.contact_cards
             .filter((item: ServiceItem) => item.is_active)
             .sort((a: ServiceItem, b: ServiceItem) => a.sort_order - b.sort_order);
           setServices(activeServices);
@@ -132,15 +131,7 @@ export default function ServicesSection() {
                   {service.description}
                 </p>
                 
-                {/* إضافة القيمة (البريد/الهاتف/الواتساب) أسفل الوصف */}
-                {service.value && (
-                  <p className="text-[#E4F0FA] text-sm mt-2 font-medium">
-                    {service.type === 'email' && '📧 '}
-                    {service.type === 'phone' && '📞 '}
-                    {service.type === 'whatsapp' && '💬 '}
-                    {service.value}
-                  </p>
-                )}
+               
               </div>
             </div>
           );

@@ -201,7 +201,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           
           <div className="flex gap-3 items-center">
             {/* خيارات الترتيب */}
-            <Select value={sortBy} onValueChange={handleSortChange}>
+            {totalReviews>0&&( <Select value={sortBy} onValueChange={handleSortChange}>
               <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#23A6F0] focus:ring-offset-0">
                 <SelectValue placeholder="ترتيب حسب" />
               </SelectTrigger>
@@ -218,9 +218,10 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+            </Select>)}
+           
 
-            <button className="bg-black text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-gray-800 transition-all duration-300">
+            <button className="bg-[#23A6F0] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#3daae9] transition-all duration-300">
               أضف تقييمًا
             </button>
           </div>
@@ -234,7 +235,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
             {reviews.length === 0 ? (
               <div className="text-center py-12 bg-gray-50  rounded-[8px] ">
                 <p className="text-gray-500">لا توجد تقييمات لهذا المنتج بعد</p>
-                <button className="mt-4 bg-black text-white px-6 py-2 rounded-full text-sm">
+                <button className="mt-4 bg-[#23A6F0] text-white px-6 py-2 rounded-full text-sm">
                   كن أول من يقيم المنتج
                 </button>
               </div>

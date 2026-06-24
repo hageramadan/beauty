@@ -289,19 +289,31 @@ const getUserName = (order: any): string => {
   return "غير متوفر";
 };
 
-// ========== دوال استخراج المقاس واللون ==========
-const getSize = (item: OrderItem): string | null => {
+// ========== دوال استخراج الخصائص (تم التعديل) ==========
+
+// جلب الذاكرة
+const getMemory = (item: OrderItem): string | null => {
   if (!item.variant?.attributes) return null;
-  const sizeAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "مقاس"
+  const memoryAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "الذاكرة"
   );
-  return sizeAttr?.value || null;
+  return memoryAttr?.value || null;
 };
 
+// جلب الهارد ديسك
+const getStorage = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const storageAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "هارد ديسك"
+  );
+  return storageAttr?.value || null;
+};
+
+// جلب اللون
 const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
   if (!item.variant?.attributes) return null;
   const colorAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "اللون"
+    (attr) => attr.attribute_type.name === "لون"
   );
   if (!colorAttr) return null;
   
@@ -317,7 +329,7 @@ const transformOrderDetails = (apiOrder: any): OrderDetails => {
   
   return {
     id: apiOrder.id,
-    orderNumber: apiOrder.order_number,
+     orderNumber: apiOrder.order_number || `#${apiOrder.id}`,
     date: formatDate(apiOrder.created_at),
     status: englishStatus,
     status_label: apiOrder.status_label,
@@ -458,7 +470,7 @@ export default function OrderDetailsPage() {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#000000] text-white px-6 py-2 rounded-[8px] hover:bg-gray-800 transition">
+          <Link href="/account/orders" className="inline-block bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] hover:bg-[#35acf1] transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -490,17 +502,17 @@ export default function OrderDetailsPage() {
     <>
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto mb-3 px-4 md:px-8">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+       
+          
+          <h1 className="text-[18px] font-bold mb-2  md:text-xl text-[#180100]">تفاصيل الطلب</h1>
+             {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 md:mb-5">
             <Link href="/account" className="hover:text-[#23A6F0] transition">حسابي</Link>
             <ChevronRight className="w-4 h-4" />
             <Link href="/account/orders" className="hover:text-[#23A6F0] transition">طلباتي</Link>
             <ChevronRight className="w-4 h-4" />
             <span className="text-[#23A6F0] font-medium">تفاصيل الطلب</span>
           </div>
-          
-          <h1 className="text-[20px] font-bold mb-2 md:text-2xl text-[#180100] md:mb-4">تفاصيل الطلب</h1>
-          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* العمود الأيمن */}
             <div className="lg:col-span-2 space-y-6">
@@ -553,38 +565,49 @@ export default function OrderDetailsPage() {
                     // ✅ اختيار الصورة المناسبة (أولوية لصورة المتغير)
                     const displayImage = variantImage || productImage;
                     
-                    // استخراج المقاس واللون
-                    const size = getSize(item);
+                    // ========== استخدام الدوال الجديدة ==========
+                    const memory = getMemory(item);
+                    const storage = getStorage(item);
                     const color = getColor(item);
                     
                     return (
-                      <div key={idx} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-[8px] p-3">
+                      <div key={idx} className="flex items-center gap-1 border border-gray-200 rounded-[8px] p-3">
                         <div className="w-20 h-20 bg-gray-100  rounded-[8px]  overflow-hidden flex-shrink-0 relative">
                           <Image
                             src={displayImage}
                             alt={item.title}
-                            width={80}
-                            height={80}
+                            width={800}
+                            height={800}
                             className="object-cover w-full h-full"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
                             }}
                           />
                         </div>
-                        <div className="flex-1 md:text-right text-center">
-                          <div className="flex flex-col md:flex-row gap-3 md:justify-between items-center md:items-start">
+                        <div className="flex-1">
+                          <div className="flex flex-col md:flex-row gap-3 md:justify-between ">
                             <div>
                               <p className="font-bold text-gray-800">{item.title}</p>
                               
-                              {/* 🔥 عرض المقاس واللون */}
+                              {/* ========== عرض جميع الخصائص ========== */}
                               <div className="flex flex-wrap gap-2 mt-1.5">
-                                {size && (
+                                {/* عرض الذاكرة */}
+                                {memory && (
                                   <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
-                                    <span className="font-medium">المقاس:</span>
-                                    <span>{size}</span>
+                                    <span className="font-medium">الذاكرة:</span>
+                                    <span>{memory}</span>
                                   </span>
                                 )}
                                 
+                                {/* عرض الهارد ديسك */}
+                                {storage && (
+                                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
+                                    <span className="font-medium">هارد ديسك:</span>
+                                    <span>{storage}</span>
+                                  </span>
+                                )}
+                                
+                                {/* عرض اللون */}
                                 {color && (
                                   <span className="inline-flex items-center gap-1.5 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
                                     <span className="font-medium">اللون:</span>
@@ -736,7 +759,7 @@ export default function OrderDetailsPage() {
                 {!isRefunded && !isReturnPending && !isReturnRejected && order.status === "delivered" && (
                   <button 
                     onClick={handleReturnClick} 
-                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover: bg-blue-50  transition"
+                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover:bg-red-50  transition"
                   >
                     إرجاع
                   </button>
@@ -746,7 +769,7 @@ export default function OrderDetailsPage() {
                   <button 
                     onClick={openCancelModal}
                     disabled={isCancelling}
-                    className="flex-1 border-2 border-red-500 text-red-600 py-3  rounded-[8px]  font-medium hover: bg-blue-50  transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 border-2 border-red-500 text-red-600 py-3  rounded-[8px]  font-medium hover:bg-red-50  transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isCancelling ? (
                       <>
@@ -812,7 +835,7 @@ export default function OrderDetailsPage() {
               <button
                 onClick={confirmCancelOrder}
                 disabled={isCancelling}
-                className="flex-1 py-2.5  rounded-[8px]   bg-blue-50 0 text-white font-medium hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5  rounded-[8px]   bg-[#23A6F0] text-white font-medium hover:bg-[#2aa9f3] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCancelling ? (
                   <>

@@ -152,7 +152,7 @@ export function CategoriesSection() {
             <p>عذراً، حدث خطأ: {error}</p>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-2 px-4 py-2 bg-black text-white rounded hover:bg-[#1f98df]"
+              className="mt-2 px-4 py-2 bg-[#23A6F0] text-white rounded hover:bg-[#1f98df]"
             >
               إعادة المحاولة
             </button>
@@ -176,12 +176,12 @@ export function CategoriesSection() {
 
   return (
     <section className="py-2 md:py-12">
-      <div className="container-custom px-2 sm:px-6 relative">
+      <div className="container-custom px-2 lg:px-6 relative">
         
         {/* زر السهم الأيمن */}
         <button
           onClick={() => scroll('right')}
-          className="absolute right-5 top-1/2 -translate-y-1/2 z-10 bg-black rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
+          className="absolute right-5 top-1/2 -translate-y-1/2 z-10 bg-[#23A6F0] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
           style={{ 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transform: 'translateX(50%) translateY(-50%)'
@@ -194,7 +194,7 @@ export function CategoriesSection() {
         {/* زر السهم الأيسر */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-5 top-1/2 -translate-y-1/2 z-10 bg-black rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
+          className="absolute left-5 top-1/2 -translate-y-1/2 z-10 bg-[#23A6F0] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
           style={{ 
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             transform: 'translateX(-50%) translateY(-50%)'
@@ -207,7 +207,7 @@ export function CategoriesSection() {
         {/* حاوية السحب الأفقية */}
         <div 
           ref={sliderRef}
-          className="overflow-x-auto px-5 md:h-[236px] h-[100px] pt-12 hide-scrollbar"
+          className="overflow-x-auto lg:px-5 md:h-[236px] h-[100px] pt-12 hide-scrollbar"
           style={{ 
             width: '100%',
             overflowY: 'hidden',
@@ -245,7 +245,7 @@ export function CategoriesSection() {
                     </div>
                     <div className="text-center mt-2 pb-2 w-full">
                       <h3 
-                        className="text-[10px] sm:text-[16px] whitespace-nowrap"
+                        className="text-[10px] sm:text-sm whitespace-nowrap"
                         style={{ color: '#112B40' }}
                       >
                         {category.name}

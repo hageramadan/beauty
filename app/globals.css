@@ -91,13 +91,11 @@ label{
   color: #F56565;
 }
 
-.page-with-padding {
-  padding-top: 5rem; /* 80px */
-}
+
 
 @media (min-width: 1024px) {
   .page-with-padding {
-    padding-top: 6rem; /* 96px */
+    padding-top: 3rem; /* 96px */
   }
 }
 
@@ -178,7 +176,7 @@ label{
 }
 
 .page-with-padding {
-  padding-top: 3rem; /* 80px */
+  padding-top: 1rem; /* 80px */
 }
 
 @media (min-width: 1024px) {

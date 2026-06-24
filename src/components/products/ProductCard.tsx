@@ -242,7 +242,7 @@ export function ProductCard({
               {/* Eye Icon - Quick View */}
               <button
                 onClick={handleQuickView}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-black transition-all duration-200 hover:scale-110"
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110"
                 style={{ color: '#112B40' }}
                 aria-label="معاينة سريعة"
               >
@@ -253,7 +253,7 @@ export function ProductCard({
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart || cartLoading}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-black transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ color: '#112B40' }}
                 aria-label="أضف إلى السلة"
               >
@@ -268,7 +268,7 @@ export function ProductCard({
               <button
                 onClick={handleFavoriteClick}
                 disabled={isLocalMutating || isLoading}
-                className="bg-white md:block hidden rounded-full p-2 shadow-lg hover:bg-black transition-all duration-200 hover:scale-110 disabled:opacity-50"
+                className="bg-white md:block hidden rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110 disabled:opacity-50"
                 style={{ color: localFavorite ? '#ef4444' : '#112B40' }}
                 aria-label="أضف إلى المفضلة"
               >

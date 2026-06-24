@@ -775,7 +775,7 @@ const prepareOrderData = useCallback(() => {
         <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
         <Link
           href="/products"
-          className="bg-black text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] "
         >
           تسوق الآن
         </Link>
@@ -787,7 +787,7 @@ const prepareOrderData = useCallback(() => {
     <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
       <div className="container page-with-padding mx-auto mb-3">
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+          <h1 className="text-xl md:text-xl font-bold text-gray-800 mb-4">
             إتمام الطلب
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
@@ -863,7 +863,7 @@ const prepareOrderData = useCallback(() => {
                     className={`px-4 py-2  rounded-[8px]  text-sm font-medium transition ${
                       createAccount
                         ? "bg-green-100 text-green-700 border border-green-300"
-                        : "bg-black text-white hover:bg-gray-800"
+                        : "bg-[#23A6F0] text-white hover:bg-[#3db8ff]"
                     }`}
                   >
                     {createAccount ? "✅ تم الاختيار" : "إنشاء حساب"}
@@ -885,7 +885,7 @@ const prepareOrderData = useCallback(() => {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3  rounded-[8px]  font-semibold text-lg transition disabled:opacity-50"
+              className="hidden md:block w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3  rounded-[8px]  font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
@@ -897,6 +897,13 @@ const prepareOrderData = useCallback(() => {
               cartSummary={cartSummary}
               deliveryMethod={formData.deliveryMethod}
             />
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || isOrderCompleted}
+              className="block md:hidden w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3  rounded-[8px]  font-semibold text-lg transition disabled:opacity-50"
+            >
+              {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
+            </button>
           </div>
         </div>
       </div>
@@ -1112,7 +1119,7 @@ function AccountPopup({
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 bg-black text-white py-2.5  rounded-[8px]  font-medium hover:bg-[#d41c19] transition"
+            className="flex-1 bg-[#23A6F0] text-white py-2.5  rounded-[8px]  font-medium hover:bg-[#3eb6fc] transition"
           >
             إنشاء الحساب
           </button>
@@ -1175,7 +1182,7 @@ function SuccessPopup({
            <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
           <button
             onClick={onGoToHome}
-            className="w-full  py-2 md:py-3  rounded-[8px]  font-medium border border-[#2DA5F3] text-[#2DA5F3]  transition"
+            className="w-full  py-2 md:py-3  rounded-[8px]  font-medium border   transition"
           >
             العودة إلى الرئيسية
           </button>

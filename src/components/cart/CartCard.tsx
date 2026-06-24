@@ -1,7 +1,6 @@
 // components/cart/CartItemCard.tsx
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Heart } from "lucide-react";
@@ -18,62 +17,73 @@ interface CartItemCardProps {
 }
 
 // دالة للحصول على اسم العلامة التجارية
-const getBrandName = (brand: string | { name: string } | null | undefined): string => {
+const getBrandName = (
+  brand: string | { name: string } | null | undefined,
+): string => {
   if (!brand) return "";
   if (typeof brand === "string") return brand;
   if (typeof brand === "object" && "name" in brand) return brand.name;
   return "";
 };
 
-// دالة لتحويل اسم اللون إلى اللون المناسب للعرض
-const getColorCode = (colorName: string): string => {
-  const colorMap: Record<string, string> = {
-    'ازرق فاتح': '#1e91eb',
-    'ازرق داكن': '#252B42',
-    'بيج': '#bdae8c',
-    'احمر': '#23A6F0',
-    'زيتوني': '#a4bfa8',
-    'رمادي': '#454545',
-    'بينك': '#d959c6',
-    'بنكي': '#d959c6',
-    'اسود': '#000000',
-    'ابيض': '#ffffff',
-    'اخضر': '#23856D',
-    'برتقالي': '#E77C40',
-  };
-  return colorMap[colorName] || '#cccccc';
-};
+// دالة للحصول على اللون المناسب للعرض (مع دعم الـ Hex)
+const getColorDisplay = (colorName: string, colorHex?: string): string => {
+  // إذا كان الـ Hex موجود، استخدمه مباشرة
+  if (colorHex && colorHex.startsWith("#")) {
+    return colorHex;
+  }
 
+  // وإلا استخدم الـ mapping القديم
+  const colorMap: Record<string, string> = {
+    "ازرق فاتح": "#1e91eb",
+    "ازرق داكن": "#252B42",
+    بيج: "#bdae8c",
+    احمر: "#23A6F0",
+    زيتوني: "#a4bfa8",
+    رمادي: "#454545",
+    بينك: "#d959c6",
+    بنكي: "#d959c6",
+    اسود: "#000000",
+    ابيض: "#ffffff",
+    اخضر: "#23856D",
+    برتقالي: "#E77C40",
+  };
+  return colorMap[colorName] || "#cccccc";
+};
 export function CartItemCard({
   item,
   onUpdateQuantity,
   onRemove,
 }: CartItemCardProps) {
-  const { 
-    id, 
-    productId, 
-    name, 
-    brand, 
-    price, 
-    originalPrice, 
-    image, 
-    color, 
-    size, 
+  const {
+    id,
+    productId,
+    name,
+    brand,
+    price,
+    originalPrice,
+    image,
+    color,
+    colorHex, // ✅ جديد
+    memory, // ✅ جديد
+    storage,
+    size,
     quantity,
-    totalPrice  // ✅ إضافة totalPrice من الـ item
+    totalPrice, // ✅ إضافة totalPrice من الـ item
   } = item;
-  
+
   // استخدام الـ FavoritesContext
-  const { addFavorite, removeFavorite, isFavorite, isMutating } = useFavoritesContext();
-  
+  const { addFavorite, removeFavorite, isFavorite, isMutating } =
+    useFavoritesContext();
+
   const isProductFavorite = isFavorite(productId);
   const brandName = getBrandName(brand);
-  const colorCode = getColorCode(color);
+  
 
   // دالة إضافة/إزالة من المفضلة
   const handleToggleFavorite = async () => {
     if (isMutating) return;
-    
+
     if (isProductFavorite) {
       await removeFavorite(productId);
     } else {
@@ -83,33 +93,38 @@ export function CartItemCard({
 
   // دالة معالجة زر الحذف مع Toast مخصص للتأكيد
   const handleRemove = () => {
-    toast((t) => (
-      <div className="flex flex-col gap-3 p-3" dir="rtl">
-        <p className="text-gray-800 text-sm font-medium">
-          هل أنت متأكد من حذف <span className="font-bold text-blue-500">{name}</span> من سلة التسوق؟
-        </p>
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              onRemove(id);
-            }}
-            className="px-4 py-1.5  bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
-          >
-            نعم، احذف
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-[8px] hover:bg-gray-300 transition font-medium"
-          >
-            إلغاء
-          </button>
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3 p-3" dir="rtl">
+          <p className="text-gray-800 text-sm font-medium">
+            هل أنت متأكد من حذف{" "}
+            <span className="font-bold text-blue-500">{name}</span> من سلة
+            التسوق؟
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                onRemove(id);
+              }}
+              className="px-4 py-1.5  bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
+            >
+              نعم، احذف
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-[8px] hover:bg-gray-300 transition font-medium"
+            >
+              إلغاء
+            </button>
+          </div>
         </div>
-      </div>
-    ), {
-      duration: 5000,
-      style: { maxWidth: '380px', padding: '0', borderRadius: '16px' },
-    });
+      ),
+      {
+        duration: 5000,
+        style: { maxWidth: "380px", padding: "0", borderRadius: "16px" },
+      },
+    );
   };
 
   return (
@@ -117,7 +132,11 @@ export function CartItemCard({
       {/* تنسيق الشاشات الكبيرة (md فما فوق) */}
       <div className="hidden md:block bg-white rounded-2xl border border-[#F0EAE9] p-4 hover:shadow-md transition-shadow duration-300">
         <div className="flex gap-4">
-          <ProductImageLarge id={parseInt(productId)} image={image} name={name} />
+          <ProductImageLarge
+            id={parseInt(productId)}
+            image={image}
+            name={name}
+          />
           <div className="flex-1">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
               <ProductDetailsLarge
@@ -125,7 +144,9 @@ export function CartItemCard({
                 name={name}
                 brand={brandName}
                 color={color}
-                colorCode={colorCode}
+                colorHex={colorHex}
+                memory={memory}
+                storage={storage}
                 size={size}
               />
               <ActionButtonsLarge
@@ -137,8 +158,8 @@ export function CartItemCard({
             </div>
             <div className="flex flex-wrap items-center justify-between mt-2 gap-3">
               {/* ✅ عرض total_price بدلاً من price فقط */}
-              <ProductPriceLarge 
-                price={price} 
+              <ProductPriceLarge
+                price={price}
                 originalPrice={originalPrice}
                 totalPrice={totalPrice}
                 quantity={quantity}
@@ -156,7 +177,11 @@ export function CartItemCard({
       {/* تنسيق الموبايل */}
       <div className="md:hidden bg-white  rounded-[8px]  border border-gray-100 p-2 hover:shadow-md transition-shadow duration-300">
         <div className="flex gap-2">
-          <ProductImageMobile id={parseInt(productId)} image={image} name={name} />
+          <ProductImageMobile
+            id={parseInt(productId)}
+            image={image}
+            name={name}
+          />
           <div className="flex-1">
             <div className="flex justify-between items-start gap-1">
               <ProductDetailsMobile
@@ -164,7 +189,9 @@ export function CartItemCard({
                 name={name}
                 brand={brandName}
                 color={color}
-                colorCode={colorCode}
+                colorHex={colorHex}
+                memory={memory}
+                storage={storage}
                 size={size}
               />
               <ActionButtonsMobile
@@ -176,8 +203,8 @@ export function CartItemCard({
             </div>
             <div className="flex items-center justify-between mt-1">
               {/* ✅ عرض total_price بدلاً من price فقط */}
-              <ProductPriceMobile 
-                price={price} 
+              <ProductPriceMobile
+                price={price}
                 originalPrice={originalPrice}
                 totalPrice={totalPrice}
                 quantity={quantity}
@@ -197,7 +224,15 @@ export function CartItemCard({
 
 // ========== مكونات الشاشات الكبيرة ==========
 
-const ProductImageLarge = ({ id, image, name }: { id: number; image: string; name: string }) => {
+const ProductImageLarge = ({
+  id,
+  image,
+  name,
+}: {
+  id: number;
+  image: string;
+  name: string;
+}) => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
@@ -226,46 +261,78 @@ const ProductDetailsLarge = ({
   name,
   brand,
   color,
-  colorCode,
+  colorHex,
+  memory,
+  storage,
   size,
 }: {
   id: number;
   name: string;
   brand: string;
   color: string;
-  colorCode: string;
+  colorHex?: string;
+  memory: string;
+  storage: string;
   size: string;
-}) => (
-  <div>
-    <Link href={`/product/${id}`}>
-      <h1 className="text-lg font-semibold text-gray-800 hover:text-[#23A6F0] transition">
-        {name}
-      </h1>
-    </Link>
-    {brand && <p className="text-sm text-gray-500 mt-1">{brand}</p>}
-    <div className="flex flex-col gap-3 mt-2 text-sm">
-      {color && (
-        <span className="font-extrabold flex items-center gap-2">
-          اللون: 
-          <span className="text-gray-800 font-normal flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-full border border-gray-300" 
-              style={{ backgroundColor: colorCode }}
-            />
-            {color}
-          </span>
-        </span>
-      )}
-      {size && (
-        <span className="font-extrabold">
-          المقاس: <span className="text-gray-800 font-normal">{size}</span>
-        </span>
-      )}
-    </div>
-  </div>
-);
+}) => {
+  const colorCode = getColorDisplay(color, colorHex);
 
-// ✅ تحديث مكون عرض السعر ليعرض total_price
+  return (
+    <div>
+      <Link href={`/product/${id}`}>
+        <h1 className="text-lg font-semibold text-gray-800 hover:text-[#23A6F0] transition">
+          {name}
+        </h1>
+      </Link>
+      
+      <div className="flex flex-col gap-2 mt-2 text-sm">
+       
+{color && color !== "-" && (
+  <span className="font-extrabold flex items-center gap-2">
+    اللون:
+    <span className="text-gray-800 font-normal flex items-center gap-2">
+      <span
+        className="w-4 h-4 rounded-full border border-gray-300"
+        style={{ backgroundColor: colorCode }}
+      />
+      {color}
+    </span>
+  </span>
+)}
+{/* ✅ إذا كان هناك Hex ولكن لا يوجد اسم لون، اعرض اللون كـ "لون" مع الدائرة فقط */}
+{!color && colorHex && (
+  <span className="font-extrabold flex items-center gap-2">
+    اللون:
+    <span className="text-gray-800 font-normal flex items-center gap-2">
+      <span
+        className="w-4 h-4 rounded-full border border-gray-300"
+        style={{ backgroundColor: colorHex }}
+      />
+      لون
+    </span>
+  </span>
+)}
+        {memory && (
+          <span className="font-extrabold">
+            الذاكرة: <span className="text-gray-800 font-normal">{memory}</span>
+          </span>
+        )}
+        {storage && (
+          <span className="font-extrabold">
+            الهارد ديسك:{" "}
+            <span className="text-gray-800 font-normal">{storage}</span>
+          </span>
+        )}
+        {size && (
+          <span className="font-extrabold">
+            المقاس: <span className="text-gray-800 font-normal">{size}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ProductPriceLarge = ({
   price,
   originalPrice,
@@ -278,24 +345,26 @@ const ProductPriceLarge = ({
   quantity: number;
 }) => (
   <div className="flex flex-col gap-1">
-    {/* سعر الوحدة (صغير) */}
-    <div className="flex items-center gap-1">
-      {originalPrice && originalPrice !== price && (
-        <div className="text-xs text-gray-400 line-through">
+    {/* السعر الأصلي مشطوب + السعر النهائي جنب بعض */}
+    <div className="flex items-center gap-2">
+      {originalPrice && originalPrice > price && (
+        <span className="text-sm text-gray-400 line-through">
           {originalPrice.toLocaleString()} EGP
-        </div>
+        </span>
       )}
-      <div className="text-sm text-gray-500">
-        {price.toLocaleString()} EGP / قطعة
-      </div>
+       {/* سعر الوحدة */}
+    <div className="text-xs text-gray-500">
+      {price.toLocaleString()} EGP / قطعة
     </div>
-    {/* السعر الإجمالي (كبير وواضح) */}
-    <div className="flex items-center gap-1">
-      <span className="text-sm lg:text-lg font-bold ">
+       </div>
+      <div className="flex items-center gap-0.5">
+        <span className="text-lg font-bold text-[#23A6F0]">
         {totalPrice.toLocaleString()} EGP
       </span>
       <span className="text-xs text-gray-400">(الإجمالي)</span>
-    </div>
+   
+      </div>
+   
   </div>
 );
 
@@ -308,7 +377,7 @@ const QuantityControlLarge = ({
   quantity: number;
   onUpdateQuantity: (id: string, newQuantity: number) => void;
 }) => (
-  <div className="flex items-center gap-3 bg-gray-50 rounded-full px-2 py-1">
+  <div className="flex items-center gap-3 bg-gray-100 rounded-full px-2 py-1">
     <button
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
@@ -344,8 +413,8 @@ const ActionButtonsLarge = ({
       onClick={onToggleFavorite}
       disabled={isMutating}
       className={`flex items-center gap-1 text-sm transition disabled:opacity-50 ${
-        isSaved 
-          ? "text-[#c41f1c] hover:text-[#c41f1c]" 
+        isSaved
+          ? "text-[#c41f1c] hover:text-[#c41f1c]"
           : "text-[#180100] hover:text-[#c41f1c]"
       }`}
     >
@@ -365,7 +434,15 @@ const ActionButtonsLarge = ({
 
 // ========== مكونات الموبايل ==========
 
-const ProductImageMobile = ({ id, image, name }: { id: number; image: string; name: string }) => {
+const ProductImageMobile = ({
+  id,
+  image,
+  name,
+}: {
+  id: number;
+  image: string;
+  name: string;
+}) => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
@@ -394,40 +471,80 @@ const ProductDetailsMobile = ({
   name,
   brand,
   color,
-  colorCode,
+  colorHex,
+  memory,
+  storage,
   size,
 }: {
   id: number;
   name: string;
   brand: string;
   color: string;
-  colorCode: string;
+  colorHex?: string;
+  memory: string;
+  storage: string;
   size: string;
-}) => (
-  <div className="flex-1">
-    <Link href={`/product/${id}`}>
-      <h1 className="text-sm font-semibold text-gray-800 hover:text-[#23A6F0] transition line-clamp-1">
-        {name}
-      </h1>
-    </Link>
-    {brand && <p className="text-xs text-gray-500">{brand}</p>}
-    <div className="flex gap-2 mt-0.5 text-xs text-gray-600 items-center">
-      {color && (
-        <div className="flex items-center gap-1">
-          <span 
-            className="w-2.5 h-2.5 rounded-full border border-gray-300" 
-            style={{ backgroundColor: colorCode }}
-          />
-          <span>{color}</span>
-        </div>
-      )}
-      {color && size && <span>|</span>}
-      {size && <span>{size}</span>}
-    </div>
-  </div>
-);
+}) => {
+  const colorCode = getColorDisplay(color, colorHex);
 
-// ✅ تحديث مكون عرض السعر للموبايل
+  return (
+    <div className="flex-1">
+      <Link href={`/product/${id}`}>
+        <h1 className="text-sm font-semibold text-gray-800 hover:text-[#23A6F0] transition line-clamp-1">
+          {name}
+        </h1>
+      </Link>
+      {brand && <p className="text-xs text-gray-500">{brand}</p>}
+      <div className="flex flex-wrap gap-1 mt-0.5 text-xs text-gray-600 items-center">
+        // في ProductDetailsLarge و ProductDetailsMobile
+{color && color !== "-" && (
+  <span className="font-extrabold flex items-center gap-2">
+    اللون:
+    <span className="text-gray-800 font-normal flex items-center gap-2">
+      <span
+        className="w-4 h-4 rounded-full border border-gray-300"
+        style={{ backgroundColor: colorCode }}
+      />
+      {color}
+    </span>
+  </span>
+)}
+{/* ✅ إذا كان هناك Hex ولكن لا يوجد اسم لون، اعرض اللون كـ "لون" مع الدائرة فقط */}
+{!color && colorHex && (
+  <span className="font-extrabold flex items-center gap-2">
+    اللون:
+    <span className="text-gray-800 font-normal flex items-center gap-2">
+      <span
+        className="w-4 h-4 rounded-full border border-gray-300"
+        style={{ backgroundColor: colorHex }}
+      />
+      لون
+    </span>
+  </span>
+)}
+        {memory && (
+          <>
+            <span className="text-gray-300">|</span>
+            <span>ذاكرة: {memory}</span>
+          </>
+        )}
+        {storage && (
+          <>
+            <span className="text-gray-300">|</span>
+            <span>تخزين: {storage}</span>
+          </>
+        )}
+        {size && (
+          <>
+            <span className="text-gray-300">|</span>
+            <span>{size}</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ProductPriceMobile = ({
   price,
   originalPrice,
@@ -440,24 +557,26 @@ const ProductPriceMobile = ({
   quantity: number;
 }) => (
   <div className="flex flex-col">
-    {/* السعر الإجمالي (كبير) */}
-    <div className="text-sm font-bold text-[#23A6F0]">
-      {totalPrice.toLocaleString()} EGP
-    </div>
-    {/* سعر الوحدة (صغير) */}
-    <div className="flex items-center gap-1">
-      {originalPrice && originalPrice !== price && (
-        <div className="text-[9px] text-gray-400 line-through">
+    {/* سعر الوحدة */}
+  
+    {/* السعر الأصلي مشطوب + السعر النهائي جنب بعض */}
+    <div className="flex items-center gap-1.5">
+      {originalPrice && originalPrice > price && (
+        <span className="text-[10px] text-gray-400 line-through">
           {originalPrice.toLocaleString()}
-        </div>
+        </span>
       )}
-      <div className="text-[9px] text-gray-400">
-        {price.toLocaleString()} / قطعة
-      </div>
+        <div className="text-[9px] text-gray-400">
+      {price.toLocaleString()} / قطعة
     </div>
+      </div>
+      <span className="text-sm font-bold text-[#23A6F0]">
+        {totalPrice.toLocaleString()} EGP
+      </span>
+    
+    
   </div>
 );
-
 const QuantityControlMobile = ({
   id,
   quantity,
@@ -467,7 +586,7 @@ const QuantityControlMobile = ({
   quantity: number;
   onUpdateQuantity: (id: string, newQuantity: number) => void;
 }) => (
-  <div className="flex items-center gap-0.5 bg-gray-50 rounded-full">
+  <div className="flex items-center gap-0.5 bg-gray-200 rounded-full">
     <button
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
@@ -500,14 +619,12 @@ const ActionButtonsMobile = ({
   isMutating: boolean;
   onRemove: () => void;
 }) => (
-  <div className="flex flex-col items-end gap-1.5">
+  <div className="flex items-end gap-1.5">
     <button
       onClick={onToggleFavorite}
       disabled={isMutating}
       className={`flex items-center gap-0.5 text-xs transition disabled:opacity-50 ${
-        isSaved 
-          ? "text-[#23A6F0]" 
-          : "text-gray-400 hover:text-[#23A6F0]"
+        isSaved ? "text-[#23A6F0]" : "text-gray-400 hover:text-[#23A6F0]"
       }`}
     >
       <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""}`} />

@@ -43,7 +43,7 @@ export default function Map({ onLocationSelect }: MapProps) {
             {/* Mock Map Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
               <div className="text-center">
-                <FaMapPin className="text-red-500 text-4xl mx-auto mb-2" />
+                <FaMapPin className="text-red-500 text-2xl mx-auto mb-2" />
                 <p className="text-gray-600 text-sm">انقر لتحديد موقعك على الخريطة</p>
                 {selectedLocation && (
                   <p className="text-green-600 text-xs mt-2 font-medium">{selectedLocation}</p>

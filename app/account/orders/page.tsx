@@ -265,18 +265,31 @@ const cleanImageUrl = (url: string): string => {
   return url;
 };
 
-const getSize = (item: OrderItem): string | null => {
+// ========== دوال جديدة لجلب خصائص المنتج ==========
+
+// جلب الذاكرة
+const getMemory = (item: OrderItem): string | null => {
   if (!item.variant?.attributes) return null;
-  const sizeAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "مقاس"
+  const memoryAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "الذاكرة"
   );
-  return sizeAttr?.value || null;
+  return memoryAttr?.value || null;
 };
 
+// جلب الهارد ديسك
+const getStorage = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const storageAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "هارد ديسك"
+  );
+  return storageAttr?.value || null;
+};
+
+// جلب اللون (مع دعم عرض اللون)
 const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
   if (!item.variant?.attributes) return null;
   const colorAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "اللون"
+    (attr) => attr.attribute_type.name === "لون"
   );
   if (!colorAttr) return null;
   
@@ -518,7 +531,7 @@ export default function OrdersPage() {
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#23A6F0]" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          <h1 className="text-xl sm:text-xl font-bold text-gray-800">
             طلباتي
           </h1>
          
@@ -535,7 +548,7 @@ export default function OrdersPage() {
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
                 filterStatus === filter.value
-                  ? "bg-[#000000] text-white"
+                  ? "bg-[#23A6F0] text-white"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
             >
@@ -626,8 +639,8 @@ export default function OrdersPage() {
 
                   {/* تفاصيل الطلب الموسعة */}
                   {isExpanded && order.items.length > 0 && (
-                    <div className="border-t border-gray-100 p-4 sm:p-5 bg-gray-50">
-                      <div className="space-y-3 sm:space-y-4">
+                    <div className=" p-4 sm:p-5 ">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-5 ">
                         {order.items.map((item, idx) => {
                           const variantImage = item.variant?.variant_image 
                             ? cleanImageUrl(item.variant.variant_image) 
@@ -638,13 +651,16 @@ export default function OrdersPage() {
                             : PLACEHOLDER_IMAGE;
 
                           const displayImage = variantImage || productImage;
-                          const size = getSize(item);
+                          
+                          // ========== استخدام الدوال الجديدة ==========
+                          const memory = getMemory(item);
+                          const storage = getStorage(item);
                           const color = getColor(item);
 
                           return (
                             <div
                               key={idx}
-                              className="flex gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-200 last:border-0 last:pb-0"
+                              className="flex gap-3 sm:gap-4 p-3 border rounded-[8px]"
                             >
                               <Link
                                 href={`/account/orders/${order.id}`}
@@ -677,14 +693,25 @@ export default function OrdersPage() {
                                       </p>
                                     </Link>
                                     
+                                    {/* ========== عرض جميع الخصائص ========== */}
                                     <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1">
-                                      {size && (
+                                      {/* عرض الذاكرة */}
+                                      {memory && (
                                         <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
-                                          <span className="font-medium">المقاس:</span>
-                                          <span>{size}</span>
+                                          <span className="font-medium">الذاكرة:</span>
+                                          <span>{memory}</span>
                                         </span>
                                       )}
                                       
+                                      {/* عرض الهارد ديسك */}
+                                      {storage && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
+                                          <span className="font-medium">هارد ديسك:</span>
+                                          <span>{storage}</span>
+                                        </span>
+                                      )}
+                                      
+                                      {/* عرض اللون */}
                                       {color && (
                                         <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
                                           <span className="font-medium">اللون:</span>
@@ -717,7 +744,9 @@ export default function OrdersPage() {
                           );
                         })}
 
-                        <div className="pt-2 sm:pt-3 flex justify-between items-center">
+                        
+                      </div>
+                      <div className="pt-2 sm:pt-3 flex justify-between items-center">
                           <Link
                             href={`/account/orders/${order.id}`}
                             className="text-[#23A6F0] text-sm sm:text-base font-medium hover:underline"
@@ -736,7 +765,6 @@ export default function OrdersPage() {
                             </p>
                           </div>
                         </div>
-                      </div>
                     </div>
                   )}
                 </div>

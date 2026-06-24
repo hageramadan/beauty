@@ -28,12 +28,24 @@ export default function AccountPage() {
   const [walletCurrency, setWalletCurrency] = useState<string>("EGP");
   const [loadingWallet, setLoadingWallet] = useState<boolean>(true);
 
-  // دالة لجلب رصيد المحفظة من الـ API (نفس الطريقة في WalletPage)
+  // دالة مساعدة لمعالجة رابط الصورة
+  const getImageUrl = (imagePath: string | null | undefined): string | null => {
+    if (!imagePath) return null;
+    
+    // إذا كان الرابط كاملًا (يبدأ بـ http أو https)
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // إذا كان مسارًا نسبيًا
+    return `https://admin.souqkaber.com${imagePath}`;
+  };
+
+  // دالة لجلب رصيد المحفظة من الـ API
   const fetchWalletBalance = async () => {
     setLoadingWallet(true);
     
     try {
-      // استرجاع التوكن من localStorage بنفس المفتاح
       const token = localStorage.getItem("auth_token");
 
       if (!token) {
@@ -54,7 +66,7 @@ export default function AccountPage() {
       const data = await response.json();
 
       if (data.result === true && data.errNum === 200) {
-        const balanceString = data.data.balance; // مثال: "EGP 371.56"
+        const balanceString = data.data.balance;
         const [currencyPart, balancePart] = balanceString.split(" ");
         
         setWalletCurrency(currencyPart || "EGP");
@@ -164,6 +176,9 @@ export default function AccountPage() {
     return user.name.charAt(0).toUpperCase();
   };
 
+  // الحصول على رابط الصورة
+  const userImage = getImageUrl(user.image);
+
   // تنسيق عرض الرصيد
   const displayBalance = () => {
     if (loadingWallet) {
@@ -181,29 +196,36 @@ export default function AccountPage() {
 
   return (
     <>
-     
-      
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto pb-4">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[#180100]">حسابي</h1>
+            <h1 className="text-xl font-bold text-[#180100]">حسابي</h1>
           </div>
 
           {/* Profile Card */}
-          <div className="bg-white rounded-2xl shadow-sm px-4 py-4 mb-3 md:mb-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="bg-white rounded-2xl shadow-sm px-4 py-2 mb-3 md:mb-8 flex flex-col md:flex-row justify-between md:items-center">
             <div className="flex items-center">
-              {/* Profile Image - صورة افتراضية تعتمد على أول حرف من الاسم */}
+              {/* Profile Image - عرض الصورة من الـ API */}
               <div className="relative mb-4 md:mb-0">
-                {user.email ? (
-                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
-                    <span className="text-white text-2xl md:text-4xl font-bold">
-                      {getUserInitial()}
-                    </span>
-                  </div>
+                {userImage ? (
+                  <Image
+                    src={userImage}
+                    alt={user.name || "User"}
+                    width={960}
+                    height={960}
+                    unoptimized
+                    className="rounded-full object-cover h-[70px] w-[70px] md:w-24 md:h-24 border-4 border-white shadow-lg"
+                    onError={() => {
+                      // في حالة فشل تحميل الصورة، استخدم الحرف الأول
+                      // يمكنك إضافة حالة للتعامل مع الخطأ
+                    }}
+                  />
                 ) : (
                   <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
-                    <FaUser className="w-8 h-8 md:w-12 md:h-12 text-white" />
+                    <span className="text-white text-xl md:text-2xl font-bold">
+                      {getUserInitial()}
+                    </span>
                   </div>
                 )}
                 <button 
@@ -215,20 +237,23 @@ export default function AccountPage() {
               </div>
 
               {/* User Info - بيانات حقيقية من Context */}
-              <div className="mr-4">
+              <div className="mr-2 md:mr-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">
                   {user.name || "مستخدم"}
                 </h2>
-                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  {user.email && (
-                    <span>{user.email}</span>
-                  )}
-                </div>
+               
+                {/* عرض رقم الهاتف مع كود الدولة */}
+                {user.phone && (
+                  <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                    <span dir="ltr"> {user.country_code || '+20'} <></>
+                      {user.phone}</span>
+                  </div>
+                )}
               </div>
             </div>
             
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3 h-fit mt-4 md:mt-0">
+            <div className="hidden md:flex gap-1 md:gap-3 h-fit mt-4 md:mt-0">
               <button
                 onClick={() => router.push("/account/edit-profile")}
                 className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-[8px] hover:bg-gray-50 transition text-gray-700"
@@ -238,7 +263,7 @@ export default function AccountPage() {
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover: bg-red-50  transition text-red-600"
+                className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover:bg-red-50 transition text-red-600"
               >
                 <FaSignOutAlt className="w-4 h-4" />
                 <span>تسجيل الخروج</span>
@@ -251,15 +276,15 @@ export default function AccountPage() {
             <h2 className="text-lg font-bold text-gray-800">المحفظة</h2>
             <Link
               href="/account/wallet"
-              className="flex items-center justify-between bg-white  rounded-[8px]  p-4 hover:shadow-md transition-shadow border border-gray-200"
+              className="flex items-center justify-between bg-white rounded-[8px] p-3 lg:p-4 hover:shadow-md transition-shadow border border-gray-200"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <div className="bg-gray-100 p-2 rounded-full">
                   <div className="text-gray-600">
                     <Image src="/images/wallet.png" alt="Wallet" width={20} height={20} />
                   </div>
                 </div>
-                <span className="text-gray-700 text-base md:text-xl font-bold">الرصيد الحالي</span>
+                <span className="text-gray-700 text-sm md:text-xl font-bold">الرصيد الحالي</span>
               </div>
               {/* عرض الرصيد من الـ API */}
               {displayBalance()}
@@ -272,7 +297,7 @@ export default function AccountPage() {
               <Link
                 key={item.id}
                 href={item.href}
-                className="flex items-center justify-between bg-white  rounded-[8px]  p-4 hover:shadow-md transition-shadow border border-gray-200"
+                className="flex items-center justify-between bg-white rounded-[8px] p-4 hover:shadow-md transition-shadow border border-gray-200"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-gray-100 p-2 rounded-full">
@@ -283,6 +308,13 @@ export default function AccountPage() {
                 <FaChevronLeft className="w-4 h-4 text-gray-400" />
               </Link>
             ))}
+             <button
+                onClick={handleLogout}
+                className="md:hidden w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover:bg-red-50 transition text-red-600"
+              >
+                <FaSignOutAlt className="w-4 h-4" />
+                <span>تسجيل الخروج</span>
+              </button>
           </div>
         </div>
       </div>

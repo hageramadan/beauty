@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </button>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">نسيت كلمة المرور</h1>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">نسيت كلمة المرور</h1>
             <p className="text-gray-500 text-sm">
               أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق لإعادة تعيين كلمة المرور
             </p>

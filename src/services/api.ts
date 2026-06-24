@@ -111,6 +111,7 @@ interface ProductResponse {
   };
 }
 
+// api.ts
 export interface ProductData {
   id: number;
   type: string;
@@ -140,6 +141,7 @@ export interface ProductData {
   variants: any;
   quantity: number;
   images: string[];
+  video?: string; 
 }
 
 // ========== واجهات (Interfaces) الأقسام ==========
@@ -966,12 +968,21 @@ export async function registerWithPhone(data: RegisterWithPhoneRequest): Promise
       body: JSON.stringify(data),
     });
 
+   const results: AuthResponse = await response.json();
+    
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        return {
+        result: results.result || false,
+        errNum: results.errNum || response.status,
+        message: results.message || `فشل في تسجيل الدخول (${response.status})`,
+        data: results.data || null,
+      };
     }
 
-    const result: AuthResponse = await response.json();
-    return result;
+
+    // const result: AuthResponse = await response.json();
+    return results;
   } catch (error) {
     console.error('Error in registerWithPhone:', error);
     return {

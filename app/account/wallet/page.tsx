@@ -115,7 +115,7 @@ export default function WalletPage() {
             <FaChevronRight className="w-4 h-4" />
             <span>رجوع إلى حسابي</span>
           </Link>
-          <h1 className="text-2xl font-bold text-[#180100]">المحفظة</h1>
+          <h1 className="text-xl font-bold text-[#180100]">المحفظة</h1>
         </div>
 
         {/* بطاقة الرصيد - Wallet Card */}
@@ -132,7 +132,7 @@ export default function WalletPage() {
                     className="brightness-0 invert opacity-90"
                   />
                 </div>
-                <p className="text-white text-lg md:text-3xl font-medium">
+                <p className="text-white text-lg md:text-xl font-medium">
                   المحفظة
                 </p>
               </div>
@@ -143,7 +143,7 @@ export default function WalletPage() {
 
                 {/* المبلغ - يعرض الرصيد من الـ API */}
                 <div className="mb-6">
-                  <span className="text-white text-2xl md:text-3xl font-black tracking-tight">
+                  <span className="text-white text-xl md:text-xl font-black tracking-tight">
                     {currency} {balance !== null ? balance.toFixed(2) : "0.00"}
                   </span>
                 </div>

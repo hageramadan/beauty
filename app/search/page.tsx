@@ -370,24 +370,11 @@ function SearchContent() {
   return (
     <div className="min-h-screen page-with-padding">
       <div className="container mx-auto px-4 pb-16  lg:px-9">
-        {/* مسار الصفحة (Breadcrumb) */}
-        <div className="flex items-center gap-1 mb-6 text-sm">
-          <Link href="/" className="text-[#726C6C] hover:text-[#23A6F0] transition">
-            الرئيسية
-          </Link>
-          <span className="text-[#726C6C]">/</span>
-          <span className="text-[#180100] font-medium">البحث</span>
-          {query && (
-            <>
-              <span className="text-[#726C6C]">/</span>
-              <span className="text-[#23A6F0]">{query}</span>
-            </>
-          )}
-        </div>
+       
 
         {/* عنوان الصفحة وشريط البحث */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+          <h1 className="text-xl md:text-xl font-bold text-gray-800 mb-4">
             نتائج البحث
           </h1>
           
@@ -447,11 +434,11 @@ function SearchContent() {
         {/* قائمة المنتجات */}
         {!isLoading && products.length > 0 ? (
           <>
-            <div className="text-sm text-gray-500 mb-4">
+            <div className="text-sm text-gray-500 mb-3">
               {getPaginationInfo()}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-4">
               {products.map((product) => {
                 const cardData = transformProductForCard(product);
                 return (

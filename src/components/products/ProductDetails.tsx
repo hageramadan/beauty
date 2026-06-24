@@ -3,7 +3,17 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Heart, Truck, RefreshCw, Ruler, Info, HardDrive, MemoryStick } from "lucide-react";
+import {
+  Heart,
+  Truck,
+  RefreshCw,
+  Ruler,
+  Info,
+  HardDrive,
+  MemoryStick,
+  Play,
+  X,
+} from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +72,7 @@ interface ProductDetailsProps {
     availability: boolean;
     variants?: ProductVariant[];
     has_variants?: boolean;
+    video?: string;
   };
 }
 
@@ -75,210 +86,270 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     "info" | "measurements" | "shipping"
   >("info");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    null,
+  );
 
-  // حالات الـ Zoom داخل نفس الصندوق
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
-  const imageContainerRef = useRef<HTMLDivElement>(null);
+  // ✅ حالة عرض الفيديو
+  const [showVideo, setShowVideo] = useState(false);
+
+  const videoRef = useRef<HTMLIFrameElement>(null);
 
   const { addItem, getItemQuantity, isLoading: cartLoading } = useCartContext();
   const { toggleFavorite, isFavorite, isMutating } = useFavorites();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // ✅ استخراج الألوان من الـ variants
-  const getAvailableColorsFromVariants = (): { name: string; code: string; variants: ProductVariant[] }[] => {
-    if (!product.variants || product.variants.length === 0) {
-      return product.colors.map(c => ({ ...c, variants: [] }));
+  // ✅ استخراج معرف الفيديو من رابط يوتيوب
+  const getYouTubeVideoId = (url: string): string | null => {
+    if (!url) return null;
+
+    // تنظيف الرابط من الـ si parameter
+    const cleanUrl = url.split("?")[0];
+
+    // محاولة استخراج الـ ID من الرابط
+    let videoId = null;
+
+    // pattern للـ youtu.be
+    const shortPattern = /youtu\.be\/([^\/\?]+)/;
+    const shortMatch = cleanUrl.match(shortPattern);
+    if (shortMatch) {
+      videoId = shortMatch[1];
     }
-    
-    const colorMap = new Map<string, { name: string; code: string; variants: ProductVariant[] }>();
-    
+
+    // pattern للـ youtube.com/watch?v=
+    if (!videoId) {
+      const longPattern = /youtube\.com\/watch\?v=([^\/\?&]+)/;
+      const longMatch = url.match(longPattern);
+      if (longMatch) {
+        videoId = longMatch[1];
+      }
+    }
+
+    // pattern للـ youtube.com/embed/
+    if (!videoId) {
+      const embedPattern = /youtube\.com\/embed\/([^\/\?]+)/;
+      const embedMatch = url.match(embedPattern);
+      if (embedMatch) {
+        videoId = embedMatch[1];
+      }
+    }
+
+    return videoId;
+  };
+
+  // ✅ الحصول على رابط تضمين الفيديو
+  const getEmbedVideoUrl = (videoUrl: string): string | null => {
+    const videoId = getYouTubeVideoId(videoUrl);
+    if (!videoId) {
+      // console.log('❌ Could not extract video ID from:', videoUrl);
+      return null;
+    }
+    // console.log('✅ Video ID extracted:', videoId);
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1`;
+  };
+
+  // ✅ عرض الفيديو
+  const showVideoPlayer = () => {
+    if (!product.video) {
+      toast.error("لا يوجد فيديو لهذا المنتج");
+      return;
+    }
+    setShowVideo(true);
+  };
+
+  // ✅ إخفاء الفيديو والعودة للصورة
+  const hideVideoPlayer = () => {
+    setShowVideo(false);
+    if (videoRef.current) {
+      videoRef.current.src = "";
+    }
+  };
+
+  // ✅ Extract colors from variants
+  const getAvailableColorsFromVariants = (): {
+    name: string;
+    code: string;
+    variants: ProductVariant[];
+  }[] => {
+    if (!product.variants || product.variants.length === 0) {
+      return product.colors.map((c) => ({ ...c, variants: [] }));
+    }
+
+    const colorMap = new Map<
+      string,
+      { name: string; code: string; variants: ProductVariant[] }
+    >();
+
     product.variants.forEach((variant) => {
       if (!variant.attributes) return;
-      
-      const colorAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "لون"
+
+      const colorAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "لون",
       );
-      
+
       if (colorAttr && colorAttr.value) {
         const colorName = colorAttr.value;
         const colorCode = colorAttr.meta?.color || "#000000";
-        
+
         if (!colorMap.has(colorName)) {
           colorMap.set(colorName, {
             name: colorName,
             code: colorCode,
-            variants: []
+            variants: [],
           });
         }
-        
+
         colorMap.get(colorName)!.variants.push(variant);
       }
     });
-    
+
     return Array.from(colorMap.values());
   };
 
-  // ✅ الحصول على خيارات الرام المتاحة للون المحدد
+  // ✅ Get RAM options for selected color
   const getAvailableRamForColor = (colorName: string): string[] => {
     if (!product.variants || product.variants.length === 0) {
       return [];
     }
-    
+
     const ramOptions = new Set<string>();
-    
+
     product.variants.forEach((variant) => {
       if (!variant.attributes) return;
-      
-      const colorAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "لون"
+
+      const colorAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "لون",
       );
-      
-      const ramAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "الذاكرة"
+
+      const ramAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "الذاكرة",
       );
-      
+
       if (colorAttr?.value === colorName && ramAttr?.value) {
         ramOptions.add(ramAttr.value);
       }
     });
-    
+
     return Array.from(ramOptions);
   };
 
-  // ✅ الحصول على خيارات الهارد ديسك المتاحة للون والرام المحددين
-  const getAvailableHardDiskForColorAndRam = (colorName: string, ramValue: string): string[] => {
+  // ✅ Get Hard Disk options for selected color and RAM
+  const getAvailableHardDiskForColorAndRam = (
+    colorName: string,
+    ramValue: string,
+  ): string[] => {
     if (!product.variants || product.variants.length === 0) {
       return [];
     }
-    
+
     const hardDiskOptions = new Set<string>();
-    
+
     product.variants.forEach((variant) => {
       if (!variant.attributes) return;
-      
-      const colorAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "لون"
+
+      const colorAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "لون",
       );
-      
-      const ramAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "الذاكرة"
+
+      const ramAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "الذاكرة",
       );
-      
-      const hardDiskAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "هارد ديسك"
+
+      const hardDiskAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "هارد ديسك",
       );
-      
-      if (colorAttr?.value === colorName && 
-          ramAttr?.value === ramValue && 
-          hardDiskAttr?.value) {
+
+      if (
+        colorAttr?.value === colorName &&
+        ramAttr?.value === ramValue &&
+        hardDiskAttr?.value
+      ) {
         hardDiskOptions.add(hardDiskAttr.value);
       }
     });
-    
+
     return Array.from(hardDiskOptions);
   };
 
-  // ✅ الحصول على الـ variant المناسب
-  const getSelectedVariant = (colorName: string, ramValue: string, hardDiskValue: string): ProductVariant | null => {
+  // ✅ Get matching variant
+  const getSelectedVariant = (
+    colorName: string,
+    ramValue: string,
+    hardDiskValue: string,
+  ): ProductVariant | null => {
     if (!product.variants || product.variants.length === 0) return null;
-    
-    const variant = product.variants.find(variant => {
+
+    const variant = product.variants.find((variant) => {
       if (!variant.attributes) return false;
-      
-      const colorAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "لون"
+
+      const colorAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "لون",
       );
-      
-      const ramAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "الذاكرة"
+
+      const ramAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "الذاكرة",
       );
-      
-      const hardDiskAttr = variant.attributes.find(attr => 
-        attr.attribute_type?.name === "هارد ديسك"
+
+      const hardDiskAttr = variant.attributes.find(
+        (attr) => attr.attribute_type?.name === "هارد ديسك",
       );
-      
-      return colorAttr?.value === colorName && 
-             ramAttr?.value === ramValue && 
-             hardDiskAttr?.value === hardDiskValue;
+
+      return (
+        colorAttr?.value === colorName &&
+        ramAttr?.value === ramValue &&
+        hardDiskAttr?.value === hardDiskValue
+      );
     });
-    
+
     return variant || null;
   };
 
-  // ✅ استخراج جميع الصور المتاحة
+  // ✅ Get all available images
   const getAllImages = (): string[] => {
     const images: string[] = [];
-    
+
     if (selectedVariant && selectedVariant.variant_image) {
       images.push(selectedVariant.variant_image);
     }
-    
+
     if (product.images && product.images.length > 0) {
       images.push(...product.images);
     }
-    
-    return [...new Map(images.map(img => [img, img])).values()];
+
+    return [...new Map(images.map((img) => [img, img])).values()];
   };
 
-  // ✅ الحصول على الصورة الرئيسية
+  // ✅ Get main image
   const getMainImage = (): string => {
     const allImagesList = getAllImages();
-    
+
     if (allImagesList.length > 0 && selectedImage < allImagesList.length) {
       return allImagesList[selectedImage];
     }
-    
+
     return "/images/placeholder.jpg";
   };
 
-  // ✅ دوال الـ Zoom
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current) return;
-    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
-    let x = (e.clientX - left) / width;
-    let y = (e.clientY - top) / height;
-    x = Math.min(Math.max(x, 0), 1);
-    y = Math.min(Math.max(y, 0), 1);
-    setZoomPosition({ x, y });
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsZoomed(true);
-    handleTouchMove(e);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!imageContainerRef.current) return;
-    const touch = e.touches[0];
-    const { left, top, width, height } = imageContainerRef.current.getBoundingClientRect();
-    let x = (touch.clientX - left) / width;
-    let y = (touch.clientY - top) / height;
-    x = Math.min(Math.max(x, 0), 1);
-    y = Math.min(Math.max(y, 0), 1);
-    setZoomPosition({ x, y });
-  };
-
-  const handleTouchEnd = () => {
-    setIsZoomed(false);
-  };
-
-  const availableColors = product.has_variants ? getAvailableColorsFromVariants() : [];
-  const availableRam = selectedColor ? getAvailableRamForColor(selectedColor) : [];
-  const availableHardDisk = (selectedColor && selectedRam) 
-    ? getAvailableHardDiskForColorAndRam(selectedColor, selectedRam) 
+  const availableColors = product.has_variants
+    ? getAvailableColorsFromVariants()
     : [];
+  const availableRam = selectedColor
+    ? getAvailableRamForColor(selectedColor)
+    : [];
+  const availableHardDisk =
+    selectedColor && selectedRam
+      ? getAvailableHardDiskForColorAndRam(selectedColor, selectedRam)
+      : [];
 
-  // ✅ تعيين أول لون متاح
+  // ✅ Set first available color
   useEffect(() => {
     if (availableColors.length > 0 && !selectedColor) {
       setSelectedColor(availableColors[0].name);
     }
   }, [availableColors.length]);
 
-  // ✅ عند تغيير اللون، إعادة تعيين الرام والهارد ديسك
+  // ✅ Reset RAM and Hard Disk on color change
   useEffect(() => {
     if (selectedColor) {
       const ramOptions = getAvailableRamForColor(selectedColor);
@@ -291,10 +362,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedColor]);
 
-  // ✅ عند تغيير الرام، إعادة تعيين الهارد ديسك
+  // ✅ Reset Hard Disk on RAM change
   useEffect(() => {
     if (selectedColor && selectedRam) {
-      const hardDiskOptions = getAvailableHardDiskForColorAndRam(selectedColor, selectedRam);
+      const hardDiskOptions = getAvailableHardDiskForColorAndRam(
+        selectedColor,
+        selectedRam,
+      );
       if (hardDiskOptions.length > 0) {
         setSelectedHardDisk(hardDiskOptions[0]);
       } else {
@@ -303,10 +377,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedRam]);
 
-  // ✅ تحديث الـ variant
+  // ✅ Update variant
   useEffect(() => {
     if (selectedColor && selectedRam && selectedHardDisk) {
-      const variant = getSelectedVariant(selectedColor, selectedRam, selectedHardDisk);
+      const variant = getSelectedVariant(
+        selectedColor,
+        selectedRam,
+        selectedHardDisk,
+      );
       setSelectedVariant(variant);
       setSelectedImage(0);
     } else {
@@ -314,41 +392,38 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedColor, selectedRam, selectedHardDisk]);
 
-  // ✅ السعر الحالي
-  const currentPrice = selectedVariant 
+  // ✅ Current price
+  const currentPrice = selectedVariant
     ? selectedVariant.price_after_discount || selectedVariant.price
     : product.price;
-  
-  const originalPrice = selectedVariant?.has_discount ? selectedVariant.price : product.originalPrice;
+
+  const originalPrice = selectedVariant?.has_discount
+    ? selectedVariant.price
+    : product.originalPrice;
 
   const isProductFavorite = isFavorite(product.id.toString());
   const itemInCartQuantity = getItemQuantity(product.id);
 
-  // ✅ إضافة إلى السلة (دعم الضيوف - بدون تسجيل دخول)
+  // ✅ Add to cart
   const handleAddToCart = async () => {
     if (isAddingToCart) return;
-    
+
     if (product.has_variants && !selectedVariant) {
       toast.error("الرجاء اختيار اللون والرام والهارد ديسك أولاً");
       return;
     }
-    
+
     setIsAddingToCart(true);
-    
+
     try {
       const variantId = selectedVariant?.id || null;
       const success = await addItem(product.id, quantity, variantId);
-      
+
       if (success) {
         setQuantity(1);
-        // toast.success(`تم إضافة "${product.name}" إلى السلة`, {
-        //   duration: 2000,
-        //   position: "top-center",
-        //   icon: "🛒",
-        // });
       }
     } catch (error) {
-      console.error("❌ خطأ في الإضافة إلى السلة:", error);
+      console.error("❌ Error adding to cart:", error);
       toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
     } finally {
       setIsAddingToCart(false);
@@ -363,15 +438,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       });
       return;
     }
-    
+
     await toggleFavorite(product.id.toString(), isProductFavorite);
   };
 
   const increaseQuantity = () => {
-    const maxQty = selectedVariant?.quantity && selectedVariant.quantity > 0 ? selectedVariant.quantity : 99;
+    const maxQty =
+      selectedVariant?.quantity && selectedVariant.quantity > 0
+        ? selectedVariant.quantity
+        : 99;
     setQuantity((prev) => Math.min(prev + 1, maxQty));
   };
-  
+
   const decreaseQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
@@ -391,13 +469,16 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const allImages = getAllImages();
   const mainImage = getMainImage();
 
+  // ✅ استخراج رابط الفيديو للتضمين
+  const embedVideoUrl = product.video ? getEmbedVideoUrl(product.video) : null;
+
   if (authLoading) {
     return (
       <div className="container-custom py-8">
         <div className="animate-pulse">
-          <div className="h-96 bg-gray-200 rounded-lg mb-4"></div>
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded-[8px] mb-3"></div>
+          <div className="h-7 bg-gray-200 rounded-[8px] w-1/3 mb-1"></div>
+          <div className="h-3 bg-gray-200 rounded-[8px] w-1/4"></div>
         </div>
       </div>
     );
@@ -405,64 +486,95 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   return (
     <div className="container-custom">
-      <div className="flex gap-2 mb-3">
-        <Link href="/" className="text-[#726C6C] text-[16px]">الرئيسية</Link>
+      {/* Breadcrumb */}
+      <div className="flex gap-1 mb-2 text-base">
+        <Link href="/" className="text-[#726C6C]">
+          الرئيسية
+        </Link>
         <span className="text-[#333333] font-bold">/</span>
-        <Link href="/products" className="text-[#726C6C] font-bold text-[16px]">
+        <Link href="/products" className="text-[#726C6C] font-bold">
           {product.brand || "المنتجات"}
         </Link>
-        <span className="text-[#180100] font-bold text-[16px]">/</span>
-        <p className="text-[#180100] font-bold text-[16px]">{product.name}</p>
+        <span className="text-[#180100] font-bold">/</span>
+        <p className="text-[#180100] font-bold truncate max-w-[150px]">
+          {product.name}
+        </p>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        {/* ===== قسم الصور ===== */}
-        <div className="space-y-2">
-          <div
-            ref={imageContainerRef}
-            className="relative aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden cursor-zoom-in"
-            onMouseEnter={() => setIsZoomed(true)}
-            onMouseLeave={() => setIsZoomed(false)}
-            onMouseMove={handleMouseMove}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              className="absolute inset-0 w-full h-full transition-transform duration-200"
-              style={{
-                backgroundImage: `url(${cleanImageUrl(mainImage)})`,
-                backgroundPosition: isZoomed ? `${zoomPosition.x * 100}% ${zoomPosition.y * 100}%` : 'center',
-                backgroundSize: isZoomed ? '200%' : 'cover',
-                backgroundRepeat: 'no-repeat',
-              }}
-            />
-            
-            <div className="absolute inset-0 z-10" />
 
-            {discountPercentage > 0 && (
-              <span className="absolute top-2 right-2 bg-black text-white text-xs font-bold px-1.5 py-0.5 rounded-full z-20">
-                {discountPercentage}% خصم
-              </span>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-10">
+        {/* ===== Images Section ===== */}
+        <div className="space-y-1.5 col-span-2">
+          <div className="relative h-[200px] md:h-[400px] lg:h-[500px] bg-[#00000033] rounded-[8px] overflow-hidden">
+            {/* ✅ إذا كان الفيديو ظاهر، اعرض الفيديو */}
+            {showVideo && embedVideoUrl ? (
+              <>
+                <iframe
+                  ref={videoRef}
+                  src={embedVideoUrl}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={`فيديو ${product.name}`}
+                />
+                <button
+                  onClick={hideVideoPlayer}
+                  className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all duration-200 border border-white/20 hover:border-white/40"
+                  aria-label="إغلاق الفيديو"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0 w-full h-full"
+                  style={{
+                    backgroundImage: `url(${cleanImageUrl(mainImage)})`,
+                    backgroundPosition: "center",
+                    backgroundSize: "contain", // ✅ تغيير من cover إلى contain عشان تظهر الصورة كاملة
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+
+                {discountPercentage > 0 && (
+                  <span className="absolute top-2 right-2 bg-[#23A6F0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
+                    {discountPercentage}% خصم
+                  </span>
+                )}
+
+                {product.video && embedVideoUrl && (
+                  <button
+                    onClick={showVideoPlayer}
+                    className="absolute inset-0 z-10 flex items-center justify-center group"
+                    aria-label="تشغيل فيديو المنتج"
+                  >
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white shadow-lg">
+                      <Play className="w-8 h-8 md:w-10 md:h-10 text-[#0A0500] fill-[#0A0500] ml-1" />
+                    </div>
+                  </button>
+                )}
+              </>
             )}
           </div>
 
-          {allImages.length > 1 && (
-            <div className="grid grid-cols-3 gap-2">
+          {/* ✅ الصور المصغرة - تختفي عند عرض الفيديو */}
+          {allImages.length > 1 && !showVideo && (
+            <div className="flex gap-1.5">
               {allImages.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
                   className={`
-                    relative aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden
-                    border-2 transition-all duration-200
-                    ${selectedImage === index ? "border-[#23A6F0]" : "border-transparent hover:border-gray-300"}
-                  `}
+            relative aspect-[4/3] max-h-[80px] bg-gray-100 rounded-[8px] overflow-hidden
+            border-2 transition-all duration-200
+            ${selectedImage === index ? "border-[#23A6F0]" : "border-transparent hover:border-gray-300"}
+          `}
                 >
                   <Image
                     src={cleanImageUrl(image)}
                     alt={`${product.name} - صورة ${index + 1}`}
-                    fill
+                    width={2000}
+                    height={2000}
                     className="object-cover"
                     sizes="(max-width: 768px) 30vw, 15vw"
                   />
@@ -470,68 +582,85 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               ))}
             </div>
           )}
+
+          {/* ✅ رسالة بدل الصور المصغرة عند عرض الفيديو */}
+          {showVideo && (
+            <div className="text-center text-sm text-gray-500 py-2">
+              <button
+                onClick={hideVideoPlayer}
+                className="text-[#23A6F0] hover:underline font-medium"
+              >
+                العودة للصور
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* ===== معلومات المنتج ===== */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-0">
-              <h1 className="text-xl font-bold text-[#000000]">{product.name}</h1>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-[16px] text-[#666666]">{product.brand || "بدون ماركة"}</span>
-              </div>
+        {/* ===== Product Info (نفس الكود) ===== */}
+        <div className="space-y-2 lg:col-span-3 ">
+          {/* Title & Price */}
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col">
+              <h1 className="text-lg font-bold text-[#000000] leading-tight">
+                {product.name}
+              </h1>
+              <span className="text-sm text-[#666666]">
+                {product.brand || "بدون ماركة"}
+              </span>
             </div>
 
-            <div className="flex gap-0 flex-col">
-              <span className="text-xl md:text-2xl font-bold text-[#C01A13] flex items-center gap-1">
+            <div className="flex flex-col items-end">
+              <span className="text-lg font-bold text-[#23A6F0] flex items-center gap-0.5">
                 {currentPrice.toLocaleString()}
-                <span className="text-lg">EGP</span>
+                <span className="text-sm">EGP</span>
               </span>
               {originalPrice && originalPrice !== currentPrice && (
-                <span className="text-sm text-[#00000080] line-through flex items-center gap-1">
+                <span className="text-xs text-[#00000080] line-through flex items-center gap-0.5">
                   {originalPrice.toLocaleString()}
-                  <span className="text-xs">EGP</span>
+                  <span className="text-[10px]">EGP</span>
                 </span>
               )}
             </div>
           </div>
 
-          {/* التقييم */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-[#EDF0F8] text-[#3A4980] font-bold text-sm rounded-full px-2 py-1 justify-center gap-1">
-              <IoChatboxEllipsesOutline className="w-4 h-4" />
-              <span> {product.reviewsCount} </span>
-              <p>تقييم</p>
+          {/* Rating */}
+          <div className="flex items-center gap-1.5 lg:mt-4">
+            <div className="flex items-center bg-[#EDF0F8] text-[#3A4980] font-bold text-xs rounded-full px-2 py-0.5 gap-1">
+              <IoChatboxEllipsesOutline className="w-3 h-3" />
+              <span>{product.reviewsCount}</span>
+              <span>تقييم</span>
             </div>
             {product.avg_rating > 0 && (
-              <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-sm rounded-full px-2 py-1 justify-center gap-1">
-                <FaRegStar className="w-3 h-3" />
-                <span> {product.avg_rating}</span>
+              <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-xs rounded-full px-2 py-0.5 gap-1">
+                <FaRegStar className="w-2.5 h-2.5" />
+                <span>{product.avg_rating}</span>
               </div>
             )}
           </div>
 
-          {/* ===== اختيار اللون ===== */}
+          {/* ===== Color Selection ===== */}
           {product.has_variants && availableColors.length > 0 && (
             <>
               <div>
-                <div className="flex justify-between items-center my-2">
-                  <span className="text-[14px] font-bold text-[#333333]">اللون</span>
+                <div className="flex justify-between items-center lg:mt-4">
+                  <span className="text-sm font-bold text-[#333333]">
+                    اللون
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {availableColors.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setSelectedColor(color.name)}
                       className={`
-                        group relative w-8 h-8 rounded-full transition-all duration-200
+                        group relative w-7 h-7 rounded-full transition-all duration-200
                         ${selectedColor === color.name ? "ring-2 ring-offset-1 scale-105" : "hover:scale-105"}
                       `}
                       style={{ backgroundColor: color.code }}
                       aria-label={`لون ${color.name}`}
                     >
                       {selectedColor === color.name && (
-                        <div className="absolute inset-0 flex items-center justify-center text-white text-sm font-bold">
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">
                           ✓
                         </div>
                       )}
@@ -539,29 +668,30 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   ))}
                 </div>
               </div>
-              <hr className="my-1" />
+              <hr className="my-2" />
             </>
           )}
 
-          {/* ===== اختيار الرام (RAM) ===== */}
+          {/* ===== RAM Selection ===== */}
           {product.has_variants && availableRam.length > 0 && (
             <div>
-              <div className="flex justify-between items-center my-2">
-                <span className="text-[14px] font-bold text-[#333333] flex items-center gap-2">
-                  <MemoryStick className="w-4 h-4" />
+              <div className="flex justify-between items-center lg:mt-4">
+                <span className="text-sm font-bold text-[#333333] flex items-center gap-1.5">
+                  <MemoryStick className="w-3.5 h-3.5" />
                   الرام (RAM)
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {availableRam.map((ram) => (
                   <button
                     key={ram}
                     onClick={() => setSelectedRam(ram)}
                     className={`
-                      flex items-center justify-center rounded-[8px] px-3 py-1.5 text-sm font-medium transition-all duration-200
-                      ${selectedRam === ram 
-                        ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]" 
-                        : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
+                      flex items-center justify-center rounded-[8px] px-2.5 py-1 text-xs font-medium transition-all duration-200
+                      ${
+                        selectedRam === ram
+                          ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]"
+                          : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
                       }
                     `}
                   >
@@ -572,25 +702,26 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
-          {/* ===== اختيار الهارد ديسك (Hard Disk) ===== */}
+          {/* ===== Hard Disk Selection ===== */}
           {product.has_variants && availableHardDisk.length > 0 && (
             <div>
-              <div className="flex justify-between items-center my-2">
-                <span className="text-[14px] font-bold text-[#333333] flex items-center gap-2">
-                  <HardDrive className="w-4 h-4" />
-                  الهارد ديسك (Hard Disk)
+              <div className="flex justify-between items-center mt-2 lg:mt-4">
+                <span className="text-sm font-bold text-[#333333] flex items-center gap-1.5">
+                  <HardDrive className="w-3.5 h-3.5" />
+                  الهارد ديسك
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {availableHardDisk.map((hardDisk) => (
                   <button
                     key={hardDisk}
                     onClick={() => setSelectedHardDisk(hardDisk)}
                     className={`
-                      flex items-center justify-center rounded-[8px] px-3 py-1.5 text-sm font-medium transition-all duration-200
-                      ${selectedHardDisk === hardDisk 
-                        ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]" 
-                        : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
+                      flex items-center justify-center rounded-[8px] px-2.5 py-1 text-xs font-medium transition-all duration-200
+                      ${
+                        selectedHardDisk === hardDisk
+                          ? "bg-[#EDF0F8] text-[#3A4980] border border-[#3A4980]"
+                          : "bg-[#F3F3F3] text-[#726C6C] hover:bg-[#EDF0F8]"
                       }
                     `}
                   >
@@ -601,135 +732,123 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           )}
 
-          {/* ===== الكمية ===== */}
+          {/* ===== Quantity ===== */}
           <div>
-            <div className="flex items-center gap-3 my-2">
-              <div className="flex items-center rounded-full bg-[#F3F3F3] h-[44px] w-[140px] justify-center">
+            <div className="flex items-center gap-2 lg:mt-4">
+              <div className="flex items-center rounded-full bg-[#F3F3F3] h-9 w-[110px] justify-center">
                 <button
                   onClick={decreaseQuantity}
-                  className="w-8 h-8 flex items-center justify-center text-[#A3A3A3] transition"
+                  className="w-6 h-6 flex items-center justify-center text-[#A3A3A3] transition"
                 >
-                  <FaMinus className="w-3 h-3" />
+                  <FaMinus className="w-2.5 h-2.5" />
                 </button>
-                <span className="w-12 text-center text-[18px] font-bold text-[#222222]">
+                <span className="w-10 text-center text-base font-bold text-[#222222]">
                   {quantity}
                 </span>
                 <button
                   onClick={increaseQuantity}
-                  className="w-8 h-8 flex items-center justify-center text-[#3A4980] font-bold transition"
+                  className="w-6 h-6 flex items-center justify-center text-[#3A4980] font-bold transition"
                 >
-                  <FaPlus className="w-3 h-3 font-bold" />
+                  <FaPlus className="w-2.5 h-2.5 font-bold" />
                 </button>
               </div>
-              {selectedVariant && selectedVariant.quantity !== null && selectedVariant.quantity < 5 && selectedVariant.quantity > 0 && (
-                <span className="text-xs text-orange-600">
-                  ⚠️ متبقي {selectedVariant.quantity} فقط
-                </span>
-              )}
+              {selectedVariant &&
+                selectedVariant.quantity !== null &&
+                selectedVariant.quantity < 5 &&
+                selectedVariant.quantity > 0 && (
+                  <span className="text-[10px] text-orange-600">
+                    ⚠️ متبقي {selectedVariant.quantity} فقط
+                  </span>
+                )}
             </div>
           </div>
 
-          {/* الأزرار */}
-          <div className="flex flex-col">
+          {/* Buttons */}
+          <div className="flex flex-col gap-1.5">
             <button
               onClick={handleAddToCart}
-              disabled={isAddingToCart || cartLoading || (product.has_variants && !selectedVariant)}
-              className="flex-1 bg-[#0A0500] text-[14px] text-white px-4 py-2.5 rounded-[8px] font-bold hover:bg-[#2b2b2b] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={
+                isAddingToCart ||
+                cartLoading ||
+                (product.has_variants && !selectedVariant)
+              }
+              className="flex-1 bg-[#2DA5F3] text-sm text-white px-4 py-2 rounded-[8px] font-bold hover:bg-[#3bacf8] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   جاري الإضافة...
                 </>
               ) : (
                 "أضف إلى السلة"
               )}
             </button>
-            
-            <div className="flex gap-3 pt-3">
+
+            <div className="flex gap-2">
               <button
                 onClick={handleToggleFavorite}
                 disabled={isMutating}
                 className={`
-                  flex-1 md:px-4 py-2.5 rounded-[8px] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-sm
-                  ${isProductFavorite 
-                    ? " bg-blue-50  text-red-600 border border-red-200 hover:bg-red-100" 
-                    : "border border-[#0A0500] hover:bg-[#f3f1f1]"
+                  flex-1 py-2 rounded-[8px] text-[#1E75AB] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-xs
+                  ${
+                    isProductFavorite
+                      ? "bg-blue-50 text-red-600 border border-red-200 hover:bg-red-100"
+                      : "border border-[#1E75AB] hover:bg-[#78c0ec2d]"
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
-                <Heart 
-                  className="w-4 h-4" 
+                <Heart
+                  className={`h-3.5 w-3.5 ${isProductFavorite?'text-[#ef4444]':'text-[#1E75AB]'}`}
                   fill={isProductFavorite ? "#ef4444" : "none"}
                 />
-                {isProductFavorite ? "تمت الإضافة إلى المفضلة" : "أضف إلى المفضلة"}
+                {isProductFavorite ? "في المفضلة" : "أضف للمفضلة"}
               </button>
-              <button className="w-10 h-10 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
-                <BsShare className="w-4 h-4 font-bold" />
+              <button className="w-9 h-9 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
+                <BsShare className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* الأقسام القابلة للطي */}
-          <div className="border-t border-gray-200 pt-3 space-y-2">
+          {/* Accordion */}
+          <div className="border-t border-gray-200 pt-2 space-y-1.5">
             <div>
               <button
-                onClick={() => setActiveTab(activeTab === "info" ? "shipping" : "info")}
-                className="flex justify-between items-center w-full py-2 text-right"
+                onClick={() =>
+                  setActiveTab(activeTab === "info" ? "shipping" : "info")
+                }
+                className="flex justify-between items-center w-full py-1.5 text-right"
               >
-                <span className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Info className="w-4 h-4 text-[#23A6F0]" />
+                <span className="font-semibold text-gray-800 flex items-center gap-1.5 text-sm">
+                  <Info className="w-3.5 h-3.5 text-[#23A6F0]" />
                   معلومات المنتج
                 </span>
-                <span className="text-xl">{activeTab === "info" ? "−" : "+"}</span>
+                <span className="text-lg">
+                  {activeTab === "info" ? "−" : "+"}
+                </span>
               </button>
               {activeTab === "info" && (
-                <div className="pt-1 pb-2 text-gray-600 text-xs leading-relaxed space-y-1">
+                <div className="pt-0.5 pb-1 text-gray-600 text-[11px] leading-relaxed space-y-0.5">
                   <p>{product.description}</p>
-                  <p><strong>رمز المنتج:</strong> {product.sku}</p>
-                  <p><strong>القسم:</strong> {product.category}</p>
-                  <p><strong>الماركة:</strong> {product.brand || "بدون ماركة"}</p>
+                  <p>
+                    <strong>رمز المنتج:</strong> {product.sku}
+                  </p>
+                  <p>
+                    <strong>القسم:</strong> {product.category}
+                  </p>
+                  <p>
+                    <strong>الماركة:</strong> {product.brand || "بدون ماركة"}
+                  </p>
                   {selectedVariant && (
                     <>
-                      <p><strong>الرام:</strong> {selectedRam}</p>
-                      <p><strong>الهارد ديسك:</strong> {selectedHardDisk}</p>
+                      <p>
+                        <strong>الرام:</strong> {selectedRam}
+                      </p>
+                      <p>
+                        <strong>الهارد ديسك:</strong> {selectedHardDisk}
+                      </p>
                     </>
                   )}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-gray-100">
-              <button
-                onClick={() => setActiveTab(activeTab === "shipping" ? "info" : "shipping")}
-                className="flex justify-between items-center w-full py-2 text-right"
-              >
-                <span className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Truck className="w-4 h-4 text-[#23A6F0]" />
-                  التسليم والإرجاع والاستبدال
-                </span>
-                <span className="text-xl">{activeTab === "shipping" ? "−" : "+"}</span>
-              </button>
-              {activeTab === "shipping" && (
-                <div className="pt-1 pb-2 text-gray-600 text-xs space-y-2">
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-0.5 flex items-center gap-1 text-xs">
-                      <Truck className="w-3 h-3" /> التوصيل
-                    </h4>
-                    <p>• التوصيل خلال 3-5 أيام عمل</p>
-                    <p>• توصيل مجاني للطلبات فوق 1000 جنيه</p>
-                    <p>• رسوم التوصيل 50 جنيه للطلبات الأقل من 1000 جنيه</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-0.5 flex items-center gap-1 text-xs">
-                      <RefreshCw className="w-3 h-3" /> الإرجاع والاستبدال
-                    </h4>
-                    <p>• يمكن إرجاع المنتج خلال 14 يوم من تاريخ الاستلام</p>
-                    <p>• يجب أن يكون المنتج بحالته الأصلية مع الفاتورة</p>
-                    <p>• استرداد كامل المبلغ خلال 7-14 يوم</p>
-                    <p>• خدمة الاستبدال مجانية لأول مرة</p>
-                  </div>
                 </div>
               )}
             </div>

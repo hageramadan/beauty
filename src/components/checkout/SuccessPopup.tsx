@@ -57,7 +57,7 @@ export default function SuccessPopup({
             {/* رقم الطلب */}
             <div className="bg-gray-50  rounded-[8px]  p-4 text-center">
               <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
-              <p className="text-2xl font-bold text-gray-800">{orderNumber}</p>
+              <p className="text-xl font-bold text-gray-800">{orderNumber}</p>
             </div>
 
          
@@ -70,7 +70,7 @@ export default function SuccessPopup({
                 onClose();
                 router.push("/");
               }}
-              className="flex-1 bg-[#000000] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2c2c2c] transition shadow-sm"
+              className="flex-1 bg-[#23A6F0] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2eacf5] transition shadow-sm"
             >
               العودة للرئيسية
             </button>

@@ -66,11 +66,11 @@ export default function LoginWithPhone() {
     }
 
     // التحقق من كلمة المرور
-    if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
-    }
+    // if (!formData.password) {
+    //   newErrors.password = "كلمة المرور مطلوبة";
+    // } else if (formData.password.length < 6) {
+    //   newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -141,15 +141,15 @@ export default function LoginWithPhone() {
         }}
       /> */}
       
-      <div className="bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center ">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-md mx-auto">
             {/* بطاقة تسجيل الدخول */}
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
               {/* العنوان */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">تسجيل الدخول</h1>
-                <p className="text-gray-500 text-sm">يرجى إدخال رقم الهاتف وكلمة المرور</p>
+                <h1 className="text-xl font-bold text-gray-800 mb-2">تسجيل الدخول</h1>
+                <p className="text-gray-500 text-sm">يرجى إدخال رقم الهاتف  </p>
               </div>
 
               <form onSubmit={handleSubmit}>
@@ -170,7 +170,7 @@ export default function LoginWithPhone() {
                 </div>
 
                 {/* كلمة المرور */}
-                <div className="mb-5">
+                {/* <div className="mb-5">
                   <label className="block text-gray-700 font-medium mb-2">
                     كلمة المرور <span className="text-red-500">*</span>
                   </label>
@@ -202,7 +202,7 @@ export default function LoginWithPhone() {
                   {errors.password && (
                     <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                   )}
-                </div>
+                </div> */}
 
                 {/* رابط نسيت كلمة المرور */}
                 {/* <div className="text-left mb-6">

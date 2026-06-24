@@ -11,8 +11,8 @@ import toast from "react-hot-toast";
 
 // ========== مكون عنوان الصفحة ==========
 const PageHeader = ({ title }: { title: string }) => (
-  <div className="mt-5">
-    <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
+  <div className="page-with-padding">
+    <h1 className="text-xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
       <Link href="/" className="hover:text-[#23A6F0] transition">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />
@@ -32,7 +32,7 @@ const WishlistEmpty = () => (
       <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
         <Heart className="w-12 h-12 text-gray-400" />
       </div>
-      <h2 className="text-2xl font-semibold text-gray-700 mb-2">
+      <h2 className="text-xl font-semibold text-gray-700 mb-2">
         قائمة المفضلة فارغة
       </h2>
       <p className="text-gray-500 mb-6">
@@ -249,9 +249,9 @@ export default function WishlistPage() {
         {/* ✅ شريط التحكم */}
         <div className="flex flex-wrap justify-between items-center gap-4 mt-6 mb-8">
           <div className="flex items-center gap-3">
-            <Heart className="w-6 h-6 text-[#EC221F] fill-current" />
+            <Heart className="w-6 h-6 bg-red-700" />
             <span className="text-sm text-gray-600">
-              <span className="font-bold text-[#EC221F]">{items.length}</span> منتج
+              <span className="font-bold text-gray-900">{items.length>2? `${items.length} منتاجات`:`${items.length} منتج`}</span> 
             </span>
           </div>
           
