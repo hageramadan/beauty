@@ -266,8 +266,7 @@ export function Hero() {
               <Image
                 src={slides[currentSlide].image}
                 alt={slides[currentSlide].title}
-                width={2000}
-                height={2000}
+                fill
                 className="object-cover pointer-events-none"
                 priority
               />

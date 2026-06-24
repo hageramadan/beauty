@@ -496,7 +496,7 @@ const ProductDetailsMobile = ({
       </Link>
       {brand && <p className="text-xs text-gray-500">{brand}</p>}
       <div className="flex flex-wrap gap-1 mt-0.5 text-xs text-gray-600 items-center">
-        // في ProductDetailsLarge و ProductDetailsMobile
+        
 {color && color !== "-" && (
   <span className="font-extrabold flex items-center gap-2">
     اللون:
