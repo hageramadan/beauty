@@ -804,8 +804,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 />
                 {isProductFavorite ? "في المفضلة" : "أضف للمفضلة"}
               </button>
-              <button className="w-9 h-9 rounded-[8px] border border-[#313131] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
-                <BsShare className="w-3.5 h-3.5" />
+              <button className="w-9 h-9 rounded-[8px] border border-[#1E75AB] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
+                <BsShare className="w-3.5 h-3.5 text-[#1E75AB]" />
               </button>
             </div>
           </div>

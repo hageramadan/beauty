@@ -136,7 +136,7 @@ const transformProduct = (product: ProductData): Product => {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: true, // هذه المنتجات هي الأكثر طلباً بالفعل
+    isBestSeller: product.is_active, // هذه المنتجات هي الأكثر طلباً بالفعل
     // ✅ إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,

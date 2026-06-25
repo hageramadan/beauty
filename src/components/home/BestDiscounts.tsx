@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
-import { getOffersProducts, ProductData } from "@/services/api";
+import { getOffersSection, ProductData } from "@/services/api";
 
 // ✅ تعريف واجهات الفاريانتات
 interface VariantAttribute {
@@ -141,7 +141,7 @@ const transformProduct = (product: ProductData): Product => {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: false,
+    isBestSeller: product.is_active,
     // ✅ إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,
@@ -151,6 +151,7 @@ const transformProduct = (product: ProductData): Product => {
 
 export function BestDiscounts() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [sectionName, setSectionName] = useState<string>("أقوي الخصومات"); // ✅ قيمة افتراضية
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(8);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -175,24 +176,43 @@ export function BestDiscounts() {
           setIsLoadingMore(true);
         }
 
-        const productsData = await getOffersProducts(page, 12);
+        // ✅ جلب السكشن بدلاً من المنتجات فقط
+        const section = await getOffersSection();
 
         if (!isMounted.current) return;
 
+        if (!section) {
+          setError("لا توجد خصومات حالياً");
+          setProducts([]);
+          setHasMore(false);
+          return;
+        }
+
+        // ✅ تحديث اسم السكشن
+        setSectionName(section.name);
+
+        const productsData = section.products || [];
+        
         if (productsData.length === 0) {
           setHasMore(false);
         }
 
         const transformedProducts = productsData.map(transformProduct);
 
+        // ✅ تطبيق pagination يدوياً (لأن الـ API لا يدعم pagination للأقسام)
+        const startIndex = (page - 1) * 12;
+        const endIndex = startIndex + 12;
+        const paginatedProducts = transformedProducts.slice(startIndex, endIndex);
+
         if (append) {
-          setProducts((prev) => [...prev, ...transformedProducts]);
+          setProducts((prev) => [...prev, ...paginatedProducts]);
         } else {
-          setProducts(transformedProducts);
+          setProducts(paginatedProducts);
         }
 
-        setTotalProducts(productsData.length);
-        setHasMore(productsData.length === 12);
+        setTotalProducts(transformedProducts.length);
+        setHasMore(endIndex < transformedProducts.length);
+        
       } catch (err) {
         console.error("Error fetching products:", err);
         if (!isMounted.current) return;
@@ -245,9 +265,7 @@ export function BestDiscounts() {
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
                 <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2DA5F3] border-t-transparent rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500 text-sm animate-pulse">
-                جاري تحميل أقوى الخصومات...
-              </p>
+             
             </div>
           </div>
         </div>
@@ -283,7 +301,7 @@ export function BestDiscounts() {
               className="text-lg md:text-xl font-bold"
               style={{ color: "#112B40" }}
             >
-              أقوي الخصومات
+              {sectionName} {/* ✅ استخدام اسم السكشن من الـ API */}
             </h2>
           </div>
           <Link
@@ -315,14 +333,7 @@ export function BestDiscounts() {
                 animationDelay: `${index * 100}ms`,
               }}
             >
-              {/* عرض نسبة الخصم الديناميكية من API - فقط إذا كان هناك خصم */}
-              {product.discount && product.discount > 0 && (
-                <div className="absolute top-3 right-3 z-20">
-                  <p className="text-[9px] sm:text-xs font-bold text-[#195073] bg-[#FFDB00] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
-                    {product.discount}% OFF
-                  </p>
-                </div>
-              )}
+              
 
               <ProductCard
                 id={product.id}
@@ -336,7 +347,7 @@ export function BestDiscounts() {
                 colors={product.colors}
                 rating={product.rating}
                 reviewsCount={product.reviewsCount}
-                isBestSeller={false}
+                isBestSeller={product.isBestSeller}
                 // ✅ تمرير معلومات الفاريانتات
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}

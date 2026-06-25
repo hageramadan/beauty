@@ -46,7 +46,7 @@ export function ProductCard({
   colors = [],
   rating = 0,
   reviewsCount = 0,
-  isBestSeller = false,
+  isBestSeller ,
   variantId = null,
   hasVariants = false, // ✅ default false
   variants = [], // ✅ default empty array
@@ -209,8 +209,15 @@ export function ProductCard({
           {isBestSeller && (
             <div className="absolute top-2 right-2 z-10">
               <p className="text-[9px] sm:text-xs font-bold text-white bg-[#FF7700] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
-                الاكثر مبيعا
+                الاكثر طلبا
               </p>
+            </div>
+          )}
+            {discount && discount > 0 && (
+            <div className="absolute top-10 right-2 z-10">
+             <p className="text-[9px] sm:text-xs font-bold text-[#195073] bg-[#FFDB00] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+                    {discount}% OFF
+                  </p>
             </div>
           )}
 

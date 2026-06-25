@@ -144,6 +144,14 @@ export interface ProductData {
   video?: string; 
 }
 
+// أضف هذا بعد واجهة SectionData الموجودة
+export interface SectionWithProducts {
+  id: number;
+  name: string;
+  is_active: boolean;
+  products: ProductData[];
+}
+
 // ========== واجهات (Interfaces) الأقسام ==========
 interface SectionResponse {
   result: boolean;
@@ -188,10 +196,10 @@ export async function getNewProducts(page: number = 1, perPage: number = 20): Pr
   }
 }
 
-// ========== دالة جلب منتجات الخصومات ==========
-export async function getOffersProducts(page: number = 1, perPage: number = 20): Promise<ProductData[]> {
+// ========== دالة جلب منتجات الخصومات مع اسم السكشن ==========
+export async function getOffersSection(): Promise<SectionWithProducts | null> {
   try {
-    const response = await fetch(`${API_URL}/sections?page=${page}&per_page=${perPage}`, {
+    const response = await fetch(`${API_URL}/sections`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -211,16 +219,30 @@ export async function getOffersProducts(page: number = 1, perPage: number = 20):
         (section: SectionData) => section.name === "اقوى الخصومات" || section.name === "أقوي الخصومات"
       );
       
-      // إذا وجد القسم أرجع منتجاته، وإلا ارجع منتجات أول قسم
+      // إذا وجد القسم أرجع السكشن كامل، وإلا ارجع أول قسم
       const targetSection = discountsSection || result.data.sections[0];
-      return targetSection?.products || [];
+      
+      if (targetSection) {
+        return {
+          id: targetSection.id,
+          name: targetSection.name,
+          is_active: targetSection.is_active,
+          products: targetSection.products || []
+        };
+      }
     }
     
-    return [];
+    return null;
   } catch (error) {
-    console.error('Error fetching offers products:', error);
-    return [];
+    console.error('Error fetching offers section:', error);
+    return null;
   }
+}
+
+// احتفظ بالدالة القديمة للتوافق (اختياري)
+export async function getOffersProducts(page: number = 1, perPage: number = 20): Promise<ProductData[]> {
+  const section = await getOffersSection();
+  return section?.products || [];
 }
 
 // ========== واجهات (Interfaces) الإعلانات ==========

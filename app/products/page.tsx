@@ -299,7 +299,7 @@ export default function ProductsPage() {
       colors: colors,
       rating: product.avg_rating || 0,
       reviewsCount: product.total_reviews || 0,
-      isBestSeller: (product.avg_rating || 0) >= 4.5,
+      isBestSeller: product.is_active,
       // ✅ إضافة hasVariants و variants
       hasVariants: product.has_variants || false,
       variants: product.variants || [],

@@ -191,7 +191,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex gap-1 items-center">
-            <h1 className="text-xl font-bold text-[#9C150C]">
+            <h1 className="text-xl font-bold text-[#181818]">
               تقييمات المنتج
             </h1>
             <div className="text-sm font-bold text-[#3A4980]">

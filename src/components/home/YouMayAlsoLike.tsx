@@ -144,7 +144,7 @@ const transformProduct = (product: ProductData): Product => {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: (product.avg_rating || 0) >= 4.5,
+    isBestSeller: product.is_active,
     // ✅ إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,
