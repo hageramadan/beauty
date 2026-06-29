@@ -292,7 +292,7 @@ export function BestDiscounts() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-white" id="discount">
+    ( products.length > 0 &&   <section className="py-6 md:py-12 bg-white" id="discount">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
@@ -399,6 +399,7 @@ export function BestDiscounts() {
           animation: fadeIn 0.5s ease-out forwards;
         }
       `}</style>
-    </section>
+    </section>)
+  
   );
 }

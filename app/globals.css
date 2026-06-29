@@ -254,7 +254,7 @@ label{
 }
 
 /* تحسين التمرير */
-::-webkit-scrollbar {
+/* ::-webkit-scrollbar {
   width: 7px;
   height: 8px;
 }
@@ -271,7 +271,7 @@ label{
 
 ::-webkit-scrollbar-thumb:hover {
   background: #1a8fd0;
-}
+} */
 
 /* تحسين التركيز */
 *:focus {

@@ -63,7 +63,7 @@ export default function ForgotWithPhone() {
 
       // التوجيه إلى صفحة إعادة تعيين كلمة المرور
       setTimeout(() => {
-        router.push("/auth/reset-password");
+        // router.push("/auth/reset-password");
       }, 1500);
     }, 1500);
   };

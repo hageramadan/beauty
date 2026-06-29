@@ -503,119 +503,129 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-10">
         {/* ===== Images Section ===== */}
-        <div className="space-y-1.5 col-span-2">
-          <div className="relative h-[200px] md:h-[400px] lg:h-[500px] bg-[#00000033] rounded-[8px] overflow-hidden">
-            {/* ✅ إذا كان الفيديو ظاهر، اعرض الفيديو */}
-            {showVideo && embedVideoUrl ? (
-              <>
-                <iframe
-                  ref={videoRef}
-                  src={embedVideoUrl}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={`فيديو ${product.name}`}
-                />
-                <button
-                  onClick={hideVideoPlayer}
-                  className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all duration-200 border border-white/20 hover:border-white/40"
-                  aria-label="إغلاق الفيديو"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <>
-                <div
-                  className="absolute inset-0 w-full h-full"
-                  style={{
-                    backgroundImage: `url(${cleanImageUrl(mainImage)})`,
-                    backgroundPosition: "center",
-                    backgroundSize: "contain", // ✅ تغيير من cover إلى contain عشان تظهر الصورة كاملة
-                    backgroundRepeat: "no-repeat",
-                  }}
-                />
+      
+<div className="space-y-1.5 col-span-2">
+  <div className="relative h-[200px] md:h-[400px] lg:h-[500px] bg-[#00000033] rounded-[8px] overflow-hidden">
+    {/* ✅ إذا كان الفيديو ظاهر، اعرض الفيديو */}
+    {showVideo && embedVideoUrl ? (
+      <>
+        <iframe
+          ref={videoRef}
+          src={embedVideoUrl}
+          className="absolute inset-0 w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={`فيديو ${product.name}`}
+        />
+        <button
+          onClick={hideVideoPlayer}
+          className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all duration-200 border border-white/20 hover:border-white/40"
+          aria-label="إغلاق الفيديو"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </>
+    ) : (
+      <>
+        {/* ✅ الصورة تملأ الإطار كاملاً */}
+        <div
+          className="absolute inset-0 w-full h-full"
+          style={{
+            backgroundImage: `url(${cleanImageUrl(mainImage)})`,
+            backgroundPosition: "center",
+            backgroundSize: "cover", // ✅ تغيير من contain إلى cover لملء الإطار
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        
+        {/* ✅ الخلفية فوق الصورة (طبقة شفافة) */}
+        <div 
+          className="absolute inset-0 w-full h-full z-10"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.1) 100%)",
+          }}
+        />
 
-                {discountPercentage > 0 && (
-                  <span className="absolute top-2 right-2 bg-[#23A6F0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
-                    {discountPercentage}% خصم
-                  </span>
-                )}
+        {discountPercentage > 0 && (
+          <span className="absolute top-2 right-2 bg-[#23A6F0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
+            {discountPercentage}% خصم
+          </span>
+        )}
 
-                {product.video && embedVideoUrl && (
-                  <button
-                    onClick={showVideoPlayer}
-                    className="absolute inset-0 z-10 flex items-center justify-center group"
-                    aria-label="تشغيل فيديو المنتج"
-                  >
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white shadow-lg">
-                      <Play className="w-8 h-8 md:w-10 md:h-10 text-[#0A0500] fill-[#0A0500] ml-1" />
-                    </div>
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+        {product.video && embedVideoUrl && (
+          <button
+            onClick={showVideoPlayer}
+            className="absolute inset-0 z-10 flex items-center justify-center group"
+            aria-label="تشغيل فيديو المنتج"
+          >
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white shadow-lg">
+              <Play className="w-8 h-8 md:w-10 md:h-10 text-[#0A0500] fill-[#0A0500] ml-1" />
+            </div>
+          </button>
+        )}
+      </>
+    )}
+  </div>
 
-          {/* ✅ الصور المصغرة - تختفي عند عرض الفيديو */}
-          {allImages.length > 1 && !showVideo && (
-            <div className="flex gap-1.5">
-              {allImages.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`
+  {/* ✅ الصور المصغرة - تختفي عند عرض الفيديو */}
+  {allImages.length > 1 && !showVideo && (
+    <div className="flex gap-1.5">
+      {allImages.map((image, index) => (
+        <button
+          key={index}
+          onClick={() => setSelectedImage(index)}
+          className={`
             relative aspect-[4/3] max-h-[80px] bg-gray-100 rounded-[8px] overflow-hidden
             border-2 transition-all duration-200
             ${selectedImage === index ? "border-[#23A6F0]" : "border-transparent hover:border-gray-300"}
           `}
-                >
-                  <Image
-                    src={cleanImageUrl(image)}
-                    alt={`${product.name} - صورة ${index + 1}`}
-                    width={2000}
-                    height={2000}
-                    className="object-cover"
-                    sizes="(max-width: 768px) 30vw, 15vw"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+        >
+          <Image
+            src={cleanImageUrl(image)}
+            alt={`${product.name} - صورة ${index + 1}`}
+            width={2000}
+            height={2000}
+            className="object-cover"
+            sizes="(max-width: 768px) 30vw, 15vw"
+          />
+        </button>
+      ))}
+    </div>
+  )}
 
-          {/* ✅ رسالة بدل الصور المصغرة عند عرض الفيديو */}
-          {showVideo && (
-            <div className="text-center text-sm text-gray-500 py-2">
-              <button
-                onClick={hideVideoPlayer}
-                className="text-[#23A6F0] hover:underline font-medium"
-              >
-                العودة للصور
-              </button>
-            </div>
-          )}
-        </div>
+  {/* ✅ رسالة بدل الصور المصغرة عند عرض الفيديو */}
+  {showVideo && (
+    <div className="text-center text-sm text-gray-500 py-2">
+      <button
+        onClick={hideVideoPlayer}
+        className="text-[#23A6F0] hover:underline font-medium"
+      >
+        العودة للصور
+      </button>
+    </div>
+  )}
+</div>
 
         {/* ===== Product Info (نفس الكود) ===== */}
-        <div className="space-y-2 lg:col-span-3 ">
+        <div className="space-y-2 lg:space-y-5 lg:col-span-3 ">
           {/* Title & Price */}
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <h1 className="text-lg font-bold text-[#000000] leading-tight">
+              <h1 className="text-lg lg:text-xl font-bold text-[#000000] leading-tight">
                 {product.name}
               </h1>
-              <span className="text-sm text-[#666666]">
+              <span className="text-sm lg:text-base text-[#666666]">
                 {product.brand || "بدون ماركة"}
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-lg font-bold text-[#23A6F0] flex items-center gap-0.5">
+              <span className="text-lg lg:text-xl font-bold text-[#23A6F0] flex items-center gap-0.5">
                 {currentPrice.toLocaleString()}
                 <span className="text-sm">EGP</span>
               </span>
               {originalPrice && originalPrice !== currentPrice && (
-                <span className="text-xs text-[#00000080] line-through flex items-center gap-0.5">
+                <span className="text-xs lg:text-base text-[#00000080] line-through flex items-center gap-0.5">
                   {originalPrice.toLocaleString()}
                   <span className="text-[10px]">EGP</span>
                 </span>
@@ -764,7 +774,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 lg:gap-4 mt-2 lg:mt-4">
             <button
               onClick={handleAddToCart}
               disabled={
@@ -804,9 +814,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 />
                 {isProductFavorite ? "في المفضلة" : "أضف للمفضلة"}
               </button>
-              <button className="w-9 h-9 rounded-[8px] border border-[#1E75AB] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
+              {/* <button className="w-9 h-9 rounded-[8px] border border-[#1E75AB] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
                 <BsShare className="w-3.5 h-3.5 text-[#1E75AB]" />
-              </button>
+              </button> */}
             </div>
           </div>
 

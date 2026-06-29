@@ -99,7 +99,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (error) {
-      toast.error('حدث خطأ في إضافة المنتج');
+      toast.error('يجب تسجيل الدخول لأضافه المنتج للمفضلة');
       return false;
     } finally {
       setIsMutating(false);

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { FaArrowLeft } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getSliders } from "@/services/api";
 
 interface Slide {
   id: number;
@@ -17,89 +16,22 @@ interface Slide {
   buttonLink: string;
 }
 
-const getDefaultSlides = (): Slide[] => {
-  return [
-    {
-      id: 1,
-      image: "/images/hero/hero1.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
-      buttonText: "تسوق الآن",
-      buttonLink: "/",
-    },
-    {
-      id: 2,
-      image: "/images/hero/hero2.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
-      buttonText: "تسوق الآن",
-      buttonLink: "/",
-    },
-    {
-      id: 3,
-      image: "/images/hero/hero1.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
-      buttonText: "تسوق الآن",
-      buttonLink: "/",
-    },
-  ];
-};
+interface HeroProps {
+  slides: Slide[];
+}
 
-const API_BASE_URL = 'https://admin.souqkaber.com';
-
-export function Hero() {
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function Hero({ slides }: HeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   
-  // متغيرات السحب المحسنة
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
   const [dragProgress, setDragProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isSwipingHorizontal = useRef<boolean>(false);
-  
-  // State لتحديد touchAction
-  const [touchAction, setTouchAction] = useState<string>('pan-y pinch-zoom');
+  // ✅ تغيير من useRef إلى useState
+  const [isSwipingHorizontal, setIsSwipingHorizontal] = useState(false);
 
-  // Fetch sliders from API
-  useEffect(() => {
-    const fetchSliders = async () => {
-      try {
-        setLoading(true);
-        const slidersData = await getSliders();
-        
-        const transformedSlides: Slide[] = slidersData.map(slider => ({
-          id: slider.id,
-          image: `${API_BASE_URL}${slider.image}`,
-          title: slider.name,
-          description: slider.description,
-          buttonText: "تسوق الآن",
-          buttonLink:  "/products",
-        }));
-        
-        setSlides(transformedSlides);
-        
-        if (transformedSlides.length === 0) {
-          setSlides(getDefaultSlides());
-        }
-      } catch (err) {
-        console.error('Error loading sliders:', err);
-        setError('فشل في تحميل البيانات');
-        setSlides(getDefaultSlides());
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchSliders();
-  }, []);
-
-  // Auto-play functionality
   useEffect(() => {
     if (!isAutoPlaying || slides.length === 0) return;
     
@@ -109,15 +41,6 @@ export function Hero() {
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, slides.length]);
-
-  // تحديث touchAction عند تغيير حالة السحب
-  useEffect(() => {
-    if (isDragging && isSwipingHorizontal.current) {
-      setTouchAction('none');
-    } else {
-      setTouchAction('pan-y pinch-zoom');
-    }
-  }, [isDragging, isSwipingHorizontal.current]);
 
   const goToNextSlide = () => {
     if (slides.length === 0) return;
@@ -139,13 +62,13 @@ export function Hero() {
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
 
-  // دوال السحب المحسنة
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     setIsDragging(true);
     setIsAutoPlaying(false);
-    isSwipingHorizontal.current = false;
+    // ✅ استخدام setIsSwipingHorizontal بدلاً من isSwipingHorizontal.current
+    setIsSwipingHorizontal(false);
     setDragProgress(0);
   };
 
@@ -157,19 +80,19 @@ export function Hero() {
     const diffX = currentX - touchStartX.current;
     const diffY = currentY - touchStartY.current;
     
-    // تحديد اتجاه السحب
-    if (!isSwipingHorizontal.current && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
+    // ✅ استخدام isSwipingHorizontal (state) بدلاً من ref
+    if (!isSwipingHorizontal && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
       if (Math.abs(diffX) > Math.abs(diffY)) {
-        isSwipingHorizontal.current = true;
+        // ✅ استخدام setIsSwipingHorizontal
+        setIsSwipingHorizontal(true);
       } else {
-        // سحب عمودي - ننهي السحب
         setIsDragging(false);
         return;
       }
     }
     
-    // تحديث التقدم فقط في حالة السحب الأفقي
-    if (isSwipingHorizontal.current) {
+    // ✅ استخدام isSwipingHorizontal (state)
+    if (isSwipingHorizontal) {
       const containerWidth = containerRef.current.clientWidth;
       let progress = diffX / containerWidth;
       progress = Math.min(Math.max(progress, -0.8), 0.8);
@@ -182,7 +105,8 @@ export function Hero() {
     
     const minSwipeDistance = 0.15;
     
-    if (Math.abs(dragProgress) > minSwipeDistance && isSwipingHorizontal.current) {
+    // ✅ استخدام isSwipingHorizontal (state)
+    if (Math.abs(dragProgress) > minSwipeDistance && isSwipingHorizontal) {
       if (dragProgress < 0) {
         goToNextSlide();
       } else if (dragProgress > 0) {
@@ -194,7 +118,8 @@ export function Hero() {
     setDragProgress(0);
     touchStartX.current = 0;
     touchStartY.current = 0;
-    isSwipingHorizontal.current = false;
+    // ✅ استخدام setIsSwipingHorizontal
+    setIsSwipingHorizontal(false);
     
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
@@ -207,54 +132,26 @@ export function Hero() {
     return (currentSlide + 1) % slides.length;
   };
 
-  if (loading) {
-    return (
-      <section className="relative w-full h-[70vh] overflow-hidden bg-gray-200">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#23A6F0] border-r-transparent"></div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error && slides.length === 0) {
-    return (
-      <section className="relative w-full h-[70vh] overflow-hidden bg-gray-200 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">عذراً، حدث خطأ</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#23A6F0] text-white rounded-lg hover:bg-[#1a7cb3] transition"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   if (slides.length === 0) {
     return null;
   }
 
   return (
     <section className="relative w-full h-[55vh] lg:h-[70vh] overflow-hidden bg-gray-900">
-      {/* Slides Container */}
       <div 
         ref={containerRef}
-        className="relative w-full h-full overflow-hidden"
+        className={`relative w-full h-full overflow-hidden ${
+          // ✅ الآن يمكن استخدام isSwipingHorizontal بأمان
+          isDragging && isSwipingHorizontal ? 'touch-none' : 'touch-pan-y'
+        }`}
+        style={{
+          cursor: isDragging && isSwipingHorizontal ? 'grabbing' : 'grab'
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ 
-          touchAction: touchAction,
-          cursor: isDragging && isSwipingHorizontal.current ? 'grabbing' : 'grab'
-        }}
       >
         <div className="relative w-full h-full">
-          {/* السلايد الحالي */}
           <div 
             className="absolute inset-0 w-full h-full transition-transform duration-100 ease-out"
             style={{
@@ -268,15 +165,15 @@ export function Hero() {
                 alt={slides[currentSlide].title}
                 fill
                 className="object-cover pointer-events-none"
-                priority
+                priority={currentSlide === 0}
+                sizes="100vw"
               />
               <div className="absolute inset-0 bg-black/20 pointer-events-none" />
             </div>
 
-            {/* Content */}
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
               <div className="container-custom text-center text-white gap-3 pointer-events-auto">
-                <h1 className="text-xl lg:text-[24px]  font-bold mb-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
+                <h1 className="text-xl lg:text-[24px] font-bold mb-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
                   {slides[currentSlide].title}
                 </h1>
                 
@@ -307,7 +204,6 @@ export function Hero() {
             </div>
           </div>
 
-          {/* السلايد التالي */}
           {slides.length > 1 && (
             <div 
               className="absolute inset-0 w-full h-full transition-transform duration-100 ease-out"
@@ -323,13 +219,13 @@ export function Hero() {
                   fill
                   className="object-cover pointer-events-none"
                   priority={false}
+                  sizes="100vw"
                 />
                 <div className="absolute inset-0 bg-black/20 pointer-events-none" />
               </div>
             </div>
           )}
 
-          {/* السلايد السابق */}
           {slides.length > 1 && (
             <div 
               className="absolute inset-0 w-full h-full transition-transform duration-100 ease-out"
@@ -345,6 +241,7 @@ export function Hero() {
                   fill
                   className="object-cover pointer-events-none"
                   priority={false}
+                  sizes="100vw"
                 />
                 <div className="absolute inset-0 bg-black/20 pointer-events-none" />
               </div>
@@ -353,12 +250,11 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Navigation Arrows - مخفية على الموبايل */}
       {slides.length > 1 && (
         <>
           <button
             onClick={goToPrevSlide}
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-all duration-300 hover:scale-110 "
+            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-all duration-300 hover:scale-110"
             aria-label="Previous slide"
           >
             <ChevronLeft className="h-8 w-8 text-white" />
@@ -366,7 +262,7 @@ export function Hero() {
 
           <button
             onClick={goToNextSlide}
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-all duration-300 hover:scale-110 "
+            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 hover:bg-white/30 backdrop-blur-sm rounded-full p-2 transition-all duration-300 hover:scale-110"
             aria-label="Next slide"
           >
             <ChevronRight className="h-8 w-8 text-white" />
@@ -374,7 +270,6 @@ export function Hero() {
         </>
       )}
 
-      {/* Dots Navigation */}
       {slides.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
           {slides.map((_, index) => (

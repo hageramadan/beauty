@@ -242,9 +242,7 @@ export function LatestProducts() {
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
                 <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2D93CA] border-t-transparent rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500 text-sm animate-pulse">
-                جاري تحميل أحدث المنتجات...
-              </p>
+              
             </div>
           </div>
         </div>
@@ -272,7 +270,7 @@ export function LatestProducts() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-white" id="new">
+    (products.length >0 &&  <section className="py-6 md:py-12 bg-white" id="new">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
@@ -372,6 +370,7 @@ export function LatestProducts() {
           animation: fadeIn 0.5s ease-out forwards;
         }
       `}</style>
-    </section>
+    </section>)
+   
   );
 }

@@ -298,21 +298,28 @@ export function Footer() {
             <h3 className="font-bold text-lg mb-4">تواصل معنا</h3>
             <ul className="space-y-4 text-sm">
               <li className="flex items-center gap-3">
-                <MdPhone className="h-5 w-5 text-primary" />
+                <MdPhone className="h-5 w-5 text-primary flex-shrink-0" />
                 <div>
-                  <p>اتصل بنا</p>
-                  <span className="text-muted-foreground" dir="ltr">
+                  <p className="text-sm">اتصل بنا</p>
+                  <a 
+                    href={`tel:${loadingSettings ? '' : settings?.phone || '0987654333'}`}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    dir="ltr"
+                  >
                     {loadingSettings ? 'جاري التحميل...' : settings?.phone || '0987654333'}
-                  </span>
+                  </a>
                 </div>
               </li>
               <li className="flex items-center gap-3">
-                <MdEmail className="h-5 w-5 text-primary" />
+                <MdEmail className="h-5 w-5 text-primary flex-shrink-0" />
                 <div>
-                  <p>البريد الإلكتروني</p>
-                  <span className="text-muted-foreground">
+                  <p className="text-sm">البريد الإلكتروني</p>
+                  <a 
+                    href={`mailto:${loadingSettings ? '' : settings?.email || 'ecommerce@gmail.com'}`}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     {loadingSettings ? 'جاري التحميل...' : settings?.email || 'ecommerce@gmail.com'}
-                  </span>
+                  </a>
                 </div>
               </li>
             </ul>

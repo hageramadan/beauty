@@ -10,7 +10,7 @@ import Pagination from "@/components/products/Pagination";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-const API_URL = 'https://admin.souqkaber.com/api';
+const API_URL = "https://admin.souqkaber.com/api";
 
 // ✅ تعريف واجهات
 interface VariantAttribute {
@@ -59,8 +59,8 @@ interface TransformedProduct {
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token");
   }
   return null;
 };
@@ -96,24 +96,30 @@ const extractColorsFromVariants = (
 };
 
 // ✅ دالة جلب نتائج البحث المعدلة
-const searchProducts = async (query: string, page: number = 1, perPage: number = 10) => {
+const searchProducts = async (
+  query: string,
+  page: number = 1,
+  perPage: number = 10,
+) => {
   try {
     const token = getToken();
-    console.log(`🟢 Searching products for "${query}" page ${page} with ${perPage} per page`);
-    
+    console.log(
+      `🟢 Searching products for "${query}" page ${page} with ${perPage} per page`,
+    );
+
     const response = await fetch(
       `${API_URL}/products?page=${page}&per_page=${perPage}&search=${encodeURIComponent(query)}`,
       {
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-      }
+      },
     );
-    
+
     const data = await response.json();
     console.log(`📥 Search response for page ${page}:`, data);
-    
+
     // ✅ التأكد من أن البيانات بالشكل الصحيح
     if (data.result === true && data.data) {
       return {
@@ -128,12 +134,12 @@ const searchProducts = async (query: string, page: number = 1, perPage: number =
             from: data.data.pagination?.from || 0,
             to: data.data.pagination?.to || 0,
             next_page: data.data.pagination?.next_page || null,
-            previous_page: data.data.pagination?.previous_page || null
-          }
-        }
+            previous_page: data.data.pagination?.previous_page || null,
+          },
+        },
       };
     }
-    
+
     return data;
   } catch (error) {
     console.error("Search error:", error);
@@ -147,7 +153,7 @@ const transformProductForCard = (product: any): TransformedProduct => {
   let hasVariants = false;
   let variants: ProductVariant[] = [];
   let variantId: number | null = null;
-  
+
   // ✅ استخراج المعلومات من الفاريانتات
   if (product.has_variants && product.variants && product.variants.length > 0) {
     hasVariants = true;
@@ -157,18 +163,19 @@ const transformProductForCard = (product: any): TransformedProduct => {
   }
 
   const cleanImageUrl = (url: string) => {
-    if (!url) return '/placeholder-image.jpg';
-    if (url.startsWith('/storage')) {
+    if (!url) return "/placeholder-image.jpg";
+    if (url.startsWith("/storage")) {
       return `https://admin.souqkaber.com${url}`;
     }
     return url;
   };
 
   // حساب السعر النهائي
-  const finalPrice = product.pricing?.final_price || product.pricing?.price || 0;
+  const finalPrice =
+    product.pricing?.final_price || product.pricing?.price || 0;
   const originalPrice = product.pricing?.price;
   const hasDiscount = product.pricing?.has_discount || false;
-  
+
   let discount = undefined;
   if (hasDiscount && originalPrice && originalPrice > finalPrice) {
     discount = Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
@@ -179,14 +186,16 @@ const transformProductForCard = (product: any): TransformedProduct => {
     name: product.name,
     price: finalPrice,
     image: cleanImageUrl(product.images?.[0]),
-    hoverImage: product.images?.[1] ? cleanImageUrl(product.images[1]) : cleanImageUrl(product.images?.[0]),
+    hoverImage: product.images?.[1]
+      ? cleanImageUrl(product.images[1])
+      : cleanImageUrl(product.images?.[0]),
     href: `/product/${product.id}`,
     originalPrice: hasDiscount ? originalPrice : undefined,
     discount: discount,
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: product.is_active ,
+    isBestSeller: product.is_active,
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,
@@ -197,8 +206,8 @@ const transformProductForCard = (product: any): TransformedProduct => {
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const query = searchParams.get('q') || '';
-  
+  const query = searchParams.get("q") || "";
+
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -207,7 +216,7 @@ function SearchContent() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [searchInput, setSearchInput] = useState(query);
   const [sortBy, setSortBy] = useState("newest");
-  
+
   const perPage = 10; // ✅ 10 منتجات في كل صفحة
 
   const hasLoadedRef = useRef(false);
@@ -227,23 +236,25 @@ function SearchContent() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     abortControllerRef.current = new AbortController();
-    
+
     setIsLoading(true);
     try {
       const result = await searchProducts(query, currentPage, perPage);
-      
+
       if (!abortControllerRef.current?.signal.aborted) {
         if (result.result === true && result.data) {
           const productsData = result.data.products || [];
           const paginationData = result.data.pagination;
-          
-          console.log(`✅ Found ${productsData.length} products for page ${currentPage}`);
+
+          console.log(
+            `✅ Found ${productsData.length} products for page ${currentPage}`,
+          );
           console.log(`📊 Pagination:`, paginationData);
-          
+
           setProducts(productsData);
-          
+
           if (paginationData) {
             setLastPage(paginationData.last_page || 1);
             setTotalProducts(paginationData.total || productsData.length);
@@ -285,7 +296,7 @@ function SearchContent() {
       setIsLoading(false);
       setIsFirstLoad(false);
     }
-    
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -311,16 +322,30 @@ function SearchContent() {
       const sortedProducts = [...products];
       switch (sortBy) {
         case "price_asc":
-          sortedProducts.sort((a, b) => (a.pricing?.final_price || a.pricing?.price || 0) - (b.pricing?.final_price || b.pricing?.price || 0));
+          sortedProducts.sort(
+            (a, b) =>
+              (a.pricing?.final_price || a.pricing?.price || 0) -
+              (b.pricing?.final_price || b.pricing?.price || 0),
+          );
           break;
         case "price_desc":
-          sortedProducts.sort((a, b) => (b.pricing?.final_price || b.pricing?.price || 0) - (a.pricing?.final_price || a.pricing?.price || 0));
+          sortedProducts.sort(
+            (a, b) =>
+              (b.pricing?.final_price || b.pricing?.price || 0) -
+              (a.pricing?.final_price || a.pricing?.price || 0),
+          );
           break;
         case "newest":
-          sortedProducts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          sortedProducts.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime(),
+          );
           break;
         case "popular":
-          sortedProducts.sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0));
+          sortedProducts.sort(
+            (a, b) => (b.sales_count || 0) - (a.sales_count || 0),
+          );
           break;
         default:
           break;
@@ -348,12 +373,12 @@ function SearchContent() {
     if (page >= 1 && page <= lastPage) {
       setIsLoading(true);
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const getPaginationInfo = () => {
-    if (totalProducts === 0) return '';
+    if (totalProducts === 0) return "";
     const from = (currentPage - 1) * perPage + 1;
     const to = Math.min(currentPage * perPage, totalProducts);
     return `عرض ${from} - ${to} من ${totalProducts} نتيجة`;
@@ -370,14 +395,12 @@ function SearchContent() {
   return (
     <div className="min-h-screen page-with-padding">
       <div className="container mx-auto px-4 pb-16  lg:px-9">
-       
-
         {/* عنوان الصفحة وشريط البحث */}
         <div className="mb-8">
           <h1 className="text-xl md:text-xl font-bold text-gray-800 mb-4">
             نتائج البحث
           </h1>
-          
+
           <form onSubmit={handleSearch} className="relative max-w-2xl">
             <input
               type="text"
@@ -404,22 +427,29 @@ function SearchContent() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <p className="text-gray-600">
             {totalProducts > 0 ? (
-              <>تم العثور على <span className="font-bold text-[#23A6F0]">{totalProducts}</span> نتيجة لـ `{query}`</>
+              <>
+                تم العثور على{" "}
+                <span className="font-bold text-[#23A6F0]">
+                  {totalProducts}
+                </span>{" "}
+                نتيجة لـ `{query}`
+              </>
             ) : (
               !isLoading && <>لم يتم العثور على نتائج لـ `{query}`</>
             )}
           </p>
-          
-          <select
-            value={sortBy}
-            onChange={handleSortChange}
-            className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0]"
-          >
-            <option value="newest">الأحدث</option>
-            <option value="popular">الأكثر مبيعاً</option>
-            <option value="price_asc">السعر: من الأقل للأعلى</option>
-            <option value="price_desc">السعر: من الأعلى للأقل</option>
-          </select>
+          {products.length > 0 && (
+            <select
+              value={sortBy}
+              onChange={handleSortChange}
+              className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0]"
+            >
+              <option value="newest">الأحدث</option>
+              <option value="popular">الأكثر مبيعاً</option>
+              <option value="price_asc">السعر: من الأقل للأعلى</option>
+              <option value="price_desc">السعر: من الأعلى للأقل</option>
+            </select>
+          )}
         </div>
 
         {isLoading && products.length > 0 && (
@@ -442,10 +472,7 @@ function SearchContent() {
               {products.map((product) => {
                 const cardData = transformProductForCard(product);
                 return (
-                  <div
-                    key={cardData.id}
-                    className="flex justify-center w-full"
-                  >
+                  <div key={cardData.id} className="flex justify-center w-full">
                     <ProductCard
                       id={cardData.id}
                       name={cardData.name}
@@ -467,7 +494,7 @@ function SearchContent() {
                 );
               })}
             </div>
-            
+
             {/* ✅ الباجينشن - يظهر فقط لو في اكتر من صفحة */}
             {lastPage > 1 && (
               <div className="mt-12">
@@ -481,19 +508,24 @@ function SearchContent() {
             )}
           </>
         ) : (
-          !isLoading && !isFirstLoad && (
+          !isLoading &&
+          !isFirstLoad && (
             <div className="text-center py-16">
-              <div className="text-gray-400 mb-4">
-                <Search className="w-16 h-16 mx-auto" />
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Search className="w-12 h-12 mx-auto text-gray-400" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد نتائج</h3>
-              <p className="text-gray-500">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                لا توجد نتائج
+              </h3>
+              <p className="text-gray-500 mb-3">
                 لم نتمكن من العثور على منتجات مطابقة لـ `{query}`
               </p>
               <button
                 onClick={() => router.push("/")}
-                className="mt-4 text-[#23A6F0] hover:underline"
-              >
+               
+        className="inline-block bg-[#23A6F0] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
+      >
+              
                 العودة إلى الرئيسية
               </button>
             </div>
@@ -506,11 +538,13 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <LoadingSpinner size="lg" text="جاري التحميل..." />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <LoadingSpinner size="lg" text="جاري التحميل..." />
+        </div>
+      }
+    >
       <SearchContent />
     </Suspense>
   );

@@ -270,7 +270,7 @@ export function BestProducts() {
   }
 
   return (
-    <section className="py-6 md:py-12 bg-white">
+    (products.length>0 &&  <section className="py-6 md:py-12 bg-white">
       <div className="container-custom">
         {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
@@ -348,6 +348,7 @@ export function BestProducts() {
           </div>
         )}
       </div>
-    </section>
+    </section>)
+   
   );
 }
