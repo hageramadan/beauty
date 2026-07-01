@@ -119,7 +119,7 @@ export default async function Home() {
 
   return (
     <div>
-      <Hero slides={slides} />
+      <Hero  />
       <CategoriesSection categories={categories} />
       <LatestProducts />
 
