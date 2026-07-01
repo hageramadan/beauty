@@ -176,7 +176,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
         <div className="container-custom">
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#23A6F0] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-gray-500">جاري تحميل التقييمات...</p>
             </div>
           </div>
@@ -202,7 +202,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           <div className="flex gap-3 items-center">
             {/* خيارات الترتيب */}
             {totalReviews>0&&( <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#23A6F0] focus:ring-offset-0">
+              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#FF7700] focus:ring-offset-0">
                 <SelectValue placeholder="ترتيب حسب" />
               </SelectTrigger>
               <SelectContent className="bg-white  rounded-[8px]  shadow-lg border-gray-100">
@@ -210,7 +210,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                   <SelectItem
                     key={option.value}
                     value={option.value}
-                    className="cursor-pointer hover: bg-blue-50  hover:text-[#23A6F0] focus: bg-blue-50  focus:text-[#23A6F0]"
+                    className="cursor-pointer hover: bg-blue-50  hover:text-[#FF7700] focus: bg-blue-50  focus:text-[#FF7700]"
                   >
                     <div className="flex items-center gap-2">
                       <span>{option.label}</span>
@@ -221,7 +221,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
             </Select>)}
            
 
-            <button className="bg-[#23A6F0] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#3daae9] transition-all duration-300">
+            <button className="bg-[#FF7700] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#3daae9] transition-all duration-300">
               أضف تقييمًا
             </button>
           </div>
@@ -235,7 +235,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
             {reviews.length === 0 ? (
               <div className="text-center py-12 bg-gray-50  rounded-[8px] ">
                 <p className="text-gray-500">لا توجد تقييمات لهذا المنتج بعد</p>
-                <button className="mt-4 bg-[#23A6F0] text-white px-6 py-2 rounded-full text-sm">
+                <button className="mt-4 bg-[#FF7700] text-white px-6 py-2 rounded-full text-sm">
                   كن أول من يقيم المنتج
                 </button>
               </div>

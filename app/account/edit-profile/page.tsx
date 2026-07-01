@@ -52,7 +52,7 @@ export default function EditProfilePage() {
     }
     
     // إذا كان مسارًا نسبيًا
-    return `https://admin.souqkaber.com${imagePath}`;
+    return `https://alsas.admin.t-carts.com${imagePath}`;
   };
 
   // دالة لجلب بيانات المستخدم
@@ -414,7 +414,7 @@ export default function EditProfilePage() {
         <div className="text-center">
           <div className="relative">
             <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-gray-200 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-8 h-8 md:w-12 md:h-12 border-4 border-[#23A6F0] border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-8 h-8 md:w-12 md:h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -500,6 +500,11 @@ export default function EditProfilePage() {
                   {formData.phone && (
                     <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                       <span dir="ltr">{getFullPhoneNumber()}</span>
+                    </div>
+                  )}
+                  {formData.email && (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                      <span dir="ltr">{formData.email}</span>
                     </div>
                   )}
                 </div>
@@ -589,7 +594,7 @@ export default function EditProfilePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 flex justify-center gap-1 px-4 py-2 bg-[#23A6F0] text-white rounded-[8px] hover:bg-[#39aff3] transition disabled:opacity-50"
+                  className="flex-1 flex justify-center gap-1 px-4 py-2 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#39aff3] transition disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>

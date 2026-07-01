@@ -456,7 +456,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -547,7 +547,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         />
 
         {discountPercentage > 0 && (
-          <span className="absolute top-2 right-2 bg-[#23A6F0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
+          <span className="absolute top-2 right-2 bg-[#FF7700] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
             {discountPercentage}% خصم
           </span>
         )}
@@ -577,7 +577,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           className={`
             relative aspect-[4/3] max-h-[80px] bg-gray-100 rounded-[8px] overflow-hidden
             border-2 transition-all duration-200
-            ${selectedImage === index ? "border-[#23A6F0]" : "border-transparent hover:border-gray-300"}
+            ${selectedImage === index ? "border-[#FF7700]" : "border-transparent hover:border-gray-300"}
           `}
         >
           <Image
@@ -598,7 +598,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     <div className="text-center text-sm text-gray-500 py-2">
       <button
         onClick={hideVideoPlayer}
-        className="text-[#23A6F0] hover:underline font-medium"
+        className="text-[#FF7700] hover:underline font-medium"
       >
         العودة للصور
       </button>
@@ -620,7 +620,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-lg lg:text-xl font-bold text-[#23A6F0] flex items-center gap-0.5">
+              <span className="text-lg lg:text-xl font-bold text-[#FF7700] flex items-center gap-0.5">
                 {currentPrice.toLocaleString()}
                 <span className="text-sm">EGP</span>
               </span>
@@ -782,7 +782,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 cartLoading ||
                 (product.has_variants && !selectedVariant)
               }
-              className="flex-1 bg-[#2DA5F3] text-sm text-white px-4 py-2 rounded-[8px] font-bold hover:bg-[#3bacf8] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-[#FF7700] text-sm text-white px-4 py-2 rounded-[8px] font-bold hover:bg-[#fc8013] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
@@ -799,17 +799,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 onClick={handleToggleFavorite}
                 disabled={isMutating}
                 className={`
-                  flex-1 py-2 rounded-[8px] text-[#1E75AB] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-xs
+                  flex-1 py-2 rounded-[8px] text-[#FF7700] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-xs
                   ${
                     isProductFavorite
-                      ? "bg-blue-50 text-red-600 border border-red-200 hover:bg-red-100"
-                      : "border border-[#1E75AB] hover:bg-[#78c0ec2d]"
+                      ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                      : "border border-[#FF7700] hover:bg-[#ffc0893f]"
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
                 <Heart
-                  className={`h-3.5 w-3.5 ${isProductFavorite?'text-[#ef4444]':'text-[#1E75AB]'}`}
+                  className={`h-3.5 w-3.5 ${isProductFavorite?'text-[#ef4444]':'text-[#FF7700]'}`}
                   fill={isProductFavorite ? "#ef4444" : "none"}
                 />
                 {isProductFavorite ? "في المفضلة" : "أضف للمفضلة"}
@@ -830,7 +830,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 className="flex justify-between items-center w-full py-1.5 text-right"
               >
                 <span className="font-semibold text-gray-800 flex items-center gap-1.5 text-sm">
-                  <Info className="w-3.5 h-3.5 text-[#23A6F0]" />
+                  <Info className="w-3.5 h-3.5 text-[#FF7700]" />
                   معلومات المنتج
                 </span>
                 <span className="text-lg">

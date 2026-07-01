@@ -117,7 +117,7 @@ interface PaginationData {
 }
 
 // ========== إعدادات API ==========
-const API_URL = "https://admin.souqkaber.com/api";
+const API_URL = "https://alsas.admin.t-carts.com/api";
 
 const getToken = (): string | null => {
   if (typeof window !== "undefined") {
@@ -260,7 +260,7 @@ const formatDate = (dateString: string): string => {
 const cleanImageUrl = (url: string): string => {
   if (!url) return PLACEHOLDER_IMAGE;
   if (url.startsWith("/storage")) {
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   }
   return url;
 };
@@ -516,7 +516,7 @@ export default function OrdersPage() {
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
               <p className="text-gray-500 mt-4">جاري تحميل الطلبات...</p>
             </div>
           </div>
@@ -530,7 +530,7 @@ export default function OrdersPage() {
       <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#23A6F0]" />
+          <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF7700]" />
           <h1 className="text-xl sm:text-xl font-bold text-gray-800">
             طلباتي
           </h1>
@@ -548,7 +548,7 @@ export default function OrdersPage() {
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
                 filterStatus === filter.value
-                  ? "bg-[#23A6F0] text-white"
+                  ? "bg-[#FF7700] text-white"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
             >
@@ -603,7 +603,7 @@ export default function OrdersPage() {
                                 </span>
                               </p>
                               <IoCopyOutline
-                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#23A6F0] transition"
+                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#FF7700] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyOrderNumber(order.orderNumber);
@@ -688,7 +688,7 @@ export default function OrdersPage() {
                                       href={`/account/orders/${order.id}`}
                                       className="hover:underline"
                                     >
-                                      <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#23A6F0] transition">
+                                      <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#FF7700] transition">
                                         {item.title}
                                       </p>
                                     </Link>
@@ -749,7 +749,7 @@ export default function OrdersPage() {
                       <div className="pt-2 sm:pt-3 flex justify-between items-center">
                           <Link
                             href={`/account/orders/${order.id}`}
-                            className="text-[#23A6F0] text-sm sm:text-base font-medium hover:underline"
+                            className="text-[#FF7700] text-sm sm:text-base font-medium hover:underline"
                           >
                             عرض تفاصيل الطلب
                           </Link>
@@ -757,8 +757,8 @@ export default function OrdersPage() {
                             <p className="text-xs sm:text-sm text-gray-500">
                               إجمالي الطلب
                             </p>
-                            <p className="text-base sm:text-xl font-bold text-[#23A6F0]">
-                              <span className="text-xs md:text-base font-bold text-[#23A6F0]">
+                            <p className="text-base sm:text-xl font-bold text-[#FF7700]">
+                              <span className="text-xs md:text-base font-bold text-[#FF7700]">
                                 EGP
                               </span>
                               {order.total_amount.toFixed(2)}

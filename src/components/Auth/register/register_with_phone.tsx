@@ -324,7 +324,7 @@ export default function RegisterWithPhone() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#2DA5F3] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
+                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
                     isLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -345,7 +345,7 @@ export default function RegisterWithPhone() {
                     <button
                       type="button"
                       onClick={() => router.push("/auth/login")}
-                      className="text-[#23A6F0] font-medium hover:underline"
+                      className="text-[#FF7700] font-medium hover:underline"
                     >
                       تسجيل الدخول
                     </button>

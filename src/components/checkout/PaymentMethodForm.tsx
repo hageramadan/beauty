@@ -60,7 +60,7 @@ export default function PaymentMethodForm({
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "wallet"
-              ? "border-[#23A6F0]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           } ${!isWalletAvailable ? "opacity-60 cursor-not-allowed" : ""}`}
         >
@@ -70,7 +70,7 @@ export default function PaymentMethodForm({
             value="wallet"
             checked={paymentMethod === "wallet"}
             onChange={() => handlePaymentChange("wallet")}
-            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
+            className="w-4 h-4 text-[#FF7700] focus:ring-[#FF7700]"
             disabled={!isWalletAvailable}
           />
           <Wallet className="w-5 h-5 text-orange-600" />
@@ -88,7 +88,7 @@ export default function PaymentMethodForm({
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "cash"
-              ? "border-[#23A6F0]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -98,7 +98,7 @@ export default function PaymentMethodForm({
             value="cash"
             checked={paymentMethod === "cash"}
             onChange={() => handlePaymentChange("cash")}
-            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
+            className="w-4 h-4 text-[#FF7700] focus:ring-[#FF7700]"
           />
           <DollarSign className="w-5 h-5 text-green-600" />
           <div>
@@ -110,7 +110,7 @@ export default function PaymentMethodForm({
         {/* <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "card"
-              ? "border-[#23A6F0]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -120,7 +120,7 @@ export default function PaymentMethodForm({
             value="card"
             checked={paymentMethod === "card"}
             onChange={() => handlePaymentChange("card")}
-            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
+            className="w-4 h-4 text-[#FF7700] focus:ring-[#FF7700]"
           />
           <CreditCard className="w-5 h-5 text-blue-600" />
           <div>
@@ -132,7 +132,7 @@ export default function PaymentMethodForm({
         {/* <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "mada"
-              ? "border-[#23A6F0]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-blue-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -142,7 +142,7 @@ export default function PaymentMethodForm({
             value="mada"
             checked={paymentMethod === "mada"}
             onChange={() => handlePaymentChange("mada")}
-            className="w-4 h-4 text-[#23A6F0] focus:ring-[#23A6F0]"
+            className="w-4 h-4 text-[#FF7700] focus:ring-[#FF7700]"
           />
           <Landmark className="w-5 h-5 text-purple-600" />
           <div>

@@ -38,7 +38,7 @@ const getColorDisplay = (colorName: string, colorHex?: string): string => {
     "ازرق فاتح": "#1e91eb",
     "ازرق داكن": "#252B42",
     بيج: "#bdae8c",
-    احمر: "#23A6F0",
+    احمر: "#FF7700",
     زيتوني: "#a4bfa8",
     رمادي: "#454545",
     بينك: "#d959c6",
@@ -236,7 +236,7 @@ const ProductImageLarge = ({
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -280,7 +280,7 @@ const ProductDetailsLarge = ({
   return (
     <div>
       <Link href={`/product/${id}`}>
-        <h1 className="text-lg font-semibold text-gray-800 hover:text-[#23A6F0] transition">
+        <h1 className="text-lg font-semibold text-gray-800 hover:text-[#FF7700] transition">
           {name}
         </h1>
       </Link>
@@ -358,7 +358,7 @@ const ProductPriceLarge = ({
     </div>
        </div>
       <div className="flex items-center gap-0.5">
-        <span className="text-lg font-bold text-[#23A6F0]">
+        <span className="text-lg font-bold text-[#FF7700]">
         {totalPrice.toLocaleString()} EGP
       </span>
       <span className="text-xs text-gray-400">(الإجمالي)</span>
@@ -381,7 +381,7 @@ const QuantityControlLarge = ({
     <button
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
-      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#23A6F0] transition rounded-full hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#FF7700] transition rounded-full hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <FaMinus className="w-3 h-3" />
     </button>
@@ -390,7 +390,7 @@ const QuantityControlLarge = ({
     </span>
     <button
       onClick={() => onUpdateQuantity(id, quantity + 1)}
-      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#23A6F0] transition rounded-full hover:bg-white"
+      className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#FF7700] transition rounded-full hover:bg-white"
     >
       <FaPlus className="w-3 h-3" />
     </button>
@@ -446,7 +446,7 @@ const ProductImageMobile = ({
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -490,7 +490,7 @@ const ProductDetailsMobile = ({
   return (
     <div className="flex-1">
       <Link href={`/product/${id}`}>
-        <h1 className="text-sm font-semibold text-gray-800 hover:text-[#23A6F0] transition line-clamp-1">
+        <h1 className="text-sm font-semibold text-gray-800 hover:text-[#FF7700] transition line-clamp-1">
           {name}
         </h1>
       </Link>
@@ -570,7 +570,7 @@ const ProductPriceMobile = ({
       {price.toLocaleString()} / قطعة
     </div>
       </div>
-      <span className="text-sm font-bold text-[#23A6F0]">
+      <span className="text-sm font-bold text-[#FF7700]">
         {totalPrice.toLocaleString()} EGP
       </span>
     
@@ -591,7 +591,7 @@ const QuantityControlMobile = ({
       onClick={() => onUpdateQuantity(id, quantity - 1)}
       disabled={quantity <= 1}
       className={`w-6 h-6 flex items-center justify-center rounded-full transition ${
-        quantity <= 1 ? "text-gray-300" : "text-gray-600 hover:text-[#23A6F0]"
+        quantity <= 1 ? "text-gray-300" : "text-gray-600 hover:text-[#FF7700]"
       }`}
     >
       <FaMinus className="w-2 h-2" />
@@ -601,7 +601,7 @@ const QuantityControlMobile = ({
     </span>
     <button
       onClick={() => onUpdateQuantity(id, quantity + 1)}
-      className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-[#23A6F0] transition rounded-full"
+      className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-[#FF7700] transition rounded-full"
     >
       <FaPlus className="w-2 h-2" />
     </button>
@@ -624,7 +624,7 @@ const ActionButtonsMobile = ({
       onClick={onToggleFavorite}
       disabled={isMutating}
       className={`flex items-center gap-0.5 text-xs transition disabled:opacity-50 ${
-        isSaved ? "text-[#23A6F0]" : "text-gray-400 hover:text-[#23A6F0]"
+        isSaved ? "text-[#FF7700]" : "text-gray-400 hover:text-[#FF7700]"
       }`}
     >
       <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""}`} />

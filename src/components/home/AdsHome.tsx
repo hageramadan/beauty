@@ -1,10 +1,12 @@
-'use client'
-import React, { useState, useEffect } from 'react'
-import { Button } from '../ui/button'
-import Link from 'next/link'
-import { FaArrowLeft } from 'react-icons/fa'
-import Image from 'next/image'
+"use client";
 
+import React, { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import Link from 'next/link';
+import { FaArrowRight } from 'react-icons/fa';
+import Image from 'next/image';
+import { MdOutlineTimer } from 'react-icons/md';
+import { getAds } from '@/services/api';
 interface Ad {
   id: number;
   sub_title: string | null;
@@ -15,244 +17,175 @@ interface Ad {
   is_active: number;
 }
 
-const API_BASE_URL = 'https://admin.souqkaber.com';
-
 export function AdsHome() {
-  // State for ads
   const [ads, setAds] = useState<Ad[]>([]);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 48 }); // وقت افتراضي
 
-  // Countdown timer state (محتفظ به من الكود الثاني)
-  const [timeLeft, setTimeLeft] = useState({
-    days: 2,
-    hours: 12,
-    minutes: 45,
-    seconds: 5
-  });
-
-  // جلب الإعلانات من API
+  // جلب البيانات من API
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
+        const data = await getAds();
+        setAds(data);
         setError(null);
-        
-        const response = await fetch(`${API_BASE_URL}/api/ads`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.errNum === 200 && data.result === true) {
-          const activeAds = data.data.ad_pop_up.filter((ad: Ad) => ad.is_active === 1);
-          setAds(activeAds);
-        } else {
-          throw new Error(data.message || 'فشل في تحميل الإعلانات');
-        }
       } catch (err) {
-        console.error('Error fetching ads:', err);
-        setError(err instanceof Error ? err.message : 'حدث خطأ في تحميل الإعلانات');
+        setError("حدث خطأ في تحميل الإعلان");
+        console.error(err);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchAds();
   }, []);
 
-  // Countdown timer (من الكود الثاني)
+  // مؤقت للعد التنازلي (اختياري)
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 }
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 }
+        if (prev.minutes > 0) {
+          return { ...prev, minutes: prev.minutes - 1 };
         } else if (prev.hours > 0) {
-          return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 }
-        } else if (prev.days > 0) {
-          return { days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 }
+          return { hours: prev.hours - 1, minutes: 59 };
         }
-        return prev
-      })
-    }, 1000)
+        return prev;
+      });
+    }, 60000); // يتغير كل دقيقة
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
-  // التبديل التلقائي بين الإعلانات كل 5 ثواني
-  useEffect(() => {
-    if (ads.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [ads.length]);
-
-  const goToAd = (index: number) => {
-    setCurrentAdIndex(index);
+  // دالة للحصول على مسار الصورة الكامل
+  const getFullImageUrl = (imagePath: string) => {
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    return `https://alsas.admin.t-carts.com${imagePath}`;
   };
 
-  const nextAd = () => {
-    setCurrentAdIndex((prevIndex) => (prevIndex + 1) % ads.length);
+  // دالة لتنسيق الوصف (إزالة الأسطر الفارغة)
+  const formatDescription = (description: string) => {
+    return description.replace(/\n/g, ' ').trim();
   };
 
-  const prevAd = () => {
-    setCurrentAdIndex((prevIndex) => (prevIndex - 1 + ads.length) % ads.length);
-  };
-
-  const formatNumber = (num: number) => String(num).padStart(2, '0');
-
-  // عرض حالة التحميل
-  if (isLoading) {
+  if (loading) {
     return (
-      <section className="py-6 md:py-12 bg-white">
-        <div className="container-custom">
-          <div className="bg-[#F2F8FD] rounded-2xl p-8 animate-pulse">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex-1 space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-32"></div>
-                <div className="h-12 bg-gray-200 rounded w-64"></div>
-                <div className="h-6 bg-gray-200 rounded w-48"></div>
-                <div className="h-12 bg-gray-200 rounded w-40"></div>
-              </div>
-              <div className="w-[336px] md:w-[536px] h-[124px] md:h-[424px] bg-gray-200 rounded"></div>
+      <div className="ms-4 sm:mx-0 pt-6 px-2 w-full md:col-span-1 bg-[#FBEDDE] flex flex-col items-center justify-center gap-4 min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700]"></div>
+      </div>
+    );
+  }
+
+  if (error || ads.length === 0) {
+    //如果在加载广告时出错或没有广告，显示默认广告
+    return (
+      <div className="ms-4 sm:mx-0 pt-6 px-2 w-full md:col-span-1 bg-[#FBEDDE] flex flex-col items-center justify-end gap-4">
+        <div className="text-center gap-4 flex flex-col items-center justify-center">
+          <p className="text-[#BE4646] text-[14px] font-bold">لفتره محدوده</p>
+          <p className="text-[#191C1F] text-[24px] md:text-[32px] font-bold">خصم 32%</p>
+          <p className="text-[#475156] text-[1rem]">علي جميع غرف كراسي السفرة</p>
+          <div className="flex gap-2 items-center flex-wrap justify-center">
+            <p className="text-[#191C1F] text-[14px]">سينتهي الخصم خلال</p>
+            <div className="flex gap-1 items-center bg-[#EC221F] text-white px-[12px] py-[4px] rounded">
+              <MdOutlineTimer className="w-4 h-4"/>
+              <p className="text-[12px]">{String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')}</p>
             </div>
           </div>
+          <Button
+            asChild
+            aria-label='buy now'
+            className="hidden md:flex w-fit md:w-[180px] md:h-[60px] rounded animate-in text-[12px] md:text-[16px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200"
+            style={{ backgroundColor: '#FF7700' }}
+          >
+            <Link href="#" className="flex uppercase items-center justify-center gap-2 text-white">
+              <FaArrowRight className="h-4 w-4" />
+              Shop now
+            </Link>
+          </Button>
         </div>
-      </section>
+        <div className="text-end mt-8">
+          <Image 
+            src="/images/left.png" 
+            alt="ads Product" 
+            width={308} 
+            height={442}
+            style={{ width: 'auto', height: 'auto' }}
+            className="max-w-full h-auto" 
+          />
+        </div>
+      </div>
     );
   }
 
-  // عرض حالة الخطأ
-  if (error) {
-    return (
-      <section className="py-6 md:py-12 bg-white">
-        <div className="container-custom">
-          <div className=" bg-blue-50  rounded-2xl p-8 text-center">
-            <p className="text-red-500 mb-4">عذراً، حدث خطأ: {error}</p>
-            <Button 
-              onClick={() => window.location.reload()}
-              className="bg-black hover:bg-[#1f98df]"
-            >
-              إعادة المحاولة
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // إذا لم توجد إعلانات من API، نستخدم البيانات الافتراضية مع العداد
-  const hasAds = ads.length > 0;
-  const currentAd = hasAds ? ads[currentAdIndex] : null;
+  // أخذ أول إعلان نشط
+  const activeAd = ads[0];
 
   return (
-    <section className="py-6 md:py-12 bg-white">
-      <div className="container-custom">
-        <div className="bg-[#F2F8FD] rounded-2xl grid grid-cols-2 items-center justify-between px-2 md:px-10 py-6 md:py-8 relative overflow-hidden">
-          
-          {/* أزرار التنقل (إذا كان هناك أكثر من إعلان من API) */}
-          {hasAds && ads.length > 1 && (
-            <>
-              <button
-                onClick={prevAd}
-                className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-1 md:p-2 shadow-lg transition-all"
-                aria-label="إعلان سابق"
-              >
-                <FaArrowLeft className="h-4 w-4 md:h-6 md:w-6 text-[#23A6F0] rotate-180" />
-              </button>
-              <button
-                onClick={nextAd}
-                className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-1 md:p-2 shadow-lg transition-all"
-                aria-label="إعلان تالي"
-              >
-                <FaArrowLeft className="h-4 w-4 md:h-6 md:w-6 text-[#23A6F0]" />
-              </button>
-            </>
-          )}
-
-          {/* محتوى الإعلان */}
-          <div className="flex flex-col gap-2 md:gap-5 flex-1 z-10 px-4 md:px-0">
-            {hasAds && currentAd?.sub_title ? (
-              <p className="text-[10px] md:text-[12px] font-semibold py-1 px-2 bg-[#FF995D] text-white w-fit rounded">
-                {currentAd.sub_title}
-              </p>
-            ) : (
-              <p className="text-[8px] md:text-[16px] font-semibold py-0.5 px-1.5 md:px-3 text-[#BE4646] text-center md:text-right">
-                لفترة محدودة
-              </p>
-            )}
-            
-            <h1 className="text-lg md:text-xl font-bold text-[#191C1F]">
-              {hasAds ? currentAd?.name : "خصم 32%"}
-            </h1>
-            
-            {hasAds && currentAd?.description ? (
-              <p className="text-sm md:text-base text-[#191C1F] w-full md:w-[80%] leading-[1.5]">
-                {currentAd.description}
-              </p>
-            ) : (
-              <p className="text-[8px] text-center md:text-right md:text-[22px] text-[#191C1F] w-full md:w-[80%] leading-[1.3] md:leading-[1.5]">
-                Lorem ipsum dolor sit amet consectetur.
-              </p>
-            )}
-            
-           
-            
-            <Button
-              asChild
-              aria-label='buy now'
-              className="w-fit md:w-[180px] md:h-[60px] animate-in text-[12px] md:text-[14px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200 rounded-xl"
-              style={{ backgroundColor: '#23A6F0' }}
-            >
-              <Link 
-                href={hasAds && currentAd?.link ? currentAd.link : "/products"} 
-                className="flex items-center justify-center gap-2 text-white"
-              >
-                تسوق الان
-                <FaArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          {/* صورة الإعلان */}
-          <div className="mt-4 md:mt-0">
-            <Image 
-              src={hasAds && currentAd?.image ? `${API_BASE_URL}${currentAd.image}` : "/images/sale.png"}
-              alt={hasAds && currentAd?.name ? currentAd.name : "Advertisement"}
-              className="w-[250px] md:w-[416px] h-[150px] md:h-[304px] lg:w-[536px] lg:h-[424px] object-cover rounded-lg"
-              width={2036}
-              height={1424}
-              priority
-            />
+    <div className="ms-4 sm:mx-0 pt-6 px-2 w-full md:col-span-1 bg-[#FBEDDE] flex flex-col items-center justify-end gap-4">
+      <div className="text-center gap-4 flex flex-col items-center justify-center">
+        {/* الاسم (مثل: لفتره محدودة) */}
+        {activeAd.name && (
+          <p className="text-[#BE4646] text-[14px] font-bold">
+            {activeAd.name}
+          </p>
+        )}
+        
+        {/* العنوان الفرعي (مثل: خصم 32%) */}
+        {activeAd.sub_title && (
+          <p className="text-[#191C1F] text-[24px] md:text-[32px] font-bold">
+            {activeAd.sub_title}
+          </p>
+        )}
+        
+        {/* الوصف */}
+        {activeAd.description && (
+          <p className="text-[#475156] text-[1rem]">
+            {formatDescription(activeAd.description)}
+          </p>
+        )}
+        
+        {/* مؤقت العد التنازلي */}
+        <div className="flex gap-2 items-center flex-wrap justify-center">
+          <p className="text-[#191C1F] text-[14px]">سينتهي الخصم خلال</p>
+          <div className="flex gap-1 items-center bg-[#EC221F] text-white px-[12px] py-[4px] rounded">
+            <MdOutlineTimer className="w-4 h-4"/>
+            <p className="text-[12px]">
+              {String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')}
+            </p>
           </div>
         </div>
-
-        {/* مؤشرات التقدم (dots) للإعلانات المتعددة من API */}
-        {hasAds && ads.length > 1 && (
-          <div className="flex justify-center gap-2 mt-4">
-            {ads.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToAd(index)}
-                className={`transition-all duration-300 rounded-full ${
-                  currentAdIndex === index
-                    ? 'w-6 h-2 bg-black'
-                    : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`الانتقال إلى الإعلان ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
+        
+        {/* زر الشراء */}
+        <Button
+          asChild
+          aria-label='buy now'
+          className="hidden md:flex w-fit md:w-[180px] md:h-[60px] rounded animate-in text-[12px] md:text-[16px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200"
+          style={{ backgroundColor: '#FF7700' }}
+        >
+          <Link 
+            href={activeAd.link || "/products"} 
+            className="flex uppercase items-center justify-center gap-2 text-white"
+          >
+            <FaArrowRight className="h-4 w-4" />
+            Shop now
+          </Link>
+        </Button>
       </div>
-    </section>
-  )
+      
+      {/* صورة الإعلان */}
+      <div className="text-end mt-8">
+        <Image 
+          src={getFullImageUrl(activeAd.image)} 
+          alt={activeAd.name || "ads Product"} 
+          width={308} 
+          height={442}
+          style={{ width: 'auto', height: 'auto' }}
+          className="max-w-full h-auto" 
+        />
+      </div>
+    </div>
+  );
 }

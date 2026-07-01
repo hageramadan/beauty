@@ -47,7 +47,7 @@ export default function SuccessPopup({
             </div>
             <h3 className="text-xl font-bold text-gray-800">تم إتمام طلبك بنجاح</h3>
             <p className="text-gray-500 text-sm mt-2">
-              شكراً لتسوقك مع <span className="font-semibold text-[#23A6F0]">متجرك</span>، 
+              شكراً لتسوقك مع <span className="font-semibold text-[#FF7700]">متجرك</span>، 
               طلبك قيد التحضير الآن.
             </p>
           </div>
@@ -70,7 +70,7 @@ export default function SuccessPopup({
                 onClose();
                 router.push("/");
               }}
-              className="flex-1 bg-[#23A6F0] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2eacf5] transition shadow-sm"
+              className="flex-1 bg-[#FF7700] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2eacf5] transition shadow-sm"
             >
               العودة للرئيسية
             </button>

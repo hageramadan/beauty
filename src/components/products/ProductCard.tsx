@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Eye, ShoppingCart } from "lucide-react";
+import { FaRegStar } from "react-icons/fa";
+import { FaStar } from "react-icons/fa6";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCartContext } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,8 +32,8 @@ interface ProductCardProps {
   reviewsCount?: number;
   isBestSeller?: boolean;
   variantId?: number | null;
-  hasVariants?: boolean; // ✅ إضافة prop جديدة
-  variants?: Array<{ id: number }>; // ✅ إضافة prop للفاريانتات
+  hasVariants?: boolean;
+  variants?: Array<{ id: number }>;
 }
 
 export function ProductCard({ 
@@ -46,10 +48,10 @@ export function ProductCard({
   colors = [],
   rating = 0,
   reviewsCount = 0,
-  isBestSeller ,
+  isBestSeller = false,
   variantId = null,
-  hasVariants = false, // ✅ default false
-  variants = [], // ✅ default empty array
+  hasVariants = false,
+  variants = [],
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [currentImage, setCurrentImage] = useState(image);
@@ -64,16 +66,32 @@ export function ProductCard({
   const isProductFavorite = isFavorite(id);
   const [localFavorite, setLocalFavorite] = useState(isProductFavorite);
 
+  // دالة لتوليد نجوم التقييم
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(<FaStar key={i} className="text-[#FA8232] w-3 h-3 md:w-4 md:h-4" />);
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(<FaStar key={i} className="text-[#FA8232] w-3 h-3 md:w-4 md:h-4" />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-[#77878F] w-3 h-3 md:w-4 md:h-4" />);
+      }
+    }
+    return stars;
+  };
+
   useEffect(() => {
     setLocalFavorite(isProductFavorite);
   }, [isProductFavorite]);
 
-  // ✅ دالة المفضلة مع التحقق (تتطلب تسجيل دخول)
   const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // التحقق من تسجيل الدخول
     if (!isAuthenticated) {
       toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى المفضلة", {
         duration: 3000,
@@ -103,9 +121,8 @@ export function ProductCard({
     }
     
     setIsLocalMutating(false);
-  }, [id, name, localFavorite, isLocalMutating, isLoading, toggleFavorite, isAuthenticated, router]);
+  }, [id, localFavorite, isLocalMutating, isLoading, toggleFavorite, isAuthenticated, router]);
 
-  // ✅ دالة الإضافة إلى السلة (تدعم الضيوف - بدون تسجيل دخول)
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -115,17 +132,12 @@ export function ProductCard({
     const productId = parseInt(id);
     const quantity = 1;
     
-    // ✅ الشرط الجديد: التحقق من وجود فاريانتات
     if (hasVariants && variants.length > 0) {
-      // ✅ المنتج له فاريانتات → استخدم أول فاريانت
       const firstVariantId = variants[0].id;
       
       setIsAddingToCart(true);
       try {
-        const success = await addItem(productId, quantity, firstVariantId);
-        if (success) {
-          // ✅ تمت الإضافة بنجاح
-        }
+        await addItem(productId, quantity, firstVariantId);
       } catch (error) {
         console.error("❌ Error adding to cart:", error);
       } finally {
@@ -134,26 +146,21 @@ export function ProductCard({
       return;
     }
     
-    // ✅ المنتج ليس له فاريانتات → استخدم null
     setIsAddingToCart(true);
     try {
       const finalVariantId = variantId || null;
-      const success = await addItem(productId, quantity, finalVariantId);
-      if (success) {
-        // ✅ تمت الإضافة بنجاح
-      }
+      await addItem(productId, quantity, finalVariantId);
     } catch (error) {
       console.error("❌ Error adding to cart:", error);
     } finally {
       setIsAddingToCart(false);
     }
-  }, [id, name, variantId, hasVariants, variants, isAddingToCart, cartLoading, addItem]);
+  }, [id, variantId, hasVariants, variants, isAddingToCart, cartLoading, addItem]);
 
   const handleQuickView = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Quick view:", id);
-     router.push(`/product/${id}`);
+    router.push(`/product/${id}`);
   };
 
   const handleMouseEnter = () => {
@@ -172,11 +179,12 @@ export function ProductCard({
     <div
       role="article"
       aria-labelledby={`product-name-${id}`}
-      className="group w-full h-full sm:w-[170px] sm:h-[240px] md:w-[308px] md:h-[386px] relative bg-white transition-all duration-300 hover:shadow-lg"
+      className="group w-[150px] sm:w-[160px] md:w-[308px] h-[278px] md:h-[442px] relative bg-white transition-all duration-300 hover:shadow-lg"
       style={{
-        borderRadius: '12px',
-        border: '1px solid #e2e8f0',
-        padding: '16px 0'
+        borderRadius: '4px',
+        border: '1px solid #E4E7E9',
+        padding: '0 0px 16px 0',
+        overflow: 'hidden',
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -184,133 +192,90 @@ export function ProductCard({
       <Link href={href} className="block h-full" aria-label={`عرض تفاصيل ${name}`}>
         {/* Image Container */}
         <div 
-          className="relative min-w-[130px] min-h-[130px] md:w-[276px] md:h-[276px] mx-auto transition-colors duration-300"
+          className="relative mx-auto transition-colors duration-300"
           style={{
-            borderRadius: '8px',
+            width: '100%',
+            borderRadius: '5px',
           }}
         >
-          {/* Heart Icon - Top Left Corner (موبايل فقط) */}
+          {/* Heart Icon - Top Left Corner (موبايل) */}
           <button
             onClick={handleFavoriteClick}
             disabled={isLocalMutating || isLoading}
-            className="block md:hidden absolute top-[-5px] left-1 z-10 bg-white rounded-full p-1.5 shadow-md hover: bg-blue-50  transition-all duration-200 hover:scale-110 disabled:opacity-50"
+            className="absolute top-1 left-2 z-10 bg-transparent rounded-full p-1.5 hover:bg-red-50 transition-all duration-200 hover:scale-110 disabled:opacity-50"
             style={{ color: localFavorite ? '#ef4444' : '#112B40' }}
             aria-label={localFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
             aria-pressed={localFavorite}
           >
             {isLocalMutating ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-red-500" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-red-500" />
             ) : (
-              <Heart className="h-4 w-4" fill={localFavorite ? '#ef4444' : 'none'} />
+              <Heart className="h-5 w-5 md:h-6 md:w-6" fill={localFavorite ? '#ef4444' : 'none'} />
             )}
           </button>
 
           {/* Best Seller Badge */}
           {isBestSeller && (
             <div className="absolute top-2 right-2 z-10">
-              <p className="text-[9px] sm:text-xs font-bold text-white bg-[#FF7700] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
-                الاكثر طلبا
+              <p className="text-[9px] md:text-xs font-bold text-white bg-[#FF7700] p-1 md:p-1.5 rounded">
+                الاكثر مبيعا
               </p>
             </div>
           )}
-            {discount && discount > 0 && (
-            <div className="absolute top-10 right-2 z-10">
-             <p className="text-[9px] sm:text-xs font-bold text-[#195073] bg-[#FFDB00] px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
-                    {discount}% OFF
-                  </p>
+
+          {/* Discount Badge */}
+          {discount && discount > 0 && (
+            <div className="absolute top-12 right-2 z-10">
+              <p className="text-[9px] md:text-xs font-bold text-[#195073] bg-[#FFDB00] px-1.5 py-0.5 md:px-2 md:py-1 rounded">
+                {discount}% OFF
+              </p>
             </div>
           )}
 
-         <Image
-  src={currentImage}
-  alt={name}
-  loading="eager"
-  fill
-  className="object-contain w-full md:p-4 transition-transform duration-300 group-hover:scale-105"
-  sizes="(max-width: 768px) 99vw, (max-width: 1200px) 50vw, 33vw"
-  quality={100}
-  priority={true}
-  unoptimized={false}
-  placeholder="blur"
-  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCQAA//Z"
-/>
+          <Image
+            src={currentImage}
+            alt={name}
+            width={340}
+            height={340}
+            className="object-cover w-[166px] h-[166px] md:w-[308px] md:h-1/5 lg:h-1/2"
+            priority
+          />
 
-          {/* الطبقة المظللة التي تظهر عند hover */}
-          {isHovered && (
-            <div 
-              className="absolute inset-0 rounded-[8px] transition-colors duration-300 pointer-events-none"
-              style={{ backgroundColor: '#0000001A' }}
-            />
-          )}
-
-          {/* Icons Overlay - appears at bottom center on hover */}
-          {isHovered && (
-            <div className="absolute bottom-3 left-0 right-0 justify-center -translate-y-1/2 flex gap-2 animate-in fade-in zoom-in-95 pointer-events-auto">
-              {/* Eye Icon - Quick View */}
-              <button
-                onClick={handleQuickView}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110"
-                style={{ color: '#112B40' }}
-                aria-label="معاينة سريعة"
-              >
-                <Eye className="h-5 w-5 hover:text-white" />
-              </button>
-
-              {/* Shopping Cart Icon - Add to Cart (يدعم الضيوف) */}
-              <button
-                onClick={handleAddToCart}
-                disabled={isAddingToCart || cartLoading}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ color: '#112B40' }}
-                aria-label="أضف إلى السلة"
-              >
-                {isAddingToCart ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-[#23A6F0]" />
-                ) : (
-                  <ShoppingCart className="h-5 w-5 hover:text-white" />
-                )}
-              </button>
-
-              {/* Heart Icon - Add to Favorites (ديسكتوب فقط - يتطلب تسجيل دخول) */}
-              <button
-                onClick={handleFavoriteClick}
-                disabled={isLocalMutating || isLoading}
-                className="bg-white md:block hidden rounded-full p-2 shadow-lg hover:bg-[#23A6F0] transition-all duration-200 hover:scale-110 disabled:opacity-50"
-                style={{ color: localFavorite ? '#ef4444' : '#112B40' }}
-                aria-label="أضف إلى المفضلة"
-              >
-                {isLocalMutating ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-red-500" />
-                ) : (
-                  <Heart className="h-5 w-5 hover:text-white" fill={localFavorite ? '#ef4444' : 'none'} />
-                )}
-              </button>
-            </div>
-          )}
+          {/* Icons Overlay - appears on hover */}
+          
         </div>
 
-        {/* Product Info */}
-        <div className="px-4 mt-3">
+        {/* Product Info - تصميم الكود الأول مع التقييمات */}
+        <div className="px-2 flex flex-col gap-0.5 sm:gap-2 mt-2">
+          {/* Rating Stars - جديد من الكود الأول */}
+          <div className="flex gap-1 items-center mb-1">
+            <p className="text-[#77878F] text-xs md:text-sm">
+              ({reviewsCount > 0 ? reviewsCount : 0})
+            </p>
+            <div className="flex gap-0.5">
+              {renderStars(rating)}
+            </div>
+          </div>
+
           {/* Product Name */}
-          <h3 className="text-xs md:text-sm font-medium line-clamp-2 mb-1" style={{ color: '#112B40' }}>
+          <h3 className="text-[12px] md:text-[14px] font-medium line-clamp-2 mb-1" style={{ color: '#112B40' }}>
             {name}
           </h3>
 
-          {/* Price */}
-          <div className="flex items-center gap-1 text-sm">
+          {/* Price - نفس تصميم الكود الأول */}
+          <div className="flex items-center gap-2">
             {originalPrice && originalPrice > price ? (
               <>
-               
-                <span className="text-xs md:text-sm line-through text-gray-400 relative">
-                  {originalPrice.toLocaleString()} 
+                <span className="text-xs md:text-sm line-through text-gray-400">
+                  {originalPrice.toLocaleString()}
                 </span>
-                 <span className="text-xs md:text-sm font-semibold relative" style={{ color: '#23A6F0' }}>
-                  {price.toLocaleString()} EGP
+                <span className="text-sm md:text-[17px] font-semibold relative" style={{ color: '#FF7700' }}>
+                  {price.toLocaleString()} <span className="text-[17px] font-semibold">EGP</span>
                 </span>
               </>
             ) : (
-              <span className="text-xs md:text-sm font-semibold relative" style={{ color: '#23A6F0' }}>
-                {price.toLocaleString()} EGP
+              <span className="text-sm md:text-[17px] font-semibold relative" style={{ color: '#FF7700' }}>
+                {price.toLocaleString()} <span className="text-[17px] font-semibold">EGP</span>
               </span>
             )}
           </div>

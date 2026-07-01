@@ -14,7 +14,7 @@ export default function AddressPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_URL = 'https://admin.souqkaber.com/api';
+  const API_URL = 'https://alsas.admin.t-carts.com/api';
 
   // جلب جميع العناوين
   const fetchAddresses = async () => {
@@ -131,7 +131,7 @@ export default function AddressPage() {
                 setEditingAddress(null);
                 setShowAddAddress(true);
               }}
-              className="flex items-center gap-2 text-[#180100] hover:text-[#ff6b6b] transition-colors"
+              className="flex items-center gap-2 text-[#FF7700] hover:text-[#fa7d10] transition-colors"
             >
               <BsFillPlusCircleFill className="w-10 h-10" />
             </button>

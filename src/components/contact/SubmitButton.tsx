@@ -10,7 +10,7 @@ export default function SubmitButton({ isSubmitting }: SubmitButtonProps) {
     <button
       type="submit"
       disabled={isSubmitting}
-      className="w-full bg-[#2DA5F3] text-white py-3  rounded-full  font-medium hover:bg-[#4bb3f8] transition flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+      className="w-full bg-[#FF7700] text-white py-3  rounded-full  font-medium hover:bg-[#4bb3f8] transition flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
     >
       {isSubmitting ? (
         <>

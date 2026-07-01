@@ -554,7 +554,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
               <div className="mt-4">
                 <button
                   onClick={handleApplyPriceFilter}
-                  className="w-[32.89px] bg-[#2DA5F3] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2"
+                  className="w-[32.89px] bg-[#FF7700] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2"
                 >
                   <FaArrowLeft className="w-5 h-5" />
                 </button>
@@ -619,11 +619,11 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
           <button
             onClick={applyFilters}
-            className="w-full bg-[#2D93CA] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#2479a8] flex items-center justify-center gap-2"
+            className="w-full bg-[#FF7700] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#2479a8] flex items-center justify-center gap-2"
           >
             تطبيق 
             {/* {getSelectedFiltersCount() > 0 && (
-              <span className="bg-white text-[#2D93CA] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="bg-white text-[#FF7700] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                 {getSelectedFiltersCount()}
               </span>
             )} */}

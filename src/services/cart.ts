@@ -94,7 +94,7 @@ export interface UpdateQuantityPayload {
   quantity: number;
 }
 
-const API_URL = 'https://admin.souqkaber.com/api';
+const API_URL = 'https://alsas.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {

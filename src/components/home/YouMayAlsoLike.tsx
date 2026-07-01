@@ -91,9 +91,9 @@ const transformProduct = (product: ProductData): Product => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   };
 
   const mainImage =
@@ -289,7 +289,7 @@ export function YouMayAlsoLike() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#23A6F0] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
                 جاري تحميل المنتجات...
@@ -305,17 +305,17 @@ export function YouMayAlsoLike() {
   if (error && products.length === 0) {
     return (
       <section className="py-6 md:py-12 bg-gray-50">
-        <div className="container-custom">
+        {/* <div className="container-custom">
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#23A6F0] text-white rounded-lg hover:bg-[#3bacee] transition"
+              className="px-4 py-2 bg-[#FF7700] text-white rounded-lg hover:bg-[#3bacee] transition"
             >
               إعادة المحاولة
             </button>
           </div>
-        </div>
+        </div> */}
       </section>
     );
   }
@@ -330,7 +330,7 @@ export function YouMayAlsoLike() {
           </h2>
           <Link
             href="/products"
-            className="text-[#23A6F0] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
+            className="text-[#FF7700] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
           >
             عرض المزيد
             <ChevronLeft className="w-4 h-4" />
@@ -341,7 +341,7 @@ export function YouMayAlsoLike() {
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
               <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
             </div>
           </div>
@@ -388,8 +388,8 @@ export function YouMayAlsoLike() {
               className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: "transparent",
-                color: "#23A6F0",
-                border: "2px solid #23A6F0",
+                color: "#FF7700",
+                border: "2px solid #FF7700",
                 borderRadius: "8px",
               }}
             >

@@ -89,9 +89,9 @@ const transformProduct = (product: ProductData): Product => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith('/storage')) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   };
   
   const mainImage = product.images && product.images.length > 0 
@@ -238,7 +238,7 @@ export function BestProducts() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2D93CA] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
                 جاري تحميل المنتجات...
@@ -254,17 +254,17 @@ export function BestProducts() {
   if (error && products.length === 0) {
     return (
       <section className="py-6 md:py-12 bg-white">
-        <div className="container-custom">
+        {/* <div className="container-custom">
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#2D93CA] text-white rounded-lg hover:bg-[#d11d1a] transition"
+              className="px-4 py-2 bg-[#FF7700] text-white rounded-lg hover:bg-[#d11d1a] transition"
             >
               إعادة المحاولة
             </button>
           </div>
-        </div>
+        </div> */}
       </section>
     );
   }
@@ -279,7 +279,7 @@ export function BestProducts() {
           </h2>
           <Link 
             href="/products" 
-            className="text-[#2D93CA] text-[14px] font-bold hover:underline transition-all duration-300"
+            className="text-[#FF7700] text-[14px] font-bold hover:underline transition-all duration-300"
           >
             عرض المزيد
           </Link>
@@ -289,7 +289,7 @@ export function BestProducts() {
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#2D93CA] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
               <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
             </div>
           </div>
@@ -334,7 +334,7 @@ export function BestProducts() {
             <Button
               onClick={handleLoadMore}
               disabled={isLoadingMore}
-              className="px-8 py-3 bg-[#2D93CA] text-white rounded-lg hover:bg-[#1a6f9e] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-8 py-3 bg-[#FF7700] text-white rounded-lg hover:bg-[#1a6f9e] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoadingMore ? (
                 <>

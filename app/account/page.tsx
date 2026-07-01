@@ -38,7 +38,7 @@ export default function AccountPage() {
     }
     
     // إذا كان مسارًا نسبيًا
-    return `https://admin.souqkaber.com${imagePath}`;
+    return `https://alsas.admin.t-carts.com${imagePath}`;
   };
 
   // دالة لجلب رصيد المحفظة من الـ API
@@ -54,7 +54,7 @@ export default function AccountPage() {
         return;
       }
 
-      const apiUrl = "https://admin.souqkaber.com/api";
+      const apiUrl = "https://alsas.admin.t-carts.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
         headers: {
@@ -212,10 +212,10 @@ export default function AccountPage() {
                   <Image
                     src={userImage}
                     alt={user.name || "User"}
-                    width={960}
-                    height={960}
+                    width={70}
+                    height={70}
                     unoptimized
-                    className="rounded-full object-cover h-[70px] w-[70px] md:w-24 md:h-24 border-4 border-white shadow-lg"
+                    className="rounded-full object-cover h-16 w-16 md:w-24 md:h-24 border-4 border-white shadow-lg"
                     onError={() => {
                       // في حالة فشل تحميل الصورة، استخدم الحرف الأول
                       // يمكنك إضافة حالة للتعامل مع الخطأ

@@ -10,7 +10,7 @@ import Pagination from "@/components/products/Pagination";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-const API_URL = "https://admin.souqkaber.com/api";
+const API_URL = "https://alsas.admin.t-carts.com/api";
 
 // ✅ تعريف واجهات
 interface VariantAttribute {
@@ -165,7 +165,7 @@ const transformProductForCard = (product: any): TransformedProduct => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/placeholder-image.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -407,15 +407,15 @@ function SearchContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="ابحث عن منتجات..."
-              className="w-full px-6 py-3 pr-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent"
+              className="w-full px-6 py-3 pr-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#FF7700] focus:border-transparent"
             />
             <button
               type="submit"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#23A6F0] transition"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FF7700] transition"
               disabled={isLoading}
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
               ) : (
                 <Search className="w-5 h-5" />
               )}
@@ -429,7 +429,7 @@ function SearchContent() {
             {totalProducts > 0 ? (
               <>
                 تم العثور على{" "}
-                <span className="font-bold text-[#23A6F0]">
+                <span className="font-bold text-[#FF7700]">
                   {totalProducts}
                 </span>{" "}
                 نتيجة لـ `{query}`
@@ -442,7 +442,7 @@ function SearchContent() {
             <select
               value={sortBy}
               onChange={handleSortChange}
-              className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#23A6F0]"
+              className="px-4 py-2 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#FF7700]"
             >
               <option value="newest">الأحدث</option>
               <option value="popular">الأكثر مبيعاً</option>
@@ -455,7 +455,7 @@ function SearchContent() {
         {isLoading && products.length > 0 && (
           <div className="flex justify-center py-8">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#23A6F0] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
               <span className="text-gray-500">جاري التحميل...</span>
             </div>
           </div>
@@ -523,7 +523,7 @@ function SearchContent() {
               <button
                 onClick={() => router.push("/")}
                
-        className="inline-block bg-[#23A6F0] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
+        className="inline-block bg-[#FF7700] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
       >
               
                 العودة إلى الرئيسية

@@ -11,7 +11,7 @@
 // import Pagination from '@/components/products/Pagination';
 
 // // ========== إعدادات API ==========
-// const API_URL = 'https://admin.souqkaber.com/api';
+// const API_URL = 'https://alsas.admin.t-carts.com/api';
 
 // const getToken = (): string | null => {
 //   if (typeof window !== 'undefined') {
@@ -219,7 +219,7 @@
 // const cleanImageUrl = (url: string): string => {
 //   if (!url) return "/images/placeholder-product.png";
 //   if (url.startsWith("/storage")) {
-//     return `https://admin.souqkaber.com${url}`;
+//     return `https://alsas.admin.t-carts.com${url}`;
 //   }
 //   return url;
 // };
@@ -415,7 +415,7 @@
 //         <div className="container mx-auto px-4 py-8 text-center">
 //           <div className="flex items-center justify-center min-h-[60vh]">
 //             <div className="text-center">
-//               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
+//               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
 //               <p className="text-gray-500 mt-4">جاري تحميل المرتجعات...</p>
 //             </div>
 //           </div>
@@ -429,7 +429,7 @@
 //       <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
 //         {/* العنوان */}
 //         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-//           <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#23A6F0]" />
+//           <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF7700]" />
 //           <h1 className="text-xl sm:text-xl font-bold text-gray-800">المرتجعات</h1>
          
 //         </div>
@@ -445,7 +445,7 @@
 //               }}
 //               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
 //                 filterStatus === filter.value
-//                   ? "bg-[#23A6F0] text-white"
+//                   ? "bg-[#FF7700] text-white"
 //                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
 //               }`}
 //             >
@@ -496,7 +496,7 @@
 //                                 #{String(returnItem.id).padStart(5, '0')}
 //                               </p>
 //                               <IoCopyOutline 
-//                                 className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#23A6F0] transition"
+//                                 className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#FF7700] transition"
 //                                 onClick={(e) => {
 //                                   e.stopPropagation();
 //                                   copyToClipboard(`#${String(returnItem.id).padStart(5, '0')}`, "رقم المرتجع");
@@ -509,13 +509,13 @@
 //                             <h1 className="text-xs sm:text-sm">الطلب</h1>
 //                             <div className="flex gap-1 sm:gap-2 items-center">
 //                               <p 
-//                                 className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#23A6F0] hover:underline transition"
+//                                 className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#FF7700] hover:underline transition"
 //                                 onClick={(e) => handleOrderClick(returnItem.order?.id, e)}
 //                               >
 //                                 {returnItem.order?.order_number || "-"}
 //                               </p>
 //                               <IoCopyOutline 
-//                                 className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#23A6F0] transition"
+//                                 className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#FF7700] transition"
 //                                 onClick={(e) => {
 //                                   e.stopPropagation();
 //                                   copyToClipboard(returnItem.order?.order_number || "", "رقم الطلب");
@@ -646,7 +646,7 @@
 //                           <div className="flex justify-between items-center flex-wrap gap-2">
 //                             <div className="text-right">
 //                               <p className="text-xs sm:text-sm text-gray-500">إجمالي المسترد</p>
-//                               <p className="text-base sm:text-xl font-bold text-[#23A6F0]">EGP {totalRefund.toFixed(2)}</p>
+//                               <p className="text-base sm:text-xl font-bold text-[#FF7700]">EGP {totalRefund.toFixed(2)}</p>
 //                             </div>
 //                           </div>
                           
@@ -670,7 +670,7 @@
 //                           <div className="mt-4 flex justify-end">
 //                             <button
 //                               onClick={() => goToReturnDetails(returnItem.id)}
-//                               className="px-4 py-2 bg-[#23A6F0] text-white rounded-[8px] text-sm font-medium hover:bg-[#31a9ee] transition"
+//                               className="px-4 py-2 bg-[#FF7700] text-white rounded-[8px] text-sm font-medium hover:bg-[#31a9ee] transition"
 //                             >
 //                               عرض التفاصيل الكاملة
 //                             </button>
@@ -744,7 +744,7 @@ import toast from "react-hot-toast";
 import Pagination from '@/components/products/Pagination';
 
 // ========== إعدادات API ==========
-const API_URL = 'https://admin.souqkaber.com/api';
+const API_URL = 'https://alsas.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -952,7 +952,7 @@ const fetchReturns = async (page: number = 1, perPage: number = 10): Promise<{ r
 const cleanImageUrl = (url: string): string => {
   if (!url) return "/images/placeholder-product.png";
   if (url.startsWith("/storage")) {
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   }
   return url;
 };
@@ -1160,7 +1160,7 @@ export default function ReturnsPage() {
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
               <p className="text-gray-500 mt-4">جاري تحميل المرتجعات...</p>
             </div>
           </div>
@@ -1174,7 +1174,7 @@ export default function ReturnsPage() {
       <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#23A6F0]" />
+          <RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF7700]" />
           <h1 className="text-xl sm:text-xl font-bold text-gray-800">المرتجعات</h1>
          
         </div>
@@ -1190,7 +1190,7 @@ export default function ReturnsPage() {
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
                 filterStatus === filter.value
-                  ? "bg-[#23A6F0] text-white"
+                  ? "bg-[#FF7700] text-white"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
             >
@@ -1241,7 +1241,7 @@ export default function ReturnsPage() {
                                 #{String(returnItem.id).padStart(5, '0')}
                               </p>
                               <IoCopyOutline 
-                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#23A6F0] transition"
+                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#FF7700] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyToClipboard(`#${String(returnItem.id).padStart(5, '0')}`, "رقم المرتجع");
@@ -1254,13 +1254,13 @@ export default function ReturnsPage() {
                             <h1 className="text-xs sm:text-sm">الطلب</h1>
                             <div className="flex gap-1 sm:gap-2 items-center">
                               <p 
-                                className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#23A6F0] hover:underline transition"
+                                className="text-gray-600 text-xs sm:text-sm cursor-pointer hover:text-[#FF7700] hover:underline transition"
                                 onClick={(e) => handleOrderClick(returnItem.order?.id, e)}
                               >
                                 {returnItem.order?.order_number || "-"}
                               </p>
                               <IoCopyOutline 
-                                className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#23A6F0] transition"
+                                className="w-3 h-3 sm:w-4 sm:h-4 cursor-pointer hover:text-[#FF7700] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyToClipboard(returnItem.order?.order_number || "", "رقم الطلب");
@@ -1402,7 +1402,7 @@ export default function ReturnsPage() {
                           <div className="flex justify-between items-center flex-wrap gap-2">
                             <div className="text-right">
                               <p className="text-xs sm:text-sm text-gray-500">إجمالي المسترد</p>
-                              <p className="text-base sm:text-xl font-bold text-[#23A6F0]">EGP {totalRefund.toFixed(2)}</p>
+                              <p className="text-base sm:text-xl font-bold text-[#FF7700]">EGP {totalRefund.toFixed(2)}</p>
                             </div>
                           </div>
                           
@@ -1426,7 +1426,7 @@ export default function ReturnsPage() {
                           <div className="mt-4 flex justify-end">
                             <button
                               onClick={() => goToReturnDetails(returnItem.id)}
-                              className="px-4 py-2 bg-[#23A6F0] text-white rounded-[8px] text-sm font-medium hover:bg-[#31a9ee] transition"
+                              className="px-4 py-2 bg-[#FF7700] text-white rounded-[8px] text-sm font-medium hover:bg-[#31a9ee] transition"
                             >
                               عرض التفاصيل الكاملة
                             </button>

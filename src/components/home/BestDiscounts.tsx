@@ -89,9 +89,9 @@ const transformProduct = (product: ProductData): Product => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   };
 
   const mainImage =
@@ -263,7 +263,7 @@ export function BestDiscounts() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2DA5F3] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
               </div>
              
             </div>
@@ -277,7 +277,7 @@ export function BestDiscounts() {
     return (
       <section className="py-6 md:py-12 bg-white">
         <div className="container-custom">
-          <div className="text-center py-12">
+          {/* <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
@@ -285,7 +285,7 @@ export function BestDiscounts() {
             >
               إعادة المحاولة
             </button>
-          </div>
+          </div> */}
         </div>
       </section>
     );
@@ -306,7 +306,7 @@ export function BestDiscounts() {
           </div>
           <Link
             href="/products"
-            className="text-[#2D93CA] text-[14px] font-bold hover:underline transition-all duration-300"
+            className="text-[#FF7700] text-[14px] font-bold hover:underline transition-all duration-300"
           >
             عرض المزيد
           </Link>
@@ -316,7 +316,7 @@ export function BestDiscounts() {
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#2DA5F3] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
               <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
             </div>
           </div>
@@ -365,8 +365,8 @@ export function BestDiscounts() {
               className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: "transparent",
-                color: "#2DA5F3",
-                border: "2px solid #2DA5F3",
+                color: "#FF7700",
+                border: "2px solid #FF7700",
                 borderRadius: "8px",
               }}
             >
@@ -376,11 +376,11 @@ export function BestDiscounts() {
         )}
 
         {/* No Products Message */}
-        {products.length === 0 && !isInitialLoading && (
+        {/* {products.length === 0 && !isInitialLoading && (
           <div className="text-center py-12">
             <p className="text-gray-500">لا توجد خصومات حالياً</p>
           </div>
-        )}
+        )} */}
       </div>
 
       <style jsx>{`

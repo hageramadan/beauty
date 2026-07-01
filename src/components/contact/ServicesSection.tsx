@@ -37,7 +37,7 @@ export default function ServicesSection() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await fetch('https://admin.souqkaber.com/api/contact-us');
+        const response = await fetch('https://alsas.admin.t-carts.com/api/contact-us');
         
         
         if (!response.ok) {

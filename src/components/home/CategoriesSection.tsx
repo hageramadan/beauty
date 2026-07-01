@@ -99,30 +99,14 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
     );
   }
 
-  const showArrows = categories.length > 5;
+ 
 
   return (
     <section className="py-2 md:py-12">
       <div className="container-custom px-2 lg:px-6 relative">
-        {showArrows && (
-          <button
-            onClick={() => scroll('right')}
-            className="absolute right-5 top-1/2 -translate-y-1/2 z-10 bg-[#23A6F0] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
-            aria-label="التمرير لليسار"
-          >
-            <FaArrowRightLong className="text-white" />
-          </button>
-        )}
+      
 
-        {showArrows && (
-          <button
-            onClick={() => scroll('left')}
-            className="absolute left-5 top-1/2 -translate-y-1/2 z-10 bg-[#23A6F0] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#1f98df] transition-all duration-300 hidden lg:block"
-            aria-label="التمرير لليمين"
-          >
-            <FaArrowLeftLong className="text-white" />
-          </button>
-        )}
+       
 
         <div 
           ref={sliderRef}
@@ -141,28 +125,34 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="flex gap-2 md:gap-[26px] justify-start items-center h-full">
+           <div className="flex gap-2 md:gap-[26px] h-full">
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="flex-shrink-0 flex items-center group transition-all duration-300 hover:-translate-y-2"
+                className="flex-shrink-0 w-[65px] md:w-[124px] group transition-all duration-300 hover:-translate-y-2"
               >
-                <Link href={`/products?categories=[${category.id}]`}>
-                  <div className="flex items-center flex-col transition-all w-[85px] md:w-[220px] duration-300 cursor-pointer pb-7">
-                    <div 
-                      className="relative bg-gray-100 flex items-center justify-center overflow-hidden rounded-full h-[64px] md:h-[196px] w-[64px] md:w-[196px] transition-transform duration-300"
-                    >
+                <Link href={`products?categories=[${category.id}]`}>
+                  <div className="bg-white transition-all w-[55px] md:w-[124px] duration-300 cursor-pointer pb-7">
+                    {/* حاوية الصورة */}
+                    <div className="relative overflow-hidden rounded-full w-[46px] md:w-[124px] transition-transform duration-300">
                       <Image
-                        src={getCategoryImage(category.name, category.image)}
+                        src={category.image}
                         alt={category.name}
-                        fill
-                        className="object-contain transition-transform duration-500 p-2 md:p-6"
-                        sizes="(max-width: 768px) 64px, 196px"
+                        width={124}
+                        height={124}
+                        className="object-cover transition-transform duration-500"
+                        sizes="124px"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/images/placeholder.jpg';
+                        }}
                       />
                     </div>
+
+                    {/* اسم الفئة */}
                     <div className="text-center mt-2 pb-2 w-full">
                       <h3 
-                        className="text-[10px] sm:text-sm whitespace-nowrap"
+                        className="text-[10px] sm:text-[16px] whitespace-nowrap"
                         style={{ color: '#112B40' }}
                       >
                         {category.name}
@@ -175,6 +165,15 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </section>
   );
 }

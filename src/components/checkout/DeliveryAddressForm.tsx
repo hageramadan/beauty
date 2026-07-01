@@ -94,7 +94,7 @@ export default function DeliveryAddressForm({
   const isFetchingRef = useRef(false);
   const hasFetchedAddressesRef = useRef(false);
   
-  const API_URL = 'https://admin.souqkaber.com/api';
+  const API_URL = 'https://alsas.admin.t-carts.com/api';
 
   const getFieldValue = (value: string): string => {
     return value && value.trim() !== "" ? value.trim() : "1";
@@ -462,7 +462,7 @@ export default function DeliveryAddressForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المحافظة <span className="text-[#23A6F0]">*</span>
+                المحافظة <span className="text-[#FF7700]">*</span>
               </label>
               <Select
                 value={addressData.governorate}
@@ -482,7 +482,7 @@ export default function DeliveryAddressForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المدينة <span className="text-[#23A6F0]">*</span>
+                المدينة <span className="text-[#FF7700]">*</span>
               </label>
               <Select
                 value={addressData.city}
@@ -568,7 +568,7 @@ export default function DeliveryAddressForm({
               <button
                 onClick={handleManualSave}
                 disabled={isSavingAddress || !addressData.governorate || !addressData.city}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#2DA5F3] hover:bg-[#3fadf7] transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#FF7700] hover:bg-[#3fadf7] transition disabled:opacity-50"
               >
                 {isSavingAddress ? (
                   <>
@@ -653,7 +653,7 @@ export default function DeliveryAddressForm({
                 ) : (
                   <>
                     {selectedAddressDetails ? (
-                      <div className="p-4 bg-white  rounded-[8px]  border-2 border-[#23A6F0] relative">
+                      <div className="p-4 bg-white  rounded-[8px]  border-2 border-[#FF7700] relative">
                         <button
                           onClick={clearSelectedAddress}
                           className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition"
@@ -682,7 +682,7 @@ export default function DeliveryAddressForm({
                           key={address.id}
                           className={`flex items-start gap-3 p-3  rounded-[8px]  border cursor-pointer transition-all ${
                             selectedSavedAddressId === address.id
-                              ? "border-[#23A6F0]  bg-blue-50 "
+                              ? "border-[#FF7700]  bg-blue-50 "
                               : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectSavedAddress(address.id)}
@@ -692,7 +692,7 @@ export default function DeliveryAddressForm({
                             name="savedAddress"
                             checked={selectedSavedAddressId === address.id}
                             onChange={() => handleSelectSavedAddress(address.id)}
-                            className="mt-0.5 w-4 h-4 text-[#23A6F0]"
+                            className="mt-0.5 w-4 h-4 text-[#FF7700]"
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-800">{address.street}</p>

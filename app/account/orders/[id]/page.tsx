@@ -109,7 +109,7 @@ interface OrderDetails {
 }
 
 // ========== إعدادات API ==========
-const API_URL = 'https://admin.souqkaber.com/api';
+const API_URL = 'https://alsas.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -273,7 +273,7 @@ const formatDate = (dateString: string): string => {
 const cleanImageUrl = (url: string): string => {
   if (!url) return PLACEHOLDER_IMAGE;
   if (url.startsWith("/storage")) {
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   }
   return url;
 };
@@ -456,7 +456,7 @@ export default function OrderDetailsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#23A6F0] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
           <p className="text-gray-500 mt-4">جاري تحميل تفاصيل الطلب...</p>
         </div>
       </div>
@@ -470,7 +470,7 @@ export default function OrderDetailsPage() {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
           <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] hover:bg-[#35acf1] transition">
+          <Link href="/account/orders" className="inline-block bg-[#FF7700] text-white px-6 py-2 rounded-[8px] hover:bg-[#35acf1] transition">
             العودة إلى الطلبات
           </Link>
         </div>
@@ -507,11 +507,11 @@ export default function OrderDetailsPage() {
           <h1 className="text-[18px] font-bold mb-2  md:text-xl text-[#180100]">تفاصيل الطلب</h1>
              {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 md:mb-5">
-            <Link href="/account" className="hover:text-[#23A6F0] transition">حسابي</Link>
+            <Link href="/account" className="hover:text-[#FF7700] transition">حسابي</Link>
             <ChevronRight className="w-4 h-4" />
-            <Link href="/account/orders" className="hover:text-[#23A6F0] transition">طلباتي</Link>
+            <Link href="/account/orders" className="hover:text-[#FF7700] transition">طلباتي</Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#23A6F0] font-medium">تفاصيل الطلب</span>
+            <span className="text-[#FF7700] font-medium">تفاصيل الطلب</span>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* العمود الأيمن */}
@@ -530,7 +530,7 @@ export default function OrderDetailsPage() {
                             </span>
                           </p>
                           <IoCopyOutline 
-                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#23A6F0]'}`}
+                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#FF7700]'}`}
                             onClick={copyOrderNumber}
                           />
                         </div>
@@ -628,7 +628,7 @@ export default function OrderDetailsPage() {
                               </div>
                             </div>
                             <div className="text-left">
-                              <p className="font-bold text-[#23A6F0]">EGP {item.total_price.toFixed(2)}</p>
+                              <p className="font-bold text-[#FF7700]">EGP {item.total_price.toFixed(2)}</p>
                               {item.discount_amount > 0 && (
                                 <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
                               )}
@@ -664,13 +664,13 @@ export default function OrderDetailsPage() {
                   {order.coupon_discount_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">خصم الكوبون</span>
-                      <span className="font-bold text-[#23A6F0]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
+                      <span className="font-bold text-[#FF7700]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
                     </div>
                   )}
                   {order.total_discount_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">الخصم الكلي</span>
-                      <span className="font-bold text-[#23A6F0]">-EGP {order.total_discount_amount.toFixed(2)}</span>
+                      <span className="font-bold text-[#FF7700]">-EGP {order.total_discount_amount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -685,7 +685,7 @@ export default function OrderDetailsPage() {
                   )}
                   <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
                     <span className="text-lg font-bold text-gray-800">الإجمالي</span>
-                    <span className="text-xl font-bold text-[#23A6F0]">EGP {order.total_amount.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-[#FF7700]">EGP {order.total_amount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -748,7 +748,7 @@ export default function OrderDetailsPage() {
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   placeholder="لا توجد ملاحظات"
-                  className="w-full p-3 border border-gray-200  rounded-[8px]  focus:outline-none focus:border-[#23A6F0] resize-none bg-gray-50"
+                  className="w-full p-3 border border-gray-200  rounded-[8px]  focus:outline-none focus:border-[#FF7700] resize-none bg-gray-50"
                   rows={3}
                   readOnly
                 />
@@ -835,7 +835,7 @@ export default function OrderDetailsPage() {
               <button
                 onClick={confirmCancelOrder}
                 disabled={isCancelling}
-                className="flex-1 py-2.5  rounded-[8px]   bg-[#23A6F0] text-white font-medium hover:bg-[#2aa9f3] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5  rounded-[8px]   bg-[#FF7700] text-white font-medium hover:bg-[#2aa9f3] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCancelling ? (
                   <>

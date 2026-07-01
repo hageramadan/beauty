@@ -256,9 +256,9 @@ export default function ProductsContent() {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/placeholder-image.jpg";
       if (url.startsWith("/storage")) {
-        return `https://admin.souqkaber.com${url}`;
+        return `https://alsas.admin.t-carts.com${url}`;
       }
-      return `https://admin.souqkaber.com/storage${url}`;
+      return `https://alsas.admin.t-carts.com/storage${url}`;
     };
 
     return {
@@ -327,7 +327,7 @@ export default function ProductsContent() {
                   onClick={() => {
                     setIsMobileFilterOpen(true);
                   }}
-                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-[#2D93CA] rounded-[8px] hover:bg-gray-200 transition-colors"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-[#FF7700] rounded-[8px] hover:bg-gray-200 transition-colors"
                 >
                   <VscSettings className="w-6 h-6 text-white" />
                 </button>

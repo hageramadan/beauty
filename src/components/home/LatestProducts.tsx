@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getNewProducts, ProductData } from "@/services/api";
+import { AdsHome } from "./AdsHome";
 
 // ✅ تعريف واجهات الفاريانتات
 interface VariantAttribute {
@@ -47,7 +48,6 @@ interface Product {
   rating?: number;
   reviewsCount?: number;
   isBestSeller?: boolean;
-  // ✅ إضافة خصائص الفاريانتات
   hasVariants?: boolean;
   variants?: ProductVariant[];
   variantId?: number | null;
@@ -89,9 +89,9 @@ const transformProduct = (product: ProductData): Product => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith('/storage')) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
-    return `https://admin.souqkaber.com${url}`;
+    return `https://alsas.admin.t-carts.com${url}`;
   };
   
   const mainImage = product.images && product.images.length > 0 
@@ -137,7 +137,6 @@ const transformProduct = (product: ProductData): Product => {
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
     isBestSeller: product.is_active,
-    // ✅ إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,
@@ -147,20 +146,18 @@ const transformProduct = (product: ProductData): Product => {
 export function LatestProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [displayCount, setDisplayCount] = useState(8);
+  const [displayCount, setDisplayCount] = useState(6); // ✅ تغيير من 8 إلى 6 (مثل الكود الأول)
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
   
-  // استخدام useRef لمنع التحديثات المتكررة
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
   // جلب المنتجات من API
   const fetchProducts = useCallback(async (page: number, append: boolean = false) => {
-    // منع جلب البيانات إذا كان هناك جلب جاري
     if (fetchingRef.current) return;
     
     try {
@@ -174,7 +171,6 @@ export function LatestProducts() {
       
       const productsData = await getNewProducts(page, 12);
       
-      // التحقق من أن المكون لا يزال موجوداً قبل تحديث الحالة
       if (!isMounted.current) return;
       
       if (productsData.length === 0) {
@@ -205,11 +201,9 @@ export function LatestProducts() {
     }
   }, []);
 
-  // استخدام useEffect منفصل للتحميل الأولي
   useEffect(() => {
     isMounted.current = true;
     
-    // استخدام setTimeout لتأخير التحميل ومنع التحديثات المتزامنة
     const timeoutId = setTimeout(() => {
       fetchProducts(1, false);
     }, 0);
@@ -220,30 +214,33 @@ export function LatestProducts() {
     };
   }, [fetchProducts]);
 
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !isLoadingMore && !fetchingRef.current) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      fetchProducts(nextPage, true);
-    }
-  }, [hasMore, isLoadingMore, currentPage, fetchProducts]);
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setDisplayCount((prev) => Math.min(prev + 6, products.length));
+      setIsLoadingMore(false);
+    }, 500);
+  };
 
+  // ✅ استخدام displayCount للتحكم في المنتجات المعروضة (مثل الكود الأول)
   const visibleProducts = products.slice(0, displayCount);
-  const showLoadMoreButton = hasMore && products.length >= displayCount && products.length < totalProducts;
+  const hasMoreProducts = displayCount < products.length;
+
+  // ✅ آخر منتج للعرض في الموبايل (مثل الكود الأول)
+  const lastProduct = products[products.length - 1];
 
   // عرض السبينر الرئيسي أثناء التحميل الأولي
   if (isInitialLoading) {
     return (
-      <section className="py-6 md:py-12 bg-white">
+      <section className="py-2 md:py-12 bg-white">
         <div className="container-custom">
-          <div className="flex justify-center items-center min-h-[400px]">
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#2D93CA] border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              
-            </div>
+          <div className="mb-5 md:mb-10 flex justify-between">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
+              أحدث المنتجات
+            </h2>
+          </div>
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF7700]"></div>
           </div>
         </div>
       </section>
@@ -253,13 +250,18 @@ export function LatestProducts() {
   // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-6 md:py-12 bg-white">
+      <section className="py-2 md:py-12 bg-white">
         <div className="container-custom">
-          <div className="text-center py-12">
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="mb-5 md:mb-10 flex justify-between">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
+              أحدث المنتجات
+            </h2>
+          </div>
+          <div className="flex flex-col justify-center items-center py-20 text-center">
+            <p className="text-red-500 mb-4">{error}</p>
             <button 
-              onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#2D93CA] text-white rounded-lg hover:bg-[#d11d1a] transition"
+              onClick={() => fetchProducts(1, false)} 
+              className="px-4 py-2 bg-[#FF7700] text-white rounded-md"
             >
               إعادة المحاولة
             </button>
@@ -269,108 +271,141 @@ export function LatestProducts() {
     );
   }
 
+  if (products.length === 0) {
+    return (
+      <section className="py-2 md:py-12 bg-white">
+        <div className="container-custom">
+          <div className="mb-5 md:mb-10 flex justify-between">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
+              أحدث المنتجات
+            </h2>
+          </div>
+          <div className="text-center py-20">
+            <p className="text-gray-500">لا توجد منتجات حالياً</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    (products.length >0 &&  <section className="py-6 md:py-12 bg-white" id="new">
+    <section className="py-2 md:py-12 bg-white">
       <div className="container-custom">
-        {/* Header */}
-        <div className="mb-2 md:mb-5 flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
+        {/* Header - نفس تصميم الكود الأول */}
+        <div className="mb-5 md:mb-10 flex justify-between items-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
             أحدث المنتجات
           </h2>
-          <Link 
-            href="/products" 
-            className="text-[#2D93CA] text-[14px] font-bold hover:underline transition-all duration-300"
-          >
+          <Link href="/products" className="text-[#FF7700] hover:underline">
             عرض المزيد
           </Link>
         </div>
 
-        {/* ✅ مؤشر تحميل عند تحميل المزيد */}
+        {/* Products Grid - نفس تصميم الكود الأول */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center mb-10">
+          <div className="col-span-3 grid grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+            {visibleProducts.map((product, index) => (
+              <div
+                key={product.id}
+                className="animate-in fade-in zoom-in duration-500"
+                style={{ 
+                  animationFillMode: 'both',
+                  animationDelay: `${index * 100}ms`
+                }}
+              >
+                <ProductCard 
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  image={product.image}
+                  hoverImage={product.hoverImage}
+                  href={product.href}
+                  originalPrice={product.originalPrice}
+                  discount={product.discount}
+                  colors={product.colors}
+                  rating={product.rating}
+                  reviewsCount={product.reviewsCount}
+                  isBestSeller={product.isBestSeller}
+                  hasVariants={product.hasVariants || false}
+                  variants={product.variants || []}
+                  variantId={product.variantId || null}
+                />
+              </div>
+            ))}
+          </div>
+         
+          {/* Mobile extra products - نفس تصميم الكود الأول */}
+          <div className="sm:hidden flex flex-col gap-6 ms-8">
+            {lastProduct && (
+              <>
+                <ProductCard 
+                  id={lastProduct.id}
+                  name={lastProduct.name}
+                  price={lastProduct.price}
+                  image={lastProduct.image}
+                  hoverImage={lastProduct.hoverImage}
+                  href={lastProduct.href}
+                  originalPrice={lastProduct.originalPrice}
+                  discount={lastProduct.discount}
+                  colors={lastProduct.colors}
+                  rating={lastProduct.rating}
+                  reviewsCount={lastProduct.reviewsCount}
+                  isBestSeller={lastProduct.isBestSeller}
+                  hasVariants={lastProduct.hasVariants || false}
+                  variants={lastProduct.variants || []}
+                  variantId={lastProduct.variantId || null}
+                />
+                <ProductCard 
+                  id={lastProduct.id}
+                  name={lastProduct.name}
+                  price={lastProduct.price}
+                  image={lastProduct.image}
+                  hoverImage={lastProduct.hoverImage}
+                  href={lastProduct.href}
+                  originalPrice={lastProduct.originalPrice}
+                  discount={lastProduct.discount}
+                  colors={lastProduct.colors}
+                  rating={lastProduct.rating}
+                  reviewsCount={lastProduct.reviewsCount}
+                  isBestSeller={lastProduct.isBestSeller}
+                  hasVariants={lastProduct.hasVariants || false}
+                  variants={lastProduct.variants || []}
+                  variantId={lastProduct.variantId || null}
+                />
+              </>
+            )}
+          </div>
+
+          {/* Sale Banner - نفس تصميم الكود الأول مع الحفاظ على AdsHome */}
+          <AdsHome/>
+        </div>
+
+        {/* Loading State for Load More */}
         {isLoadingMore && (
-          <div className="flex justify-center py-4 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#2D93CA] rounded-full animate-spin"></div>
-              <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
-            </div>
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF7700]"></div>
           </div>
         )}
 
-        {/* Products Grid - تعديل لضمان أحجام متساوية */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
-          {visibleProducts.map((product, index) => (
-            <div
-              key={product.id}
-              className="animate-in fade-in zoom-in duration-500 flex justify-center w-full"
-              style={{ 
-                animationFillMode: 'both',
-                animationDelay: `${index * 100}ms`
-              }}
-            >
-              <ProductCard 
-                id={product.id}
-                name={product.name}
-                price={product.price}
-                image={product.image}
-                hoverImage={product.hoverImage}
-                href={product.href}
-                originalPrice={product.originalPrice}
-                discount={product.discount}
-                colors={product.colors}
-                rating={product.rating}
-                reviewsCount={product.reviewsCount}
-                isBestSeller={product.isBestSeller}
-                // ✅ تمرير معلومات الفاريانتات
-                hasVariants={product.hasVariants || false}
-                variants={product.variants || []}
-                variantId={product.variantId || null}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Load More Button */}
-        {showLoadMoreButton && !isLoadingMore && (
-          <div className="text-center mt-4">
+        {/* View More Button - نفس تصميم الكود الأول (معلق) */}
+        {/* {hasMoreProducts && !isLoadingMore && (
+          <div className="text-center">
             <Button
               onClick={handleLoadMore}
-              className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
+              className="group px-8 py-6 text-base font-semibold transition-all duration-300 hover:scale-105"
               style={{
-                backgroundColor: 'transparent',
-                color: '#2D93CA',
-                border: '2px solid #2D93CA',
-                borderRadius: '8px'
+                backgroundColor: 'white',
+                color: '#FF7700',
+                border: '2px solid #FF7700',
+                borderRadius: '12px'
               }}
             >
               عرض المزيد
+              <ChevronLeft className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </div>
-        )}
-
-        {/* No Products Message */}
-        {products.length === 0 && !isInitialLoading && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">لا توجد منتجات حالياً</p>
-          </div>
-        )}
+        )} */}
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-in {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-      `}</style>
-    </section>)
-   
+    </section>
   );
 }

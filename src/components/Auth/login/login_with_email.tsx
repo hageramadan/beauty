@@ -77,7 +77,7 @@ export default function LoginWithEmail() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-5">
-              <label className="block text-gray-700 font-medium mb-2">البريد الإلكتروني *</label>
+              <label className="block text-gray-700 font-medium mb-2">البريد الإلكتروني <span className="text-red-500">*</span></label>
               <div className="relative">
                 <FaEnvelope className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -95,7 +95,7 @@ export default function LoginWithEmail() {
             </div>
 
             <div className="mb-5">
-              <label className="block text-gray-700 font-medium mb-2">كلمة المرور *</label>
+              <label className="block text-gray-700 font-medium mb-2">كلمة المرور <span className="text-red-500">*</span></label>
               <div className="relative">
                 <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input

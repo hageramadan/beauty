@@ -26,7 +26,7 @@ export default function WalletPage() {
       }
 
       // 2. عنوان الـ API - استبدل YOUR_API_URL بالعنوان الحقيقي
-      const apiUrl ="https://admin.souqkaber.com/api";
+      const apiUrl ="https://alsas.admin.t-carts.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
         headers: {

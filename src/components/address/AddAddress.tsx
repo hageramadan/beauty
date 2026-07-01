@@ -126,7 +126,7 @@ export default function AddAddress({
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
 
-  const API_URL = "https://admin.souqkaber.com/api";
+  const API_URL = "https://alsas.admin.t-carts.com/api";
 
   // --- جلب المحافظات من الـ API ---
   useEffect(() => {
@@ -629,9 +629,9 @@ export default function AddAddress({
           <SelectItem key={city.id} value={city.id.toString()}>
             <div className="flex justify-between items-center w-full">
               <span>{city.name}</span>
-              <span className="text-xs text-gray-400 mr-2">
+              {/* <span className="text-xs text-gray-400 mr-2">
                 رسوم التوصيل: {city.delivery_fee} ج.م
-              </span>
+              </span> */}
             </div>
           </SelectItem>
         ))
@@ -795,7 +795,7 @@ export default function AddAddress({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-[#23A6F0] text-white rounded-[8px] hover:bg-[#41b1f1] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#41b1f1] transition disabled:opacity-50"
                   >
                     {isSubmitting
                       ? "جاري الحفظ..."

@@ -1,4 +1,4 @@
-// const API_URL = "https://admin.souqkaber.com/api";
+// const API_URL = "https://alsas.admin.t-carts.com/api";
 
 // // ========== واجهات (Interfaces) السلايدر ==========
 // interface SliderResponse {
@@ -1586,7 +1586,7 @@
 
 
 // services/api.ts
-const API_URL = "https://admin.souqkaber.com/api";
+const API_URL = "https://alsas.admin.t-carts.com/api";
 
 // ✅ طريقة بديلة للتحقق من وقت الـ build بدون .env
 // NEXT_RUNTIME: 'nodejs' أو 'edge' أثناء التشغيل، undefined أثناء الـ build

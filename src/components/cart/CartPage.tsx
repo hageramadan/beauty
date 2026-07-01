@@ -116,7 +116,7 @@ export function CartPage() {
   const cleanImageUrl = (url: string | null | undefined) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -246,9 +246,9 @@ const PageHeader = ({ title, itemCount }: { title: string; itemCount: number }) 
   <div className="mb-8">
     <h1 className="text-lg lg:text-xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-      <Link href="/" className="hover:text-[#23A6F0]">الرئيسية</Link>
+      <Link href="/" className="hover:text-[#FF7700]">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />
-      <span className="text-[#23A6F0]">{title}</span>
+      <span className="text-[#FF7700]">{title}</span>
       <span className="text-gray-400">({itemCount} منتجات)</span>
     </div>
   </div>

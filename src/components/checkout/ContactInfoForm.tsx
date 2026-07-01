@@ -116,7 +116,7 @@ export default function ContactInfoForm({
             onChange={handleNameChange}
             onBlur={handleNameBlur}
             placeholder="أدخل اسمك الكامل"
-            className={`w-full px-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent transition ${
+            className={`w-full px-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#FF7700] focus:border-transparent transition ${
               nameError && isNameTouched
                 ? "border-red-500 focus:ring-red-500"
                 : "border-gray-200"
@@ -154,7 +154,7 @@ export default function ContactInfoForm({
               onChange={handleEmailChange}
               onBlur={handleEmailBlur}
               placeholder="example@email.com"
-              className={`w-full pr-12 pl-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#23A6F0] focus:border-transparent transition ${
+              className={`w-full pr-12 pl-4 py-3 border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#FF7700] focus:border-transparent transition ${
                 emailError && isEmailTouched
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-200"

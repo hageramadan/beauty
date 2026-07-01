@@ -14,11 +14,11 @@ const PageHeader = ({ title }: { title: string }) => (
   <div className="page-with-padding">
     <h1 className="text-xl font-bold text-gray-800">{title}</h1>
     <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-      <Link href="/" className="hover:text-[#23A6F0] transition">الرئيسية</Link>
+      <Link href="/" className="hover:text-[#FF7700] transition">الرئيسية</Link>
       <ChevronRight className="w-4 h-4" />
-      <Link href="/account" className="hover:text-[#23A6F0] transition">حسابي</Link>
+      <Link href="/account" className="hover:text-[#FF7700] transition">حسابي</Link>
       <ChevronRight className="w-4 h-4" />
-      <span className="text-[#23A6F0]">{title}</span>
+      <span className="text-[#FF7700]">{title}</span>
     </div>
   </div>
 );
@@ -40,7 +40,7 @@ const WishlistEmpty = () => (
       </p>
       <Link
         href="/products"
-        className="inline-block bg-[#23A6F0] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
+        className="inline-block bg-[#FF7700] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
       >
         استكشاف المنتجات
       </Link>
@@ -207,7 +207,7 @@ export default function WishlistPage() {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith('http')) return url;
     if (url.startsWith('/storage')) {
-      return `https://admin.souqkaber.com${url}`;
+      return `https://alsas.admin.t-carts.com${url}`;
     }
     return url;
   }, []);

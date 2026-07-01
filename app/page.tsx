@@ -10,7 +10,7 @@ import { getSliders, getCategories } from "@/services/api";
 import HomeLoading from "./HomeLoading";
 import HomeError from "./HomeError";
 
-const API_BASE_URL = 'https://admin.souqkaber.com';
+const API_BASE_URL = 'https://alsas.admin.t-carts.com';
 
 interface Slide {
   id: number;
@@ -33,24 +33,24 @@ const getDefaultSlides = (): Slide[] => {
     {
       id: 1,
       image: "/images/hero/hero1.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
+      title: "",
+      description:"",
       buttonText: "تسوق الآن",
       buttonLink: "/",
     },
     {
       id: 2,
       image: "/images/hero/hero2.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
+      title: "",
+      description: "",
       buttonText: "تسوق الآن",
       buttonLink: "/",
     },
     {
       id: 3,
       image: "/images/hero/hero1.jpg",
-      title: "حيث تلتقي الأناقة بالثقة",
-      description: 'اكتشف مجموعة مختارة بعناية تجمع بين الراحة والجودة لتناسب جميع مناسباتك.',
+      title: "",
+      description: "",
       buttonText: "تسوق الآن",
       buttonLink: "/",
     },
@@ -94,7 +94,7 @@ async function getHomeData() {
     const categories: Category[] = categoriesData.map(cat => ({
       id: cat.id,
       name: cat.name,
-      image: `https://admin.souqkaber.com${cat.image}`,
+      image: `https://alsas.admin.t-carts.com${cat.image}`,
       slug: generateSlug(cat.name)
     }));
 
@@ -121,9 +121,11 @@ export default async function Home() {
     <div>
       <Hero slides={slides} />
       <CategoriesSection categories={categories} />
-      <BestProducts />
       <LatestProducts />
-      <AdsHome />
+
+      <BestProducts />
+      <BestProducts />
+     
       <BestDiscounts />
     </div>
   );

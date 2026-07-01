@@ -21,7 +21,7 @@ import PaymentMethodForm from "@/components/checkout/PaymentMethodForm";
 import NotesForm from "@/components/checkout/NotesForm";
 import OrderSummary from "@/components/checkout/OrderSummary";
 
-const API_URL = "https://admin.souqkaber.com/api";
+const API_URL = "https://alsas.admin.t-carts.com/api";
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
@@ -237,7 +237,7 @@ const transformCartItems = (cart: any): CartItem[] => {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/images/placeholder.jpg";
       if (url.startsWith("/storage")) {
-        return `https://admin.souqkaber.com${url}`;
+        return `https://alsas.admin.t-carts.com${url}`;
       }
       return url;
     };
@@ -807,7 +807,7 @@ export default function CheckoutPage() {
         <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
         <Link
           href="/products"
-          className="bg-[#23A6F0] text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#FF7700] text-white px-6 py-2 rounded-[8px] "
         >
           تسوق الآن
         </Link>
@@ -823,11 +823,11 @@ export default function CheckoutPage() {
             إتمام الطلب
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/cart" className="hover:text-[#23A6F0] transition">
+            <Link href="/cart" className="hover:text-[#FF7700] transition">
               سلة التسوق
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#23A6F0] font-medium">إتمام الطلب</span>
+            <span className="text-[#FF7700] font-medium">إتمام الطلب</span>
           </div>
         </div>
 
@@ -883,7 +883,7 @@ export default function CheckoutPage() {
                       checked={createAccount}
                       onChange={(e) => handleCreateAccountToggle(e.target.checked)}
                       disabled={isSendingAccount}
-                      className="w-5 h-5 rounded border-gray-300 text-[#23A6F0] focus:ring-[#23A6F0] cursor-pointer disabled:opacity-50"
+                      className="w-5 h-5 rounded border-gray-300 text-[#FF7700] focus:ring-[#FF7700] cursor-pointer disabled:opacity-50"
                     />
                   </div>
                   <div className="flex-1">
@@ -891,7 +891,7 @@ export default function CheckoutPage() {
                       htmlFor="createAccount"
                       className="font-semibold text-gray-800 text-sm cursor-pointer flex items-center gap-2"
                     >
-                      <User className="w-4 h-4 text-[#23A6F0]" />
+                      <User className="w-4 h-4 text-[#FF7700]" />
                       إنشاء حساب جديد
                       {isSendingAccount && (
                         <span className="text-xs text-gray-400 mr-2">جاري الإرسال...</span>
@@ -938,7 +938,7 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="hidden md:block w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
+              className="hidden md:block w-full bg-[#FF7700] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
@@ -953,7 +953,7 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="block md:hidden w-full bg-[#2DA5F3] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
+              className="block md:hidden w-full bg-[#FF7700] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
@@ -1038,7 +1038,7 @@ function SuccessPopup({
           {!isGuest && (
             <button
               onClick={onGoToOrders}
-              className="w-full bg-[#2DA5F3] text-white py-2 rounded-[8px] font-medium hover:bg-[#d41c19] transition"
+              className="w-full bg-[#FF7700] text-white py-2 rounded-[8px] font-medium hover:bg-[#d41c19] transition"
             >
               متابعة الطلبات
             </button>
