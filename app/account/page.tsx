@@ -215,7 +215,7 @@ export default function AccountPage() {
                     width={70}
                     height={70}
                     unoptimized
-                    className="rounded-full object-cover h-[70px] w-[70px] md:w-24 md:h-24 border-4 border-white shadow-lg"
+                    className="rounded-full object-cover h-16 w-16 md:w-24 md:h-24 border-4 border-white shadow-lg"
                     onError={() => {
                       // في حالة فشل تحميل الصورة، استخدم الحرف الأول
                       // يمكنك إضافة حالة للتعامل مع الخطأ
