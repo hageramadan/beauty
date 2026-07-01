@@ -225,6 +225,90 @@ function useFilterOptions(): FilterOptionsState {
 }
 
 // ============================================================================
+// Components for "Show More" functionality
+// ============================================================================
+
+interface ShowMoreListProps<T, K extends string | number> {
+  items: T[];
+  selectedValues: K[];
+  getKey: (item: T) => K;
+  getLabel: (item: T) => string;
+  onToggle: (key: K) => void;
+  loadingMessage: string;
+  getBadgeColor?: (item: T) => string;
+  initialDisplayCount?: number; // عدد العناصر المعروضة في البداية
+  height?: string; // ارتفاع ثابت للمحتوى
+}
+
+function ShowMoreList<T, K extends string | number>({
+  items,
+  selectedValues,
+  getKey,
+  getLabel,
+  onToggle,
+  loadingMessage,
+  getBadgeColor,
+  initialDisplayCount = 5,
+  height = 'h-[180px]', // ارتفاع ثابت
+}: ShowMoreListProps<T, K>) {
+  const [showAll, setShowAll] = useState(false);
+  
+  if (items.length === 0) {
+    return <p className="text-sm text-gray-400">{loadingMessage}</p>;
+  }
+
+  const displayedItems = showAll ? items : items.slice(0, initialDisplayCount);
+  const hasMore = items.length > initialDisplayCount;
+
+  return (
+    <div className="space-y-2">
+      {/* حاوية بارتفاع ثابت مع سكرول */}
+      <div 
+        className={`${height} overflow-y-auto space-y-2 pr-1 custom-scrollbar`}
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#D1D5DB transparent',
+        }}
+      >
+        {displayedItems.map((item) => {
+          const key = getKey(item);
+          const label = getLabel(item);
+          const badgeColor = getBadgeColor?.(item);
+          
+          return (
+            <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <input
+                type="checkbox"
+                checked={selectedValues.includes(key)}
+                onChange={() => onToggle(key)}
+                className="rounded text-blue-600 focus:ring-blue-500"
+              />
+              {badgeColor && (
+                <span 
+                  className="w-3 h-3 rounded-full flex-shrink-0" 
+                  style={{ backgroundColor: badgeColor }}
+                />
+              )}
+              <span className="text-sm text-gray-600">{label}</span>
+            </label>
+          );
+        })}
+      </div>
+
+      {/* زر عرض المزيد/أقل */}
+      {hasMore && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="text-[#FF7700] text-sm font-medium hover:underline mt-1 transition-all"
+        >
+          {showAll ? 'عرض أقل' : `عرض المزيد (${items.length - initialDisplayCount})`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // Presentational sub-components
 // ============================================================================
 
@@ -232,7 +316,7 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="py-4">
+    <div className="py-4 border-b border-gray-100 last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex justify-between items-center w-full text-right font-semibold text-gray-700 mb-2"
@@ -257,6 +341,7 @@ interface CheckboxFilterListProps<T, K extends string | number> {
   loadingMessage: string;
   maxHeightClassName?: string;
   getBadgeColor?: (item: T) => string;
+  initialDisplayCount?: number; // ✅ إضافة
 }
 
 function CheckboxFilterListInner<T, K extends string | number>({
@@ -268,37 +353,25 @@ function CheckboxFilterListInner<T, K extends string | number>({
   loadingMessage,
   maxHeightClassName = 'max-h-64',
   getBadgeColor,
+  initialDisplayCount = 5, // ✅ إضافة
 }: CheckboxFilterListProps<T, K>) {
   if (items.length === 0) {
     return <p className="text-sm text-gray-400">{loadingMessage}</p>;
   }
 
+  // ✅ استخدام ShowMoreList
   return (
-    <div className={`space-y-2  ${maxHeightClassName}`}>
-      {items.map((item) => {
-        const key = getKey(item);
-        const label = getLabel(item);
-        const badgeColor = getBadgeColor?.(item);
-        
-        return (
-          <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-            <input
-              type="checkbox"
-              checked={selectedValues.includes(key)}
-              onChange={() => onToggle(key)}
-              className="rounded text-blue-600 focus:ring-blue-500"
-            />
-            {badgeColor && (
-              <span 
-                className="w-3 h-3 rounded-full flex-shrink-0" 
-                style={{ backgroundColor: badgeColor }}
-              />
-            )}
-            <span className="text-sm text-gray-600">{label}</span>
-          </label>
-        );
-      })}
-    </div>
+    <ShowMoreList
+      items={items}
+      selectedValues={selectedValues}
+      getKey={getKey}
+      getLabel={getLabel}
+      onToggle={onToggle}
+      loadingMessage={loadingMessage}
+      getBadgeColor={getBadgeColor}
+      initialDisplayCount={initialDisplayCount}
+      height="h-[180px]" // ارتفاع ثابت 180px
+    />
   );
 }
 
@@ -490,146 +563,167 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
   }, [state]);
 
   return (
-    <div
-      className={`
-        border rounded-[8px] p-4
-        ${
-          isMobile
-            ? 'w-full max-h-[calc(100vh-80px)] my-0 border-0 rounded-none'
-            : 'sticky top-[10%] mx-auto my-3 w-[340px]'
-        }
-      `}
-    >
-      <h3 className="text-[18.28px] mb-4 text-[#180100] flex justify-between items-center">
-        فلتر
-        <button
-          onClick={handleResetFilters}
-          className="text-sm text-[#666666] border py-[10px] px-[18px] rounded-full border-[#999999] font-normal"
-        >
-          مسح الكل
-        </button>
-      </h3>
-
-      {/* ===== فلتر السعر ===== */}
-      <FilterSection title="الاسعار">
-        <div className="space-y-4">
-          <p className="text-sm text-[#333333] flex justify-end gap-1">
-            <span>L.E</span>
-            {tempMaxPrice.toLocaleString()}
-            <span>-</span>
-            <span>L.E</span>
-            {tempMinPrice.toLocaleString()}
-          </p>
-
-          <Slider
-            value={state.tempPriceRange}
-            onValueChange={handlePriceSliderChange}
-            min={MIN_PRICE}
-            max={MAX_PRICE}
-            step={10}
-            className="my-6"
-          />
-
-          <div className="flex gap-3 mt-2 items-center">
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">الحد الأقصى</label>
-              <input
-                type="number"
-                value={tempMaxPrice}
-                onChange={handleMaxPriceInputChange}
-                className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">الحد الأدنى</label>
-              <input
-                type="number"
-                value={tempMinPrice}
-                onChange={handleMinPriceInputChange}
-                className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            {/* ✅ إخفاء زر تطبيق السعر في الموبايل لأنه سيتم تطبيق كل الفلاتر دفعة واحدة */}
-            {!isMobile && (
-              <div className="mt-4">
-                <button
-                  onClick={handleApplyPriceFilter}
-                  className="w-[32.89px] bg-[#FF7700] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2"
-                >
-                  <FaArrowLeft className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </FilterSection>
-
-      {/* ===== فلتر الفئات ===== */}
-      <FilterSection title="الفئات">
-        <CheckboxFilterList
-          items={categories}
-          selectedValues={state.selectedCategories}
-          getKey={(category) => category.id}
-          getLabel={(category) => category.name}
-          onToggle={handleCategoryToggle}
-          loadingMessage="جاري تحميل الفئات..."
-          maxHeightClassName="max-h-64"
-        />
-      </FilterSection>
-
-      {/* ===== فلتر الألوان ===== */}
-      <FilterSection title="الألوان">
-        <ColorSwatchList
-          colors={colors}
-          selectedColors={state.selectedColors}
-          onToggle={handleColorToggle}
-          loadingMessage="جاري تحميل الألوان..."
-        />
-      </FilterSection>
-
-      {/* ===== ✅ فلتر المواصفات (RAM / HDD) ===== */}
-      <FilterSection title="المواصفات (RAM / HDD)">
-        <CheckboxFilterList
-          items={sizes}
-          selectedValues={state.selectedAttributeIds}
-          getKey={(size) => size.id}
-          getLabel={getSizeLabel}
-          onToggle={handleAttributeToggle}
-          loadingMessage="جاري تحميل المواصفات..."
-          maxHeightClassName="max-h-64"
-          getBadgeColor={getSizeBadgeColor}
-        />
-      </FilterSection>
-
-      {/* ===== فلتر العلامات التجارية ===== */}
-      <FilterSection title="العلامات التجارية">
-        <CheckboxFilterList
-          items={brands}
-          selectedValues={state.selectedBrands}
-          getKey={(brand) => brand.id}
-          getLabel={(brand) => brand.name}
-          onToggle={handleBrandToggle}
-          loadingMessage="جاري تحميل العلامات التجارية..."
-          maxHeightClassName="max-h-48"
-        />
-      </FilterSection>
-
-      {/* ✅ زر تطبيق الفلاتر (يظهر فقط في الموبايل) */}
-      {isMobile && (
-        <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
+    <>
+      <div
+        className={`
+          border rounded-[8px] p-4
+          ${
+            isMobile
+              ? 'w-full max-h-[calc(100vh-80px)] my-0 border-0 rounded-none'
+              : 'sticky top-[10%] mx-auto my-3 w-[340px]'
+          }
+        `}
+      >
+        <h3 className="text-[18.28px] mb-4 text-[#180100] flex justify-between items-center">
+          فلتر
           <button
-            onClick={applyFilters}
-            className="w-full bg-[#FF7700] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#2479a8] flex items-center justify-center gap-2"
+            onClick={handleResetFilters}
+            className="text-sm text-[#666666] border py-[10px] px-[18px] rounded-full border-[#999999] font-normal"
           >
-            تطبيق 
-            {/* {getSelectedFiltersCount() > 0 && (
-              <span className="bg-white text-[#FF7700] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {getSelectedFiltersCount()}
-              </span>
-            )} */}
+            مسح الكل
           </button>
-        </div>
-      )}
-    </div>
+        </h3>
+
+        {/* ===== فلتر السعر ===== */}
+        <FilterSection title="الاسعار">
+          <div className="space-y-4">
+            <p className="text-sm text-[#333333] flex justify-end gap-1">
+              <span>L.E</span>
+              {tempMaxPrice.toLocaleString()}
+              <span>-</span>
+              <span>L.E</span>
+              {tempMinPrice.toLocaleString()}
+            </p>
+
+            <Slider
+              value={state.tempPriceRange}
+              onValueChange={handlePriceSliderChange}
+              min={MIN_PRICE}
+              max={MAX_PRICE}
+              step={10}
+              className="my-6"
+            />
+
+            <div className="flex gap-3 mt-2 items-center">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">الحد الأقصى</label>
+                <input
+                  type="number"
+                  value={tempMaxPrice}
+                  onChange={handleMaxPriceInputChange}
+                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-gray-500 mb-1">الحد الأدنى</label>
+                <input
+                  type="number"
+                  value={tempMinPrice}
+                  onChange={handleMinPriceInputChange}
+                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {/* ✅ إخفاء زر تطبيق السعر في الموبايل لأنه سيتم تطبيق كل الفلاتر دفعة واحدة */}
+              {!isMobile && (
+                <div className="mt-4">
+                  <button
+                    onClick={handleApplyPriceFilter}
+                    className="w-[32.89px] bg-[#FF7700] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2"
+                  >
+                    <FaArrowLeft className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </FilterSection>
+
+        {/* ===== فلتر الفئات ===== */}
+        <FilterSection title="الفئات">
+          <CheckboxFilterList
+            items={categories}
+            selectedValues={state.selectedCategories}
+            getKey={(category) => category.id}
+            getLabel={(category) => category.name}
+            onToggle={handleCategoryToggle}
+            loadingMessage="جاري تحميل الفئات..."
+            initialDisplayCount={5}
+            maxHeightClassName="h-[180px]"
+          />
+        </FilterSection>
+
+        {/* ===== فلتر الألوان ===== */}
+        <FilterSection title="الألوان">
+          <ColorSwatchList
+            colors={colors}
+            selectedColors={state.selectedColors}
+            onToggle={handleColorToggle}
+            loadingMessage="جاري تحميل الألوان..."
+          />
+        </FilterSection>
+
+        {/* ===== ✅ فلتر المواصفات (RAM / HDD) ===== */}
+        <FilterSection title="المواصفات (RAM / HDD)">
+          <CheckboxFilterList
+            items={sizes}
+            selectedValues={state.selectedAttributeIds}
+            getKey={(size) => size.id}
+            getLabel={getSizeLabel}
+            onToggle={handleAttributeToggle}
+            loadingMessage="جاري تحميل المواصفات..."
+            initialDisplayCount={5}
+            maxHeightClassName="h-[180px]"
+            getBadgeColor={getSizeBadgeColor}
+          />
+        </FilterSection>
+
+        {/* ===== فلتر العلامات التجارية ===== */}
+        <FilterSection title="العلامات التجارية">
+          <CheckboxFilterList
+            items={brands}
+            selectedValues={state.selectedBrands}
+            getKey={(brand) => brand.id}
+            getLabel={(brand) => brand.name}
+            onToggle={handleBrandToggle}
+            loadingMessage="جاري تحميل العلامات التجارية..."
+            initialDisplayCount={5}
+            maxHeightClassName="h-[180px]"
+          />
+        </FilterSection>
+
+        {/* ✅ زر تطبيق الفلاتر (يظهر فقط في الموبايل) */}
+        {isMobile && (
+          <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
+            <button
+              onClick={applyFilters}
+              className="w-full bg-[#FF7700] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#e06800] flex items-center justify-center gap-2"
+            >
+              تطبيق 
+              {getSelectedFiltersCount() > 0 && (
+                <span className="bg-white text-[#FF7700] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {getSelectedFiltersCount()}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #D1D5DB;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #9CA3AF;
+        }
+      `}</style>
+    </>
   );
 }
