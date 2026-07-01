@@ -212,8 +212,8 @@ export default function AccountPage() {
                   <Image
                     src={userImage}
                     alt={user.name || "User"}
-                    width={960}
-                    height={960}
+                    width={70}
+                    height={70}
                     unoptimized
                     className="rounded-full object-cover h-[70px] w-[70px] md:w-24 md:h-24 border-4 border-white shadow-lg"
                     onError={() => {
