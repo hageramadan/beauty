@@ -276,8 +276,8 @@ export function BestDiscounts() {
   if (error && products.length === 0) {
     return (
       <section className="py-6 md:py-12 bg-white">
-        <div className="container-custom">
-          {/* <div className="text-center py-12">
+        {/* <div className="container-custom">
+          <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
@@ -285,8 +285,8 @@ export function BestDiscounts() {
             >
               إعادة المحاولة
             </button>
-          </div> */}
-        </div>
+          </div>
+        </div> */}
       </section>
     );
   }

@@ -250,15 +250,10 @@ export function LatestProducts() {
   // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-2 md:py-12 bg-white">
-        <div className="container-custom">
-          <div className="mb-5 md:mb-10 flex justify-between">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
-              أحدث المنتجات
-            </h2>
-          </div>
-          <div className="flex flex-col justify-center items-center py-20 text-center">
-            <p className="text-red-500 mb-4">{error}</p>
+      <section className="py-6 md:py-12 bg-white">
+        {/* <div className="container-custom">
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={() => fetchProducts(1, false)} 
               className="px-4 py-2 bg-[#FF7700] text-white rounded-md"
@@ -266,24 +261,7 @@ export function LatestProducts() {
               إعادة المحاولة
             </button>
           </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (products.length === 0) {
-    return (
-      <section className="py-2 md:py-12 bg-white">
-        <div className="container-custom">
-          <div className="mb-5 md:mb-10 flex justify-between">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: '#112B40' }}>
-              أحدث المنتجات
-            </h2>
-          </div>
-          <div className="text-center py-20">
-            <p className="text-gray-500">لا توجد منتجات حالياً</p>
-          </div>
-        </div>
+        </div> */}
       </section>
     );
   }
