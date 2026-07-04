@@ -111,7 +111,7 @@ const SummaryRow = ({
 };
 
 const CheckoutButton = () => (
-  <Link href="/checkout" className="flex items-center justify-center gap-2 mt-4 w-full bg-[#FF7700] text-white py-2  rounded-[8px]  font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-[#3fabf3]">
+  <Link href="/checkout" className="flex items-center justify-center gap-2 mt-4 w-full bg-[#FF7700] text-white py-2  rounded-[8px]  font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-[#fc8a27]">
     <button className="">
       إكمال الطلب
 

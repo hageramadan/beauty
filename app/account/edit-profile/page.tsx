@@ -476,7 +476,7 @@ export default function EditProfilePage() {
                       }}
                     />
                   ) : (
-                    <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
+                    <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#FF7700] flex items-center justify-center shadow-lg">
                       <span className="text-white text-xl md:text-2xl font-bold">
                         {getUserInitial()}
                       </span>
@@ -577,6 +577,110 @@ export default function EditProfilePage() {
                     )}
                   </div>
                 
+              </div>
+  {/* تغيير كلمة المرور */}
+              <div className="my-6">
+                <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
+                  تغيير كلمة المرور
+                </h2>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    كلمة المرور الحالية
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={formData.currentPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, currentPassword: e.target.value });
+                        clearFieldError("currentPassword");
+                      }}
+                      placeholder="************"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.currentPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.currentPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    كلمة المرور الجديدة
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={formData.newPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, newPassword: e.target.value });
+                        clearFieldError("newPassword");
+                      }}
+                      placeholder="************ (6 أحرف على الأقل)"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.newPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.newPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    تأكيد كلمة المرور
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmPassword}
+                      onChange={(e) => {
+                        setFormData({ ...formData, confirmPassword: e.target.value });
+                        clearFieldError("confirmPassword");
+                      }}
+                      placeholder="************"
+                      disabled={isSubmitting}
+                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                        errors.confirmPassword ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "opacity-50" : ""}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isSubmitting}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+
+            
               </div>
 
             

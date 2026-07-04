@@ -568,7 +568,7 @@ export default function DeliveryAddressForm({
               <button
                 onClick={handleManualSave}
                 disabled={isSavingAddress || !addressData.governorate || !addressData.city}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#FF7700] hover:bg-[#3fadf7] transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#FF7700] hover:bg-[#ff8b26] transition disabled:opacity-50"
               >
                 {isSavingAddress ? (
                   <>
@@ -586,7 +586,7 @@ export default function DeliveryAddressForm({
           )}
 
           {/* ✅ رسالة للضيف عند اختيار المدينة */}
-          {isGuest && addressData.city && (
+          {/* {isGuest && addressData.city && (
             <div className="pt-2 mt-2">
               <div className="p-3 bg-green-50  rounded-[8px]  border border-green-200">
                 <p className="text-sm font-medium text-green-800">
@@ -597,7 +597,7 @@ export default function DeliveryAddressForm({
                 </p>
               </div>
             </div>
-          )}
+          )} */}
 
           {saveError && (
             <div className="pt-2 mt-2">
@@ -682,7 +682,7 @@ export default function DeliveryAddressForm({
                           key={address.id}
                           className={`flex items-start gap-3 p-3  rounded-[8px]  border cursor-pointer transition-all ${
                             selectedSavedAddressId === address.id
-                              ? "border-[#FF7700]  bg-blue-50 "
+                              ? "border-[#FF7700]  bg-orange-50 "
                               : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectSavedAddress(address.id)}

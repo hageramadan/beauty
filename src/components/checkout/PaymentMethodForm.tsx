@@ -60,7 +60,7 @@ export default function PaymentMethodForm({
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "wallet"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           } ${!isWalletAvailable ? "opacity-60 cursor-not-allowed" : ""}`}
         >
@@ -88,7 +88,7 @@ export default function PaymentMethodForm({
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "cash"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -110,7 +110,7 @@ export default function PaymentMethodForm({
         {/* <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "card"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -132,7 +132,7 @@ export default function PaymentMethodForm({
         {/* <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             paymentMethod === "mada"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >

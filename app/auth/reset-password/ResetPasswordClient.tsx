@@ -179,7 +179,7 @@ export default function ResetPasswordClient() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-black text-white rounded-[8px] hover:bg-gray-800 transition disabled:opacity-50"
+              className="w-full py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#e06a00] transition disabled:opacity-50"
             >
               {isLoading ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
             </button>
@@ -190,7 +190,7 @@ export default function ResetPasswordClient() {
                 <button
                   type="button"
                   onClick={() => router.push("/auth/login")}
-                  className="text-[#ff3c27] font-medium hover:underline"
+                  className="text-[#FF7700] font-medium hover:underline"
                 >
                   تسجيل الدخول
                 </button>
