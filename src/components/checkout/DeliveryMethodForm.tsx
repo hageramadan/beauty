@@ -13,7 +13,7 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             deliveryMethod === "pickup"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -32,7 +32,7 @@ export default function DeliveryMethodForm({ deliveryMethod, onDeliveryMethodCha
         <label
           className={`flex items-center gap-3 p-4 border  rounded-[8px]  cursor-pointer transition ${
             deliveryMethod === "delivery"
-              ? "border-[#FF7700]  bg-blue-50 "
+              ? "border-[#FF7700]  bg-orange-50 "
               : "border-gray-200 hover:border-gray-300"
           }`}
         >

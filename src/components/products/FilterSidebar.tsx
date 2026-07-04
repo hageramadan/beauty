@@ -663,7 +663,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
         </FilterSection>
 
         {/* ===== ✅ فلتر المواصفات (RAM / HDD) ===== */}
-        <FilterSection title="المواصفات (RAM / HDD)">
+        {/* <FilterSection title="المواصفات (RAM / HDD)">
           <CheckboxFilterList
             items={sizes}
             selectedValues={state.selectedAttributeIds}
@@ -675,7 +675,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
             maxHeightClassName="h-[180px]"
             getBadgeColor={getSizeBadgeColor}
           />
-        </FilterSection>
+        </FilterSection> */}
 
         {/* ===== فلتر العلامات التجارية ===== */}
         <FilterSection title="العلامات التجارية">

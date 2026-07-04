@@ -158,7 +158,7 @@ export default function AccountPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#ff3c27] rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#FF7700] rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">جاري تحميل بيانات الحساب...</p>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function AccountPage() {
                     }}
                   />
                 ) : (
-                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#ff3c27] flex items-center justify-center shadow-lg">
+                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#FF7700] flex items-center justify-center shadow-lg">
                     <span className="text-white text-xl md:text-2xl font-bold">
                       {getUserInitial()}
                     </span>
@@ -247,6 +247,11 @@ export default function AccountPage() {
                   <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                     <span dir="ltr"> {user.country_code || '+20'} <></>
                       {user.phone}</span>
+                  </div>
+                )}
+                {user.email && (
+                  <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                    <span>{user.email}</span>
                   </div>
                 )}
               </div>

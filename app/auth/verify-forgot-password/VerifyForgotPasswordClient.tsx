@@ -129,7 +129,7 @@ export default function VerifyForgotPasswordClient() {
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   disabled={isLoading}
-                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-[8px] focus:border-[#ff3c27] focus:ring-2 focus:ring-[#ff3c27]/20 outline-none transition-all disabled:opacity-50"
+                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-[8px] focus:border-[#FF7700] focus:ring-2 focus:ring-[#FF7700]/20 outline-none transition-all disabled:opacity-50"
                   maxLength={1}
                 />
               ))}
@@ -139,7 +139,7 @@ export default function VerifyForgotPasswordClient() {
               {!canResend ? (
                 <p className="text-gray-500 text-sm">
                   لم تستلم الرمز؟{" "}
-                  <span className="text-[#ff3c27] font-medium">
+                  <span className="text-[#FF7700] font-medium">
                     إعادة الإرسال ({timeLeft.toString().padStart(2, "0")} ثانية)
                   </span>
                 </p>
@@ -148,7 +148,7 @@ export default function VerifyForgotPasswordClient() {
                   type="button"
                   onClick={handleResendCode}
                   disabled={isLoading}
-                  className="text-[#ff3c27] font-medium hover:underline disabled:opacity-50"
+                  className="text-[#FF7700] font-medium hover:underline disabled:opacity-50"
                 >
                   لم تستلم الرمز؟ إعادة إرسال
                 </button>
@@ -158,7 +158,7 @@ export default function VerifyForgotPasswordClient() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-black text-white rounded-[8px] hover:bg-gray-800 transition disabled:opacity-50"
+              className="w-full py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#e06a00] transition disabled:opacity-50"
             >
               {isLoading ? "جاري التحقق..." : "تحقق"}
             </button>

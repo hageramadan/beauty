@@ -20,8 +20,9 @@ import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
 import PaymentMethodForm from "@/components/checkout/PaymentMethodForm";
 import NotesForm from "@/components/checkout/NotesForm";
 import OrderSummary from "@/components/checkout/OrderSummary";
+import PhoneInput from "@/components/contact/PhoneInput";
 
-const API_URL = "https://alsas.admin.t-carts.com/api";
+const API_URL = "https://dukanah.admin.t-carts.com/api";
 
 // دالة جلب التوكن
 const getToken = (): string | null => {
@@ -99,93 +100,6 @@ const fetchCartWithParams = async (
   }
 };
 
-// ✅ دالة التحقق من رقم الهاتف حسب الدولة
-const validatePhoneNumberByCountry = (
-  phoneNumber: string,
-  countryCode: string,
-): { isValid: boolean; error: string } => {
-  const cleanNumber = phoneNumber.replace(/[\s\-]/g, "");
-
-  if (!cleanNumber) {
-    return { isValid: false, error: "رقم الهاتف مطلوب" };
-  }
-
-  if (!/^\d+$/.test(cleanNumber)) {
-    return { isValid: false, error: "يجب أن يحتوي رقم الهاتف على أرقام فقط" };
-  }
-
-  const rules: Record<
-    string,
-    {
-      minLength: number;
-      maxLength: number;
-      startsWith: string[];
-      pattern: RegExp;
-      name: string;
-    }
-  > = {
-    "+20": {
-      name: "مصر",
-      minLength: 11,
-      maxLength: 11,
-      startsWith: ["010", "011", "012", "015"],
-      pattern: /^01[0125][0-9]{8}$/,
-    },
-    "+966": {
-      name: "السعودية",
-      minLength: 9,
-      maxLength: 9,
-      startsWith: ["05"],
-      pattern: /^05[0-9]{8}$/,
-    },
-    "+964": {
-      name: "العراق",
-      minLength: 11,
-      maxLength: 11,
-      startsWith: ["07"],
-      pattern: /^07[0-9]{9}$/,
-    },
-    "+971": {
-      name: "الإمارات",
-      minLength: 9,
-      maxLength: 9,
-      startsWith: ["05"],
-      pattern: /^05[0-9]{8}$/,
-    },
-  };
-
-  const rule = rules[countryCode];
-  if (!rule) {
-    return { isValid: false, error: "كود الدولة غير صالح" };
-  }
-
-  if (cleanNumber.length !== rule.minLength) {
-    return {
-      isValid: false,
-      error: `رقم الهاتف في ${rule.name} يجب أن يكون ${rule.minLength} أرقام (الطول الحالي: ${cleanNumber.length})`,
-    };
-  }
-
-  const startsWithValid = rule.startsWith.some((prefix) =>
-    cleanNumber.startsWith(prefix),
-  );
-  if (!startsWithValid) {
-    return {
-      isValid: false,
-      error: `رقم الهاتف في ${rule.name} يجب أن يبدأ بـ (${rule.startsWith.join(" أو ")})`,
-    };
-  }
-
-  if (!rule.pattern.test(cleanNumber)) {
-    return {
-      isValid: false,
-      error: `رقم الهاتف غير صحيح لدولة ${rule.name}`,
-    };
-  }
-
-  return { isValid: true, error: "" };
-};
-
 // دالة إنشاء الطلب
 const createOrder = async (orderData: any): Promise<any> => {
   try {
@@ -237,7 +151,7 @@ const transformCartItems = (cart: any): CartItem[] => {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/images/placeholder.jpg";
       if (url.startsWith("/storage")) {
-        return `https://alsas.admin.t-carts.com${url}`;
+        return `https://dukanah.admin.t-carts.com${url}`;
       }
       return url;
     };
@@ -266,7 +180,7 @@ interface CompletedOrderResult {
   total: number;
 }
 
-// ✅ واجهة بيانات إنشاء الحساب (مع كلمة المرور ولكن مخفية)
+// ✅ واجهة بيانات إنشاء الحساب
 interface AccountData {
   email: string;
   phone: string;
@@ -296,17 +210,19 @@ export default function CheckoutPage() {
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
 
-  // ✅ حالة خيار إنشاء حساب (Checkbox)
+  // ✅ حالة خيار إنشاء حساب
   const [createAccount, setCreateAccount] = useState(false);
+  const [showAccountPopup, setShowAccountPopup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [accountData, setAccountData] = useState<AccountData>({
     email: "",
     phone: "",
     name: "",
-    password: "", // ✅ فارغ
-    password_confirmation: "", // ✅ فارغ
+    password: "",
+    password_confirmation: "",
   });
   const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
-  const [isSendingAccount, setIsSendingAccount] = useState(false);
 
   // ✅ استخدم useRef لتخزين cityId بشكل فوري
   const selectedCityIdRef = useRef<string | null>(null);
@@ -327,7 +243,7 @@ export default function CheckoutPage() {
     phone: "",
     phoneNumber: "",
     phoneCountryCode: "+20",
-    email: "", // ✅ إضافة حقل email
+    email: "", // ✅ إضافة email إلى formData
     deliveryAddress: {
       street: "",
       city: "",
@@ -381,7 +297,7 @@ export default function CheckoutPage() {
       router.replace("/");
     }
   }, [cart, cartLoading, router, isOrderCompleted]);
-
+  
   // ✅ استدعاء الـ API عند تغيير طريقة التوصيل أو المدينة (محسّن)
   useEffect(() => {
     if (isOrderCompleted) return;
@@ -390,16 +306,20 @@ export default function CheckoutPage() {
     if (isFetchingRef.current) return;
 
     const currentDeliveryMethod = formData.deliveryMethod;
+    // ✅ استخدم الـ ref بدلاً من الـ state
     const currentCityId = selectedCityIdRef.current;
 
+    // ✅ التحقق: هل تغيرت طريقة التوصيل أم المدينة؟
     const deliveryMethodChanged = lastDeliveryMethodRef.current !== currentDeliveryMethod;
     const cityIdChanged = lastFetchedCityIdRef.current !== currentCityId;
 
+    // ✅ إذا لم يتغير شيء، لا نستدعي الـ API
     if (!deliveryMethodChanged && !cityIdChanged) {
       console.log("🟢 Skipping - no changes detected");
       return;
     }
 
+    // ✅ تحديث القيم المخزنة
     lastDeliveryMethodRef.current = currentDeliveryMethod;
     lastFetchedCityIdRef.current = currentCityId;
 
@@ -409,6 +329,7 @@ export default function CheckoutPage() {
       try {
         isFetchingRef.current = true;
         
+        // ✅ إذا كانت طريقة التوصيل delivery ولدينا cityId
         if (currentDeliveryMethod === "delivery" && currentCityId) {
           console.log(`🟢 Fetching cart with delivery and city_id: ${currentCityId}`);
           const cartData = await fetchCartWithParams("delivery", currentCityId);
@@ -416,6 +337,7 @@ export default function CheckoutPage() {
             updateCart(cartData);
           }
         } 
+        // ✅ إذا كانت طريقة التوصيل pickup
         else if (currentDeliveryMethod === "pickup") {
           console.log("🟢 Fetching cart with pickup (receive)");
           const cartData = await fetchCartWithParams("pickup");
@@ -423,6 +345,7 @@ export default function CheckoutPage() {
             updateCart(cartData);
           }
         } 
+        // ✅ إذا كانت delivery ولكن لم يتم اختيار مدينة بعد
         else if (currentDeliveryMethod === "delivery" && !currentCityId) {
           console.log("🟢 Fetching cart with delivery (no city yet)");
           const cartData = await fetchCartWithParams("delivery");
@@ -437,6 +360,7 @@ export default function CheckoutPage() {
       }
     };
 
+    // ✅ تأخير بسيط لتجنب الاستدعاءات المتكررة أثناء الكتابة
     const timeoutId = setTimeout(fetchCart, 300);
     
     return () => {
@@ -524,7 +448,26 @@ export default function CheckoutPage() {
     setSelectedCityId(cityId);
   }, []);
 
-  // ✅ دالة التحقق من بيانات الحساب (بدون التحقق من كلمة المرور)
+  // ✅ دالة فتح Popup إنشاء الحساب
+  const handleOpenAccountPopup = useCallback(() => {
+    setAccountData((prev) => ({
+      ...prev,
+      name: formData.fullName || "",
+      phone: formData.phone || "",
+      email: formData.email || "", // ✅ إضافة email
+    }));
+    setAccountErrors({});
+    setShowAccountPopup(true);
+  }, [formData.fullName, formData.phone, formData.email]);
+
+  // ✅ دالة إغلاق Popup إنشاء الحساب
+  const handleCloseAccountPopup = useCallback(() => {
+    setShowAccountPopup(false);
+    setCreateAccount(false);
+    setAccountErrors({});
+  }, []);
+
+  // ✅ دالة التحقق من بيانات الحساب
   const validateAccountData = (): boolean => {
     const errors: Record<string, string> = {};
 
@@ -536,14 +479,6 @@ export default function CheckoutPage() {
 
     if (!accountData.phone.trim()) {
       errors.phone = "رقم الهاتف مطلوب";
-    } else {
-      const phoneValidation = validatePhoneNumberByCountry(
-        accountData.phone.replace(/[\s\-]/g, ""),
-        "+20",
-      );
-      if (!phoneValidation.isValid) {
-        errors.phone = phoneValidation.error;
-      }
     }
 
     if (!accountData.name.trim()) {
@@ -552,96 +487,33 @@ export default function CheckoutPage() {
       errors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
     }
 
-    // ✅ لا نتحقق من كلمة المرور لأنها ستُرسل فارغة
+    // ✅ كلمة المرور 8 أحرف أو أرقام
+    if (!accountData.password) {
+      errors.password = "كلمة المرور مطلوبة";
+    } else if (accountData.password.length < 8) {
+      errors.password = "كلمة المرور يجب أن تكون 8 أحرف أو أرقام على الأقل";
+    }
+
+    if (!accountData.password_confirmation) {
+      errors.password_confirmation = "تأكيد كلمة المرور مطلوب";
+    } else if (accountData.password !== accountData.password_confirmation) {
+      errors.password_confirmation = "كلمات المرور غير متطابقة";
+    }
 
     setAccountErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ دالة إرسال بيانات الحساب للباك اند (مع كلمة المرور الفارغة)
-  const sendAccountDataToBackend = useCallback(async () => {
-    if (!createAccount || isSendingAccount) return;
-    
-    // التحقق من صحة البيانات (بدون كلمة المرور)
-    if (!validateAccountData()) {
-      toast.error("يرجى تصحيح الأخطاء في بيانات الحساب");
-      return;
+  // ✅ دالة تأكيد إنشاء الحساب
+  const handleConfirmAccount = useCallback(() => {
+    if (validateAccountData()) {
+      setCreateAccount(true);
+      setShowAccountPopup(false);
+      toast.success("سيتم إنشاء حسابك بعد إتمام الطلب");
     }
+  }, [accountData]);
 
-    setIsSendingAccount(true);
-    
-    try {
-      // ✅ إرسال البيانات للباك اند مع كلمة مرور فارغة
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: accountData.name,
-          email: accountData.email,
-          phone: accountData.phone,
-          password: accountData.password || "", // ✅ فارغ
-          password_confirmation: accountData.password_confirmation || "", // ✅ فارغ
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.result === true) {
-        toast.success("تم إنشاء الحساب بنجاح!");
-        // ✅ حفظ التوكن إذا رجعه الباك اند
-        if (data.data?.token) {
-          localStorage.setItem("auth_token", data.data.token);
-        }
-      } else {
-        toast.error(data.message || "فشل إنشاء الحساب");
-        setCreateAccount(false); // إلغاء التحديد
-      }
-    } catch (error) {
-      console.error("❌ Error creating account:", error);
-      toast.error("حدث خطأ أثناء إنشاء الحساب");
-      setCreateAccount(false); // إلغاء التحديد
-    } finally {
-      setIsSendingAccount(false);
-    }
-  }, [createAccount, accountData, isSendingAccount]);
-
-  // ✅ عند تغيير حالة الـ Checkbox (تشغيل/إيقاف)
-  const handleCreateAccountToggle = useCallback(async (checked: boolean) => {
-    setCreateAccount(checked);
-    
-    if (checked) {
-      // ✅ عند التفعيل: تعبئة البيانات من النموذج مع كلمة مرور فارغة
-      setAccountData((prev) => ({
-        ...prev,
-        name: formData.fullName || "",
-        phone: formData.phone || "",
-        email: formData.email || "",
-        password: "", // ✅ فارغ
-        password_confirmation: "", // ✅ فارغ
-      }));
-      
-      // ✅ إرسال البيانات فوراً عند التفعيل
-      setTimeout(() => {
-        sendAccountDataToBackend();
-      }, 100);
-    }
-  }, [formData.fullName, formData.phone, formData.email, sendAccountDataToBackend]);
-
-  // ✅ تحديث بيانات الحساب عند تغيير النموذج (للمزامنة)
-  useEffect(() => {
-    if (createAccount) {
-      setAccountData((prev) => ({
-        ...prev,
-        name: formData.fullName || prev.name,
-        phone: formData.phone || prev.phone,
-        email: formData.email || prev.email,
-      }));
-    }
-  }, [formData.fullName, formData.phone, formData.email, createAccount]);
-
-  // ✅ تحضير بيانات الطلب (معدل لدعم الضيف)
+  // ✅ تحضير بيانات الطلب
   const prepareOrderData = useCallback(() => {
     const paymentMethodMap: Record<string, string> = {
       cash: "cash",
@@ -655,7 +527,6 @@ export default function CheckoutPage() {
       pickup: "receive",
     };
 
-    // ✅ بناء orderData الأساسي
     const orderData: any = {
       payment_method: paymentMethodMap[formData.paymentMethod] || "cash",
       delivery_method: deliveryMethodMap[formData.deliveryMethod] || "delivery",
@@ -663,23 +534,20 @@ export default function CheckoutPage() {
       create_account: createAccount,
     };
 
-    // ✅ إذا كان الضيف يريد إنشاء حساب، أضف بيانات الحساب (مع كلمة مرور فارغة)
     if (createAccount && isGuest) {
       orderData.account = {
         email: accountData.email,
         phone: accountData.phone,
         name: accountData.name,
-        password: accountData.password || "", // ✅ فارغ
-        password_confirmation: accountData.password_confirmation || "", // ✅ فارغ
+        password: accountData.password,
+        password_confirmation: accountData.password_confirmation,
       };
     }
 
-    // ✅ إضافة payment_gateway فقط إذا كانت طريقة الدفع هي المحفظة
     if (formData.paymentMethod === "wallet") {
       orderData.payment_gateway = "wallet";
     }
 
-    // ✅ بيانات إضافية للضيف
     if (isGuest) {
       const guestEmail = formData.email || accountData.email || "";
       
@@ -695,14 +563,12 @@ export default function CheckoutPage() {
 
       if (formData.deliveryMethod === "delivery") {
         const cityId = selectedCityIdRef.current || "1";
-        console.log(`🟢 Using cityId from ref: ${cityId}`);
         additionalData.city_id = cityId;
       }
 
       orderData.additional_data = additionalData;
     }
 
-    // ✅ إذا كان المستخدم مسجل دخول ولديه عنوان
     if (!isGuest && formData.deliveryMethod === "delivery") {
       if (selectedAddressId) {
         orderData.address_id = selectedAddressId;
@@ -713,24 +579,22 @@ export default function CheckoutPage() {
     return orderData;
   }, [formData, selectedAddressId, createAccount, isGuest, accountData]);
 
-  // ✅ إرسال الطلب (معدل)
+  // ✅ إرسال الطلب
   const handleSubmit = async () => {
     if (isSubmitting || isOrderCompleted) return;
 
-    // ✅ التحقق من البيانات الأساسية
     if (!formData.fullName.trim()) {
       toast.error("الرجاء إدخال الاسم الكامل");
       return;
     }
 
-    const phoneValidation = validatePhoneNumberByCountry(
-      formData.phoneNumber ||
-        formData.phone.replace(formData.phoneCountryCode || "", ""),
-      formData.phoneCountryCode || "+20",
-    );
+    if (!formData.phone.trim()) {
+      toast.error("الرجاء إدخال رقم الهاتف");
+      return;
+    }
 
-    if (!phoneValidation.isValid) {
-      toast.error(phoneValidation.error);
+    if (isGuest && !formData.email?.trim()) {
+      toast.error("الرجاء إدخال البريد الإلكتروني");
       return;
     }
 
@@ -793,6 +657,16 @@ export default function CheckoutPage() {
     router.push("/");
   }, [router]);
 
+  // ✅ دالة معالجة تغيير رقم الهاتف من PhoneInput
+  const handlePhoneChange = useCallback((phoneNumber: string, countryCode: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      phone: phoneNumber,
+      phoneNumber: phoneNumber,
+      phoneCountryCode: countryCode,
+    }));
+  }, []);
+
   if (cartLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -807,7 +681,7 @@ export default function CheckoutPage() {
         <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
         <Link
           href="/products"
-          className="bg-[#FF7700] text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#EC221F] text-white px-6 py-2 rounded-[8px] "
         >
           تسوق الآن
         </Link>
@@ -819,25 +693,67 @@ export default function CheckoutPage() {
     <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
       <div className="container page-with-padding mx-auto mb-3">
         <div className="mb-6">
-          <h1 className="text-xl md:text-xl font-bold text-gray-800 mb-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
             إتمام الطلب
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/cart" className="hover:text-[#FF7700] transition">
+            <Link href="/cart" className="hover:text-[#EC221F] transition">
               سلة التسوق
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#FF7700] font-medium">إتمام الطلب</span>
+            <span className="text-[#EC221F] font-medium">إتمام الطلب</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <ContactInfoForm
-              formData={formData}
-              onFormChange={handleFormChange}
-              isGuest={isGuest}
-            />
+            {/* ✅ قسم معلومات الاتصال - استخدام PhoneInput */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                معلومات الاتصال
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الاسم الكامل <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => handleFormChange({ fullName: e.target.value })}
+                    placeholder="أدخل اسمك الكامل"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم الهاتف <span className="text-red-500">*</span>
+                  </label>
+                  <PhoneInput
+                    value={`${formData.phoneCountryCode}${formData.phone}`}
+                    onChange={handlePhoneChange}
+                    required={true}
+                  />
+                </div>
+
+                {isGuest && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      البريد الإلكتروني <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email || ""}
+                      onChange={(e) => handleFormChange({ email: e.target.value })}
+                      placeholder="example@email.com"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
 
             <DeliveryMethodForm
               deliveryMethod={formData.deliveryMethod}
@@ -872,65 +788,29 @@ export default function CheckoutPage() {
               onNotesChange={(notes) => handleFormChange({ notes })}
             />
 
-            {/* ✅ Checkbox إنشاء حساب للضيف (بدون حقول كلمة المرور) */}
             {isGuest && (
-              <div className="bg-white rounded-[8px] p-4 border border-gray-200 mb-2 md:mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center h-5 mt-0.5">
-                    <input
-                      type="checkbox"
-                      id="createAccount"
-                      checked={createAccount}
-                      onChange={(e) => handleCreateAccountToggle(e.target.checked)}
-                      disabled={isSendingAccount}
-                      className="w-5 h-5 rounded border-gray-300 text-[#FF7700] focus:ring-[#FF7700] cursor-pointer disabled:opacity-50"
-                    />
+              <div className="bg-white rounded-xl p-4 border border-gray-200 mb-2 md:mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                      <User className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        إنشاء حساب
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label
-                      htmlFor="createAccount"
-                      className="font-semibold text-gray-800 text-sm cursor-pointer flex items-center gap-2"
-                    >
-                      <User className="w-4 h-4 text-[#FF7700]" />
-                      إنشاء حساب جديد
-                      {isSendingAccount && (
-                        <span className="text-xs text-gray-400 mr-2">جاري الإرسال...</span>
-                      )}
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                      سيتم إنشاء حساب باستخدام بياناتك (البريد الإلكتروني، رقم الهاتف، الاسم)
-                    </p>
-                    
-                    {/* ✅ عرض بيانات الحساب عند التفعيل (بدون كلمة المرور) */}
-                    {/* {createAccount && !isSendingAccount && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
-                        <p className="text-xs text-gray-600">
-                          <span className="font-medium">الاسم:</span> {accountData.name || "..."}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          <span className="font-medium">البريد الإلكتروني:</span> {accountData.email || "..."}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          <span className="font-medium">رقم الهاتف:</span> {accountData.phone || "..."}
-                        </p>
-                       
-                        {Object.keys(accountErrors).length > 0 && (
-                          <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
-                            {Object.entries(accountErrors).map(([key, error]) => (
-                              <p key={key} className="text-xs text-red-600">• {error}</p>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-               
-                    {createAccount && !isSendingAccount && accountData.name && accountData.email && accountData.phone && Object.keys(accountErrors).length === 0 && (
-                      <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                        <p className="text-xs text-green-600">✅ تم إنشاء الحساب بنجاح</p>
-                      </div>
-                    )} */}
-                  </div>
+                  <button
+                    onClick={handleOpenAccountPopup}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                      createAccount
+                        ? "bg-green-100 text-green-700 border border-green-300"
+                        : "bg-black text-white hover:bg-gray-800"
+                    }`}
+                  >
+                    {createAccount ? "✅ تم الاختيار" : "إنشاء حساب"}
+                  </button>
                 </div>
               </div>
             )}
@@ -938,7 +818,7 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="hidden md:block w-full bg-[#FF7700] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
+              className="hidden md:block w-full bg-black text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
@@ -953,13 +833,29 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="block md:hidden w-full bg-[#FF7700] hover:bg-[#3fadf7] text-white py-3 rounded-[8px] font-semibold text-lg transition disabled:opacity-50"
+              className="md:hidden block w-full bg-black text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* ✅ Popup إنشاء الحساب */}
+      {showAccountPopup && (
+        <AccountPopup
+          isOpen={showAccountPopup}
+          onClose={handleCloseAccountPopup}
+          onConfirm={handleConfirmAccount}
+          accountData={accountData}
+          setAccountData={setAccountData}
+          errors={accountErrors}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          showConfirmPassword={showConfirmPassword}
+          setShowConfirmPassword={setShowConfirmPassword}
+        />
+      )}
 
       {showSuccessPopup && orderResult && (
         <SuccessPopup
@@ -973,8 +869,192 @@ export default function CheckoutPage() {
             total: orderResult.total,
           }}
           isGuest={isGuest}
+          phone={formData.phone || ""}
+          email={formData.email || accountData.email || ""}
         />
       )}
+    </div>
+  );
+}
+
+// ✅ Popup إنشاء الحساب
+interface AccountPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  accountData: AccountData;
+  setAccountData: (data: AccountData | ((prev: AccountData) => AccountData)) => void;
+  errors: Record<string, string>;
+  showPassword: boolean;
+  setShowPassword: (show: boolean) => void;
+  showConfirmPassword: boolean;
+  setShowConfirmPassword: (show: boolean) => void;
+}
+
+function AccountPopup({
+  isOpen,
+  onClose,
+  onConfirm,
+  accountData,
+  setAccountData,
+  errors,
+  showPassword,
+  setShowPassword,
+  showConfirmPassword,
+  setShowConfirmPassword,
+}: AccountPopupProps) {
+  if (!isOpen) return null;
+
+  const handleChange = (field: keyof AccountData, value: string) => {
+    setAccountData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 text-center">
+            إنشاء حساب جديد
+          </h3>
+          <p className="text-sm text-gray-500 text-center mt-1">
+            أدخل بياناتك لإنشاء حساب وتتبع طلبك
+          </p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              الاسم الكامل <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={accountData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="أدخل اسمك الكامل"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.name ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              البريد الإلكتروني <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                value={accountData.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+                placeholder="example@email.com"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.email ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              رقم الهاتف <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="tel"
+                value={accountData.phone}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                placeholder="01012345678"
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.phone ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              كلمة المرور <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={accountData.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                placeholder="••••••"
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.password ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              تأكيد كلمة المرور <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={accountData.password_confirmation}
+                onChange={(e) => handleChange("password_confirmation", e.target.value)}
+                placeholder="••••••"
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                  errors.password_confirmation ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password_confirmation && (
+              <p className="text-xs text-red-500 mt-1">{errors.password_confirmation}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-100 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 bg-[#EC221F] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
+          >
+            إنشاء الحساب
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -991,6 +1071,8 @@ interface SuccessPopupProps {
     total: number;
   };
   isGuest: boolean;
+  phone?: string;
+  email?: string;
 }
 
 function SuccessPopup({
@@ -1001,8 +1083,13 @@ function SuccessPopup({
   orderNumber,
   orderDetails,
   isGuest = false,
+  phone = "",
+  email = "",
 }: SuccessPopupProps) {
   if (!isOpen) return null;
+
+  // ✅ تنظيف رقم الهاتف من كود الدولة +20
+  const cleanPhone = phone.replace(/^\+?20\s*/, "").trim();
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1021,24 +1108,45 @@ function SuccessPopup({
           </p>
         </div>
 
-        <div className="p-1">
-          <div className="bg-gray-50 rounded-[8px] p-2 text-center mb-2">
+        <div className="p-4">
+          <div className="bg-gray-50 rounded-xl p-3 text-center mb-3">
             <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
             <p className="text-xl font-bold text-gray-800">#{orderNumber}</p>
           </div>
+
+          {/* ✅ عرض الإيميل ورقم الهاتف بدون كود الدولة */}
+          {isGuest && (email || cleanPhone) && (
+            <div className="bg-gray-50 rounded-xl p-3 mb-3">
+              <p className="text-xs text-gray-500 mb-2 text-center">بيانات الاتصال</p>
+              <div className="space-y-2">
+                {email && (
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-700">{email}</span>
+                  </div>
+                )}
+                {cleanPhone && (
+                  <div className="flex items-center justify-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-700">{cleanPhone}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
           <button
             onClick={onGoToHome}
-            className="w-full py-2 md:py-3 rounded-[8px] font-medium border transition"
+            className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
           >
             العودة إلى الرئيسية
           </button>
           {!isGuest && (
             <button
               onClick={onGoToOrders}
-              className="w-full bg-[#FF7700] text-white py-2 rounded-[8px] font-medium hover:bg-[#d41c19] transition"
+              className="w-full bg-[#EC221F] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
             >
               متابعة الطلبات
             </button>

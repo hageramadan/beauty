@@ -464,7 +464,7 @@ export function Navbar() {
                       <div className="py-2">
                         <div className="px-4 py-3 border-b border-gray-100">
                           <p className="text-sm font-semibold text-[#FF7700]">{user.name || "مستخدم"}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 text-end" dir="ltr">{user.country_code} {user.phone || user.email} </p>
+                          <p className="text-xs text-gray-500 mt-0.5 text-end" dir="ltr"> {user.phone || user.email} </p>
                         </div>
                         <Link href="/account/wishlist" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50" onClick={() => setShowUserDropdown(false)}>
                           <HeartIcon className="h-4 w-4" />

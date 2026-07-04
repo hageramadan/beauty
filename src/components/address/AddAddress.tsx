@@ -795,7 +795,7 @@ export default function AddAddress({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#41b1f1] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#ff8b26] transition disabled:opacity-50"
                   >
                     {isSubmitting
                       ? "جاري الحفظ..."

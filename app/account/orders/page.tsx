@@ -559,11 +559,18 @@ export default function OrdersPage() {
 
         {/* قائمة الطلبات */}
         <div className="space-y-3 sm:space-y-4">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
+      <p className="text-gray-500 mt-4">جاري تحميل الطلبات...</p>
+    </div>
+  </div>
+) : filteredOrders.length === 0 ? (
             <div className="mt-8 md:mt-12 rounded-2xl p-8 sm:p-12 text-center">
               <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
               <p className="text-gray-500 text-sm sm:text-base">
-                {orders.length === 0 ? "جاري تحميل الطلبات..." : "لا توجد طلبات في هذه الفئة"}
+                {orders.length === 0 && !loading ? "لا توجد طلبات حالياً" : "لا توجد طلبات في هذه الفئة"}
               </p>
             </div>
           ) : (

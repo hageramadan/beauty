@@ -124,7 +124,7 @@ export default function LoginWithEmail() {
               <button
                 type="button"
                 onClick={() => router.push("/auth/forgot-password")}
-                className="text-sm text-[#ff3c27] hover:underline"
+                className="text-sm text-[#FF7700] hover:underline"
               >
                 نسيت كلمة المرور؟
               </button>
@@ -133,7 +133,7 @@ export default function LoginWithEmail() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-black text-white rounded-[8px] hover:bg-gray-800 transition disabled:opacity-50"
+              className="w-full py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#e06a00] transition disabled:opacity-50"
             >
               {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
             </button>
@@ -144,7 +144,7 @@ export default function LoginWithEmail() {
                 <button
                   type="button"
                   onClick={() => router.push("/auth/register/email")}
-                  className="text-[#ff3c27] font-medium hover:underline"
+                  className="text-[#FF7700] font-medium hover:underline"
                 >
                   إنشاء حساب جديد
                 </button>

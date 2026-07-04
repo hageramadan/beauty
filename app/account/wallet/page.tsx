@@ -67,7 +67,7 @@ export default function WalletPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff3c27] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto mb-4"></div>
           <p className="text-gray-600">جاري تحميل رصيد المحفظة...</p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function WalletPage() {
           <div className="mb-6">
             <Link
               href="/account"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#ff3c27] transition mb-4"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#FF7700] transition mb-4"
             >
               <FaChevronRight className="w-4 h-4" />
               <span>رجوع إلى حسابي</span>
@@ -92,7 +92,7 @@ export default function WalletPage() {
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchWalletBalance}
-              className="px-4 py-2 bg-[#ff3c27] text-white rounded-[8px]  hover:bg-[#e63520] transition"
+              className="px-4 py-2 bg-[#FF7700] text-white rounded-[8px]  hover:bg-[#e63520] transition"
             >
               إعادة المحاولة
             </button>
@@ -110,7 +110,7 @@ export default function WalletPage() {
         <div className="mb-6">
           <Link
             href="/account"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#ff3c27] transition mb-4"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#FF7700] transition mb-4"
           >
             <FaChevronRight className="w-4 h-4" />
             <span>رجوع إلى حسابي</span>
