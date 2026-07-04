@@ -224,7 +224,7 @@ export default function WishlistPage() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#EC221F] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">جاري تحميل المفضلة...</p>
             </div>
@@ -336,7 +336,7 @@ export default function WishlistPage() {
                   هل أنت متأكد من حذف جميع المنتجات؟
                 </p>
                 <p className="text-gray-500 text-sm">
-                  سيتم حذف <span className="font-bold text-[#EC221F]">{items.length}</span> منتج من قائمة المفضلة بشكل نهائي.
+                  سيتم حذف <span className="font-bold text-[#FF7700]">{items.length}</span> منتج من قائمة المفضلة بشكل نهائي.
                 </p>
               </div>
             </div>

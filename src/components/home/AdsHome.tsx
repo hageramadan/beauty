@@ -89,7 +89,7 @@ export function AdsHome() {
           <p className="text-[#475156] text-[1rem]">علي جميع غرف كراسي السفرة</p>
           <div className="flex gap-2 items-center flex-wrap justify-center">
             <p className="text-[#191C1F] text-[14px]">سينتهي الخصم خلال</p>
-            <div className="flex gap-1 items-center bg-[#EC221F] text-white px-[12px] py-[4px] rounded">
+            <div className="flex gap-1 items-center bg-[#FF7700] text-white px-[12px] py-[4px] rounded">
               <MdOutlineTimer className="w-4 h-4"/>
               <p className="text-[12px]">{String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')}</p>
             </div>
@@ -150,7 +150,7 @@ export function AdsHome() {
         {/* مؤقت العد التنازلي */}
         <div className="flex gap-2 items-center flex-wrap justify-center">
           <p className="text-[#191C1F] text-[14px]">سينتهي الخصم خلال</p>
-          <div className="flex gap-1 items-center bg-[#EC221F] text-white px-[12px] py-[4px] rounded">
+          <div className="flex gap-1 items-center bg-[#FF7700] text-white px-[12px] py-[4px] rounded">
             <MdOutlineTimer className="w-4 h-4"/>
             <p className="text-[12px]">
               {String(timeLeft.hours).padStart(2, '0')} : {String(timeLeft.minutes).padStart(2, '0')}

@@ -681,7 +681,7 @@ export default function CheckoutPage() {
         <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
         <Link
           href="/products"
-          className="bg-[#EC221F] text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#FF7700] text-white px-6 py-2 rounded-[8px] "
         >
           تسوق الآن
         </Link>
@@ -697,11 +697,11 @@ export default function CheckoutPage() {
             إتمام الطلب
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/cart" className="hover:text-[#EC221F] transition">
+            <Link href="/cart" className="hover:text-[#FF7700] transition">
               سلة التسوق
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#EC221F] font-medium">إتمام الطلب</span>
+            <span className="text-[#FF7700] font-medium">إتمام الطلب</span>
           </div>
         </div>
 
@@ -723,7 +723,7 @@ export default function CheckoutPage() {
                     value={formData.fullName}
                     onChange={(e) => handleFormChange({ fullName: e.target.value })}
                     placeholder="أدخل اسمك الكامل"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition"
                   />
                 </div>
 
@@ -748,7 +748,7 @@ export default function CheckoutPage() {
                       value={formData.email || ""}
                       onChange={(e) => handleFormChange({ email: e.target.value })}
                       placeholder="example@email.com"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition"
                     />
                   </div>
                 )}
@@ -933,7 +933,7 @@ function AccountPopup({
                 value={accountData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="أدخل اسمك الكامل"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
                   errors.name ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -954,7 +954,7 @@ function AccountPopup({
                 value={accountData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="example@email.com"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -975,7 +975,7 @@ function AccountPopup({
                 value={accountData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 placeholder="01012345678"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
                   errors.phone ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -995,7 +995,7 @@ function AccountPopup({
                 value={accountData.password}
                 onChange={(e) => handleChange("password", e.target.value)}
                 placeholder="••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1022,7 +1022,7 @@ function AccountPopup({
                 value={accountData.password_confirmation}
                 onChange={(e) => handleChange("password_confirmation", e.target.value)}
                 placeholder="••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#EC221F] transition ${
+                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
                   errors.password_confirmation ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -1049,7 +1049,7 @@ function AccountPopup({
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 bg-[#EC221F] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
+            className="flex-1 bg-[#FF7700] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
           >
             إنشاء الحساب
           </button>
@@ -1146,7 +1146,7 @@ function SuccessPopup({
           {!isGuest && (
             <button
               onClick={onGoToOrders}
-              className="w-full bg-[#EC221F] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
+              className="w-full bg-[#FF7700] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
             >
               متابعة الطلبات
             </button>
