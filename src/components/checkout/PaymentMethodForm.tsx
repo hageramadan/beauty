@@ -45,9 +45,7 @@ export default function PaymentMethodForm({
     
     // إذا كانت الطريقة هي المحفظة، نضيف payment_gateway: "wallet"
     if (method === "wallet") {
-      // يمكنك إرسال البيانات إلى الـ parent component
-      // أو تخزينها في state محلي
-      console.log("Payment gateway:", getPaymentGateway(method));
+     
     }
   };
 

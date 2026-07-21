@@ -239,7 +239,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await clearCart();
       
       if (response.result === true) {
-        toast.success(t('cart.clearSuccess'));
+        // toast.success(t('cart.clearSuccess'));
         await fetchCartData(false);
         return true;
       } else {

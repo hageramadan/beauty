@@ -118,7 +118,7 @@ const fetchOrderDetails = async (orderId: string, locale: string = "ar-EG"): Pro
     });
     
     const data = await response.json();
-    console.log("📦 Order details for return:", data);
+    
     
     if (data.result === true || data.data || data.data.order) {
       const order = data.data.order;
@@ -174,7 +174,7 @@ const submitReturnRequest = async (
     });
     
     const data = await response.json();
-    console.log("📦 Return request response:", data);
+   
     
     if (data.result === true && data.errNum === 200) {
       return { 

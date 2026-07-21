@@ -154,7 +154,7 @@ export default function ProductsContent() {
         ];
       }
 
-      console.log(`🟢 Fetching products page ${currentPage}`, filterParams);
+      
       
       const { products: productsData, pagination } =
         await getAllProducts(filterParams);
@@ -194,7 +194,7 @@ export default function ProductsContent() {
   }, [loadProducts]);
 
   const handleFilterChange = (newFilters: any) => {
-    console.log('🔍 New filters received:', newFilters);
+   
     
     const updatedFilters: FiltersState = {};
     
@@ -217,7 +217,7 @@ export default function ProductsContent() {
       updatedFilters.maxPrice = newFilters.maxPrice;
     }
     
-    console.log(' Updated filters state:', updatedFilters);
+   
     
     isFilterChangeRef.current = true;
     setFilters(updatedFilters);
@@ -226,7 +226,7 @@ export default function ProductsContent() {
   };
 
   const handlePageChange = (page: number) => {
-    console.log(`🔄 Changing to page ${page}`);
+   
     if (page >= 1 && page <= lastPage) {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: "smooth" });

@@ -254,7 +254,7 @@ const transformOrder = (apiOrder: any, locale: string = "ar-EG"): Order => {
 const fetchOrders = async (page: number = 1, perPage: number = 10, locale: string = "ar-EG"): Promise<{ orders: Order[], pagination: PaginationData }> => {
   const now = Date.now();
   if (isFetching || (now - lastFetchTime < 300)) {
-    console.log("⏳ Skipping duplicate fetch request");
+    
     return {
       orders: [],
       pagination: {
@@ -274,14 +274,14 @@ const fetchOrders = async (page: number = 1, perPage: number = 10, locale: strin
   lastFetchTime = now;
   
   try {
-    console.log(`🟢 Fetching orders page ${page}`);
+    
     const response = await fetch(`${API_URL}/orders?page=${page}&per_page=${perPage}`, {
       method: "GET",
       headers: getHeaders(),
     });
 
     const data = await response.json();
-    console.log(`📥 Response for page ${page}:`, data);
+   
 
     if (data.result === true && data.data) {
       //  تحويل البيانات بشكل آمن مع تمرير اللغة
@@ -296,8 +296,6 @@ const fetchOrders = async (page: number = 1, perPage: number = 10, locale: strin
       
       const pagination = data.data.pagination;
       
-      console.log(` Loaded ${orders.length} orders for page ${page}`);
-      console.log(`📊 Pagination:`, pagination);
       
       return {
         orders: orders,
@@ -422,8 +420,7 @@ export default function OrdersPage() {
       const result = await fetchOrders(page, itemsPerPage, locale);
       
       if (!abortControllerRef.current?.signal.aborted) {
-        console.log(`🟢 Setting orders for page ${page}:`, result.orders.length);
-        console.log(`📊 Setting pagination:`, result.pagination);
+      
         
         setOrders(result.orders);
         setPagination(result.pagination);
@@ -444,7 +441,7 @@ export default function OrdersPage() {
   // ========== تحميل الصفحة الأولى ==========
   useEffect(() => {
     if (!hasLoadedRef.current) {
-      console.log("🟢 Loading orders for the first time");
+    
       loadOrders(1);
     }
     
@@ -529,7 +526,7 @@ export default function OrdersPage() {
             <button
               key={filter.value}
               onClick={() => {
-                console.log(`🔍 Filter changed to: ${filter.value}`);
+               
                 setFilterStatus(filter.value);
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${

@@ -131,7 +131,7 @@ const fetchReturns = async (page: number = 1, perPage: number = 10): Promise<{ r
   //  منع التكرار في نفس الثانية
   const now = Date.now();
   if (isFetching || (now - lastFetchTime < 300)) {
-    console.log("⏳ Skipping duplicate fetch request");
+   
     return {
       returns: [],
       pagination: {
@@ -151,14 +151,14 @@ const fetchReturns = async (page: number = 1, perPage: number = 10): Promise<{ r
   lastFetchTime = now;
   
   try {
-    console.log(`🟢 Fetching returns page ${page}`);
+  
     const response = await fetch(`${API_URL}/returns?page=${page}&per_page=${perPage}`, {
       method: 'GET',
       headers: getHeaders(),
     });
     
     const data: ReturnsResponse = await response.json();
-    console.log(`📥 Response for page ${page}:`, data);
+   
     
     if (data.result === true && data.errNum === 200 && data.data.returns) {
       const returns = data.data.returns.map((returnItem) => ({
@@ -166,8 +166,7 @@ const fetchReturns = async (page: number = 1, perPage: number = 10): Promise<{ r
         returnNumber: `#R${String(returnItem.id).padStart(5, '0')}`,
       }));
       
-      console.log(` Loaded ${returns.length} returns for page ${page}`);
-      console.log(`📊 Pagination:`, data.data.pagination);
+      
       
       return {
         returns: returns,
@@ -334,8 +333,7 @@ export default function ReturnsPage() {
       const result = await fetchReturns(page, itemsPerPage);
       
       if (!abortControllerRef.current?.signal.aborted) {
-        console.log(`🟢 Setting returns for page ${page}:`, result.returns.length);
-        console.log(`📊 Setting pagination:`, result.pagination);
+     
         
         setReturns(result.returns);
         setPagination(result.pagination);
@@ -356,7 +354,7 @@ export default function ReturnsPage() {
   // ========== تحميل الصفحة الأولى ==========
   useEffect(() => {
     if (!hasLoadedRef.current) {
-      console.log("🟢 Loading returns for the first time");
+     
       loadReturns(1);
     }
     
@@ -369,7 +367,7 @@ export default function ReturnsPage() {
 
   // ========== تغيير الصفحة ==========
   const handlePageChange = useCallback((newPage: number) => {
-    console.log(`🔄 Changing to page ${newPage}`);
+   
     if (newPage >= 1 && newPage <= pagination.last_page) {
       loadReturns(newPage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -403,8 +401,7 @@ export default function ReturnsPage() {
 
   // ========== فلترة المرتجعات حسب الحالة (فلتر محلي) ==========
   const filteredReturns = useMemo(() => {
-    console.log(`🔄 Filtering returns with status: ${filterStatus}`);
-    console.log(`📦 Current returns count: ${returns.length}`);
+  
     
     if (filterStatus === "all") {
       return returns;
@@ -413,7 +410,7 @@ export default function ReturnsPage() {
       const statusKey = mapStatusToKey(returnItem.status_label);
       return statusKey === filterStatus;
     });
-    console.log(` Filtered to ${filtered.length} returns`);
+   
     return filtered;
   }, [returns, filterStatus]);
 
@@ -454,7 +451,7 @@ export default function ReturnsPage() {
             <button
               key={filter.value}
               onClick={() => {
-                console.log(`🔍 Filter changed to: ${filter.value}`);
+              
                 setFilterStatus(filter.value);
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${

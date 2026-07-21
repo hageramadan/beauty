@@ -375,7 +375,7 @@ export default function ReturnDetailsPage() {
   const userName = getUserName(returnData.order);
 
   // ✅ تنسيق التاريخ باللغة الحالية
-  const formattedDate = formatDate(returnData.created_at, t('locale') || 'ar-EG');
+  const formattedDate = formatDate(returnData.created_at);
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
