@@ -30,8 +30,8 @@ async function getMetadata(): Promise<{ title: string; description: string }> {
     const settings = await getSettings();
     
     // استخدام القيم من الـ API إذا كانت موجودة، وإلا استخدام القيم الافتراضية
-    const title = settings.setting.meta?.meta_title || defaultTitle;
-    const description = settings.setting.meta?.meta_description || defaultDescription;
+    const title = settings.setting.meta?.meta_title || '';
+    const description = settings.setting.meta?.meta_description || '';
     
     return { title, description };
   } catch (error) {
