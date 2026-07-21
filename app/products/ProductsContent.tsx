@@ -12,6 +12,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { VscSettings } from "react-icons/vsc";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface VariantAttribute {
   id: number;
@@ -79,6 +80,7 @@ const extractColorsFromVariants = (
 
 export default function ProductsContent() {
   const searchParams = useSearchParams();
+  const { t } = useTranslation(); //  استخدام hook الترجمة
 
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -215,7 +217,7 @@ export default function ProductsContent() {
       updatedFilters.maxPrice = newFilters.maxPrice;
     }
     
-    console.log('✅ Updated filters state:', updatedFilters);
+    console.log(' Updated filters state:', updatedFilters);
     
     isFilterChangeRef.current = true;
     setFilters(updatedFilters);
@@ -256,9 +258,9 @@ export default function ProductsContent() {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/placeholder-image.jpg";
       if (url.startsWith("/storage")) {
-        return `https://alsas.admin.t-carts.com${url}`;
+        return `https://beauty.admin.t-carts.com${url}`;
       }
-      return `https://alsas.admin.t-carts.com/storage${url}`;
+      return `https://beauty.admin.t-carts.com/storage${url}`;
     };
 
     return {
@@ -314,11 +316,11 @@ export default function ProductsContent() {
               <div className="flex  justify-between items-start sm:items-center gap-4">
                 <div className="flex items-end gap-1">
                   <Link href="/" className="text-[#726C6C] text-xl">
-                    الرئيسية
+                    {t("products.home")}
                   </Link>
                   <span>/</span>
                   <h1 className="text-base md:text-xl font-bold text-[#180100]">
-                    {categoryName ? ` ${categoryName}` : "جميع المنتجات"}
+                    {categoryName ? ` ${categoryName}` : t("products.allProducts")}
                   </h1>
                 </div>
 
@@ -327,7 +329,7 @@ export default function ProductsContent() {
                   onClick={() => {
                     setIsMobileFilterOpen(true);
                   }}
-                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-[#FF7700] rounded-[8px] hover:bg-gray-200 transition-colors"
+                  className="md:hidden flex items-center gap-2 px-4 py-2 bg-[#E60076] rounded-[8px] hover:bg-gray-200 transition-colors"
                 >
                   <VscSettings className="w-6 h-6 text-white" />
                 </button>
@@ -335,7 +337,7 @@ export default function ProductsContent() {
             </div>
 
             {loading ? (
-              <LoadingSpinner size="lg" text="جاري تحميل المنتجات..." />
+              <LoadingSpinner size="lg" text={t("products.loading")} />
             ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -383,8 +385,8 @@ export default function ProductsContent() {
               </>
             ) : (
               <div className="text-center py-16">
-                <p className="text-xl text-gray-600">لا توجد منتجات متاحة</p>
-                <p className="text-gray-500 mt-2">حاول تغيير خيارات الفلتر</p>
+                <p className="text-xl text-gray-600">{t("products.noProducts")}</p>
+                <p className="text-gray-500 mt-2">{t("products.tryChangingFilters")}</p>
               </div>
             )}
           </div>
@@ -395,6 +397,7 @@ export default function ProductsContent() {
         </div>
       </div>
 
+      {/*  فلتر الموبايل مع الترجمة */}
       <div
         className={`
           fixed inset-0 z-50 md:hidden
@@ -423,7 +426,7 @@ export default function ProductsContent() {
           </div>
 
           <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center z-10 rounded-t-3xl">
-            <h2 className="text-lg font-bold">تصفية المنتجات</h2>
+            <h2 className="text-lg font-bold">{t("products.filterProducts")}</h2>
             <button
               onClick={() => setIsMobileFilterOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"

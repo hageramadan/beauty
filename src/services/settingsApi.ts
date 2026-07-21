@@ -1,5 +1,7 @@
 // services/settingsApi.ts
 
+import { getHeaders } from "./api";
+
 interface SettingsData {
   setting: {
     name: string;
@@ -14,6 +16,14 @@ interface SettingsData {
     whatsapp: string;
     email: string;
     phone: string;
+    logo?: string;
+    main_color?: string;
+    secondary_color?: string;
+    template_id?: number;
+    meta: {
+      meta_title: string | null;
+      meta_description: string | null;
+    };
   };
 }
 
@@ -27,11 +37,9 @@ interface SettingsResponse {
 // دالة لجلب إعدادات الموقع
 export async function getSettings(): Promise<SettingsData> {
   try {
-    const response = await fetch(`https://alsas.admin.t-carts.com/api/settings`, {
+    const response = await fetch(`https://beauty.admin.t-carts.com/api/settings`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getHeaders(false),
     });
 
     if (!response.ok) {

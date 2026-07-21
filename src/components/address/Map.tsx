@@ -58,7 +58,7 @@ export default function Map({ onLocationSelect }: MapProps) {
               <div className="absolute top-3/4 left-0 w-full h-px bg-gray-300 opacity-30"></div>
               <div className="absolute left-1/4 top-0 w-px h-full bg-gray-300 opacity-30"></div>
               <div className="absolute left-2/4 top-0 w-px h-full bg-gray-300 opacity-30"></div>
-              <div className="absolute left-3/4 top-0 w-px h-full bg-gray-300 opacity-30"></div>
+              <div className="absolute  end-3/4 top-0 w-px h-full bg-gray-300 opacity-30"></div>
             </div>
           </>
         )}

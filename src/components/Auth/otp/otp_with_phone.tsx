@@ -14,12 +14,12 @@ export default function OTPWithPhone() {
   const [timeLeft, setTimeLeft] = useState(59);
   const [canResend, setCanResend] = useState(false);
   
-  // ✅ استقبال country_code و phone منفصلين
+  //  استقبال country_code و phone منفصلين
   const fullPhone = searchParams.get("phone") || "";
   const isLogin = searchParams.get("isLogin") === "true";
   const isRegister = searchParams.get("isRegister") === "true";
   
-  // ✅ استخراج country_code و phone من الرقم الكامل
+  //  استخراج country_code و phone من الرقم الكامل
   let countryCode = "+20";
   let phoneNumber = fullPhone;
   
@@ -93,7 +93,7 @@ export default function OTPWithPhone() {
 
     setIsLoading(true);
 
-    // ✅ إرسال otp, phone, country_code بشكل منفصل
+    //  إرسال otp, phone, country_code بشكل منفصل
     const result = await verifyOTPWithPhone(otpValue, phoneNumber, countryCode);
 
     if (result.success) {
@@ -120,7 +120,7 @@ export default function OTPWithPhone() {
     
     setIsLoading(true);
 
-    // ✅ إعادة إرسال OTP باستخدام phone و country_code منفصلين
+    //  إعادة إرسال OTP باستخدام phone و country_code منفصلين
     // ملاحظة: دالة resendOTPToPhone تحتاج أيضاً إلى تعديل لاستقبال country_code
     const result = await resendOTPToPhone(phoneNumber, countryCode);
 
@@ -178,7 +178,7 @@ export default function OTPWithPhone() {
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   disabled={isLoading}
-                  className="w-10 h-10 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300  rounded-[8px]  focus:border-[#FF7700] focus:ring-2 focus:ring-[#FF7700]/20 outline-none transition-all disabled:opacity-50"
+                  className="w-10 h-10 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300  rounded-[8px]  focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 outline-none transition-all disabled:opacity-50"
                   maxLength={1}
                 />
               ))}
@@ -188,7 +188,7 @@ export default function OTPWithPhone() {
               {!canResend ? (
                 <p className="text-gray-500 text-sm">
                   لم تستلم الرمز؟{" "}
-                  <span className="text-[#FF7700] font-medium">
+                  <span className="text-[#E60076] font-medium">
                     إعادة الإرسال ({timeLeft.toString().padStart(2, "0")} ثانية)
                   </span>
                 </p>
@@ -197,7 +197,7 @@ export default function OTPWithPhone() {
                   type="button"
                   onClick={handleResendCode}
                   disabled={isLoading}
-                  className="text-[#FF7700] font-medium hover:underline transition disabled:opacity-50"
+                  className="text-[#E60076] font-medium hover:underline transition disabled:opacity-50"
                 >
                   لم تستلم الرمز؟ إعادة إرسال
                 </button>
@@ -207,7 +207,7 @@ export default function OTPWithPhone() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#FF7700] text-white  rounded-[8px]  hover:bg-[#33adf3] transition disabled:opacity-50 font-medium"
+              className="w-full py-3 bg-[#E60076] text-white  rounded-[8px]  hover:bg-[#f0278f] transition disabled:opacity-50 font-medium"
             >
               {isLoading ? (
                 <>

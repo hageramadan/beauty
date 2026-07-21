@@ -32,12 +32,12 @@ export interface CheckoutFormData {
   paymentMethod: "cash" | "card" | "mada" | "wallet";
 }
 
-// ✅ واجهة جديدة لملخص سلة التسوق
+//  واجهة جديدة لملخص سلة التسوق
 export interface CartSummary {
    subtotal: number;
   discount: number;
-  couponDiscount?: number;        // ✅ خصم الكوبون
-  couponCode?: string;            // ✅ كود الكوبون المطبق
+  couponDiscount?: number;        //  خصم الكوبون
+  couponCode?: string;            //  كود الكوبون المطبق
    deliveryFee: number | null | undefined; 
   total: number;
 }
@@ -63,7 +63,7 @@ export interface NotesFormProps {
   onNotesChange: (notes: string) => void;
 }
 
-// ✅ تعديل OrderSummaryProps لاستخدام cartSummary
+//  تعديل OrderSummaryProps لاستخدام cartSummary
 export interface OrderSummaryProps {
   cartItems: CartItem[]; // يمكن الاحتفاظ بالمنتجات لعرضها
   cartSummary: CartSummary;

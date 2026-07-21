@@ -13,8 +13,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { FaCircleCheck } from "react-icons/fa6";
+import { useTranslation } from "@/hooks/useTranslation";
 
-// ✅ تصدير النوع هنا
+//  تصدير النوع هنا
 export type OrderStatus =
   | "ordered" // تم الطلب
   | "processing" // قيد المعالجة
@@ -32,29 +33,32 @@ interface OrderTrackerProps {
 }
 
 // ========== تكوين المراحل حسب نوع الاستلام ==========
-const STEPS_CONFIG = {
+const getStepsConfig = (t: any) => ({
   pickup: [
-    { label: "تم الطلب", icon: Clock },
-    { label: "قيد المعالجة", icon: Box },
-    { label: "جاهز للاستلام", icon: PackageCheck },
-    { label: "تم التسليم", icon: Home },
+    { label: t('orderTracker.ordered'), icon: Clock },
+    { label: t('orderTracker.processing'), icon: Box },
+    { label: t('orderTracker.readyForPickup'), icon: PackageCheck },
+    { label: t('orderTracker.delivered'), icon: Home },
   ],
   delivery: [
-    { label: "تم الطلب", icon: Clock },
-    { label: "قيد المعالجة", icon: Box },
-    { label: "في الطريق", icon: Truck },
-    { label: "تم التسليم", icon: Home },
+    { label: t('orderTracker.ordered'), icon: Clock },
+    { label: t('orderTracker.processing'), icon: Box },
+    { label: t('orderTracker.onTheWay'), icon: Truck },
+    { label: t('orderTracker.delivered'), icon: Home },
   ],
-} as const;
+});
 
 export default function OrderTracker({
   currentStatus,
   deliveryMethod = "pickup",
 }: OrderTrackerProps) {
+  const { t } = useTranslation(); //  استخدام hook الترجمة
+  
   // ========== حساب المراحل بناءً على نوع الاستلام ==========
+  const stepsConfig = useMemo(() => getStepsConfig(t), [t]);
   const steps = useMemo(() => {
-    return STEPS_CONFIG[deliveryMethod];
-  }, [deliveryMethod]);
+    return stepsConfig[deliveryMethod];
+  }, [deliveryMethod, stepsConfig]);
 
   // ========== حساب الخطوة الحالية ==========
   const currentStep = useMemo(() => {
@@ -80,7 +84,7 @@ export default function OrderTracker({
         className="w-full"
         dir="rtl"
       >
-        <div className=" bg-blue-50  border border-red-200  rounded-[8px]  p-4 md:p-6 text-center">
+        <div className="bg-blue-50 border border-red-200 rounded-[8px] p-4 md:p-6 text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -88,8 +92,8 @@ export default function OrderTracker({
           >
             <XCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
           </motion.div>
-          <h3 className="text-lg md:text-xl font-bold text-red-600">تم إلغاء الطلب</h3>
-          <p className="text-sm md:text-base text-red-500 mt-1">تم إلغاء هذا الطلب ولن يتم تنفيذه</p>
+          <h3 className="text-lg md:text-xl font-bold text-red-600">{t('orderTracker.cancelledTitle')}</h3>
+          <p className="text-sm md:text-base text-red-500 mt-1">{t('orderTracker.cancelledDesc')}</p>
         </div>
       </motion.div>
     );
@@ -104,7 +108,7 @@ export default function OrderTracker({
         className="w-full"
         dir="rtl"
       >
-        <div className=" bg-blue-50  border border-red-200  rounded-[8px]  p-4 md:p-6 text-center">
+        <div className="bg-blue-50 border border-red-200 rounded-[8px] p-4 md:p-6 text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -112,8 +116,8 @@ export default function OrderTracker({
           >
             <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-red-500 mx-auto mb-3" />
           </motion.div>
-          <h3 className="text-lg md:text-xl font-bold text-red-600">لم يتم التسليم</h3>
-          <p className="text-sm md:text-base text-red-500 mt-1">لم نتمكن من توصيل الطلب، يرجى التواصل مع خدمة العملاء</p>
+          <h3 className="text-lg md:text-xl font-bold text-red-600">{t('orderTracker.notDeliveredTitle')}</h3>
+          <p className="text-sm md:text-base text-red-500 mt-1">{t('orderTracker.notDeliveredDesc')}</p>
         </div>
       </motion.div>
     );
@@ -121,14 +125,14 @@ export default function OrderTracker({
 
   // ========== عرض الـ Timeline ==========
   return (
-    <div className="w-full" dir="rtl">
+    <div className="w-full">
       <div className="relative">
         {/* الخط الخلفي (الرمادي) */}
-        <div className="absolute top-5 right-9 left-9 h-[2px] bg-gray-200 rounded-full" />
+        <div className="absolute top-5 start-9 end-9 h-[2px] bg-gray-200 rounded-full" />
 
         {/* الخط الأمامي (المتحرك) */}
         <motion.div
-          className="absolute top-5 h-[2px] bg-[#FF7700] rounded-full"
+          className="absolute top-5 h-[2px] bg-[#E60076] rounded-full"
           initial={{ right: "36px", width: "0%" }}
           animate={{
             right: "36px",
@@ -187,9 +191,9 @@ export default function OrderTracker({
                       border-2 transition-all duration-300
                       ${
                         isCompleted
-                          ? "border-[#FF7700] bg-[#FF7700]/10"
+                          ? "border-[#E60076] bg-[#E60076]/10"
                           : isCurrent
-                          ? "border-[#FF7700]"
+                          ? "border-[#E60076]"
                           : "border-gray-300"
                       }
                     `}
@@ -204,12 +208,12 @@ export default function OrderTracker({
                           damping: 20,
                         }}
                       >
-                        <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-[#FF7700]" />
+                        <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-[#E60076]" />
                       </motion.div>
                     ) : (
                       <step.icon
                         className={`w-5 h-5 md:w-6 md:h-6 ${
-                          isCurrent ? "text-[#FF7700]" : "text-gray-400"
+                          isCurrent ? "text-[#E60076]" : "text-gray-400"
                         }`}
                       />
                     )}
@@ -224,16 +228,6 @@ export default function OrderTracker({
                 >
                   {step.label}
                 </p>
-
-                {/* {isCurrent && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[10px] md:text-xs text-[#FF7700] font-medium mt-0.5"
-                  >
-                    الحالية
-                  </motion.p>
-                )} */}
               </div>
             );
           })}

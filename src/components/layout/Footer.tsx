@@ -7,8 +7,55 @@ import { ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { getCategories } from "@/services/api";
 import { useSettings } from "@/hooks/useSettings";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+//  دالة للحصول على الترجمات حسب اللغة (نفس الفوتر الأول)
+const getTranslations = (lang: string) => {
+  if (lang === 'en') {
+    return {
+      categories: "Categories",
+      new: "New",
+      leastPrice: "Least Price",
+      discounts: "Discounts",
+      help: "Help",
+      terms: "Terms & Conditions",
+      privacy: "Privacy Policy",
+      contactUs: "Contact Us",
+      callUs: "Call Us",
+      email: "Email",
+      loading: "Loading...",
+      noCategories: "No categories",
+      home: "Home",
+      allRightsReserved: "All Rights Reserved",
+      storeName: "Your perfect store, everything you need",
+    };
+  }
+  // Arabic (default)
+  return {
+    categories: "الفئات",
+    new: "جديدنا",
+    leastPrice: "اقل الاسعار",
+    discounts: "الخصومات",
+    help: "المساعدة",
+    terms: "الشروط والاحكام",
+    privacy: "سياسة الخصوصية",
+    contactUs: "تواصل معنا",
+    callUs: "اتصل بنا",
+    email: "البريد الإلكتروني",
+    loading: "جاري التحميل...",
+    noCategories: "لا توجد فئات",
+    home: "الرئيسية",
+    allRightsReserved: "جميع الحقوق محفوظة",
+    storeName: "متجرك المثالي هنا كل ما تريد",
+  };
+};
 
 export function Footer() {
+  const { language } = useLanguage();
+  const t = getTranslations(language);
+  
+  //  إضافة state لمنع Hydration Error
+  const [isMounted, setIsMounted] = useState(false);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
   const [footerCategories, setFooterCategories] = useState<
     { id: number; name: string }[]
@@ -17,6 +64,11 @@ export function Footer() {
 
   // استخدام Hook الإعدادات
   const { settings, loading: settingsLoading } = useSettings();
+
+  //  تعيين isMounted بعد تحميل العميل
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch categories from API
   useEffect(() => {
@@ -133,6 +185,44 @@ export function Footer() {
 
   const socialLinks = getSocialLinks();
 
+  //  عرض نسخة مبسطة أثناء التحميل على السيرفر (بدون نصوص مترجمة)
+  if (!isMounted) {
+    return (
+      <footer className="border-t mt-auto bg-[#141718] text-white pt-6 md:pt-10">
+        <div className="container mx-auto px-4 py-4 md:py-8">
+          <div className="flex flex-wrap md:flex-row flex-col items-center justify-center md:justify-between gap-8 mb-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-24 h-8 bg-gray-700 animate-pulse rounded"></div>
+                <PiLineVerticalThin className="w-6 h-8 text-[#E8ECEF]" />
+                <div className="w-48 h-4 bg-gray-700 animate-pulse rounded"></div>
+              </div>
+            </div>
+            <div className="flex md:flex-row flex-col justify-center gap-5 items-center">
+              <div className="w-16 h-4 bg-gray-700 animate-pulse rounded"></div>
+              <div className="w-16 h-4 bg-gray-700 animate-pulse rounded"></div>
+              <div className="w-16 h-4 bg-gray-700 animate-pulse rounded"></div>
+            </div>
+          </div>
+          <div className="border-t border-white/20 pt-6 md:pt-8 pb-16 lg:pb-0">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="w-32 h-4 bg-gray-700 animate-pulse rounded"></div>
+              <div className="flex gap-6">
+                <div className="w-20 h-4 bg-gray-700 animate-pulse rounded"></div>
+                <div className="w-20 h-4 bg-gray-700 animate-pulse rounded"></div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-6 h-6 bg-gray-700 animate-pulse rounded-full"></div>
+                <div className="w-6 h-6 bg-gray-700 animate-pulse rounded-full"></div>
+                <div className="w-6 h-6 bg-gray-700 animate-pulse rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="border-t mt-auto bg-[#141718] text-white pt-6 md:pt-10">
       <div className="container mx-auto px-4 py-4 md:py-8">
@@ -142,34 +232,34 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <h1 className="text-[#FFFFFF] text-xl md:text-2xl font-bold">
-                {settingsLoading ? "جاري التحميل..." : settings?.name || "LoGo"}
+                {settingsLoading ? t.loading : settings?.name || "LoGo"}
               </h1>
               <PiLineVerticalThin className="w-6 h-8 text-[#E8ECEF]" />
               <p className="text-white/70 text-sm leading-relaxed">
-                {settingsLoading ? "..." : settings?.address || "متجرك المثالي هنا كل ما تريد"}
+                {settingsLoading ? t.loading : settings?.address || t.storeName}
               </p>
             </div>
           </div>
 
-          {/* روابط */}
+          {/* روابط -  استخدام الترجمات */}
           <div className="flex md:flex-row flex-col justify-center gap-5 items-center text-[14px]">
             <Link
               href="/"
-              className="font-bold hover:text-[#FF7700] transition-colors"
+              className="font-bold hover:text-[#E60076] transition-colors"
             >
-              الرئيسية
+              {t.home}
             </Link>
 
-            {/* Categories Dropdown */}
+            {/* Categories Dropdown -  استخدام الترجمات */}
             <div className="relative" ref={categoriesRef}>
               <button
                 onClick={() =>
                   setShowCategoriesDropdown(!showCategoriesDropdown)
                 }
                 onMouseEnter={() => setShowCategoriesDropdown(true)}
-                className="flex items-center gap-1 hover:text-[#FF7700] transition-colors"
+                className="flex items-center gap-1 hover:text-[#E60076] transition-colors"
               >
-                الفئات
+                {t.categories}
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
                     showCategoriesDropdown ? "rotate-180" : ""
@@ -185,23 +275,29 @@ export function Footer() {
                   <div className="absolute -bottom-1.5 right-4 w-3 h-3 rotate-45 bg-white border-r border-b"></div>
 
                   <div className="py-2">
-                    {footerCategories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/products?categories=[${category.id}]`}
-                        className="block px-4 py-2 text-[14px] transition-colors hover:bg-gray-50 text-right"
-                        style={{ color: "#112B40" }}
-                        onClick={() => setShowCategoriesDropdown(false)}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#FF7700")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = "#112B40")
-                        }
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
+                    {footerCategories.length > 0 ? (
+                      footerCategories.map((category) => (
+                        <Link
+                          key={category.id}
+                          href={`/products?categories=[${category.id}]`}
+                          className="block px-4 py-2 text-[14px] transition-colors hover:bg-gray-50 text-right"
+                          style={{ color: "#112B40" }}
+                          onClick={() => setShowCategoriesDropdown(false)}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = "#E60076")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.color = "#112B40")
+                          }
+                        >
+                          {category.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-[14px] text-gray-500 text-right">
+                        {t.noCategories}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -209,32 +305,32 @@ export function Footer() {
 
             <Link
               href="/contact"
-              className="hover:text-[#FF7700] transition-colors"
+              className="hover:text-[#E60076] transition-colors"
             >
-              تواصل معنا
+              {t.contactUs}
             </Link>
           </div>
         </div>
 
-        {/* footer bottom */}
-        <div className="border-t border-white/20 pt-6 md:pt-8">
+        {/* footer bottom -  استخدام الترجمات */}
+        <div className="border-t border-white/20 pt-6 md:pt-8 pb-16 lg:pb-0">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/60 font-bold text-sm">
-              © جميع الحقوق محفوظة | {new Date().getFullYear()}
+              © {t.allRightsReserved} | {new Date().getFullYear()}
             </p>
 
             <div className="flex gap-6">
               <Link 
                 href={settings?.terms_and_conditions ? "/terms" : "#"} 
-                className="hover:text-[#FF7700] text-white"
+                className="hover:text-[#E60076] text-white"
               >
-                الشروط والأحكام
+                {settingsLoading ? t.loading : settings?.terms_and_conditions || t.terms}
               </Link>
               <Link 
                 href={settings?.privacy_policy ? "/privacy" : "#"} 
-                className="hover:text-[#FF7700] text-white"
+                className="hover:text-[#E60076] text-white"
               >
-                سياسة الخصوصية
+                {settingsLoading ? t.loading : settings?.privacy_policy || t.privacy}
               </Link>
             </div>
 

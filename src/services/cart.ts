@@ -1,5 +1,7 @@
 // src/services/cart.ts
 
+import { getHeaders } from "./api";
+
 export interface ProductPricing {
   price: number;
   has_discount: boolean;
@@ -94,7 +96,7 @@ export interface UpdateQuantityPayload {
   quantity: number;
 }
 
-const API_URL = 'https://alsas.admin.t-carts.com/api';
+const API_URL = 'https://beauty.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -103,7 +105,7 @@ const getToken = (): string | null => {
   return null;
 };
 
-// ✅ دالة للحصول على guest_token من localStorage
+//  دالة للحصول على guest_token من localStorage
 export const getGuestToken = (): string | null => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('guest_cart_token');
@@ -111,41 +113,21 @@ export const getGuestToken = (): string | null => {
   return null;
 };
 
-// ✅ دالة لحفظ guest_token في localStorage
+//  دالة لحفظ guest_token في localStorage
 export const setGuestToken = (token: string): void => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('guest_cart_token', token);
   }
 };
 
-// ✅ دالة لمسح guest_token
+//  دالة لمسح guest_token
 export const clearGuestToken = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('guest_cart_token');
   }
 };
 
-// ✅ دالة للحصول على الـ Headers مع إضافة X-Guest-Token
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  const guestToken = getGuestToken();
-  
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  
-  // ✅ إضافة الـ auth token إذا كان موجوداً
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  // ✅ إضافة X-Guest-Token إذا كان موجوداً
-  if (guestToken) {
-    headers['X-Guest-Token'] = guestToken;
-  }
-  
-  return headers;
-};
+
 
 // 1. إضافة منتج إلى السلة (مع دعم guest_token في الـ Headers)
 export const addToCart = async (payload: AddToCartPayload): Promise<CartResponse> => {
@@ -158,7 +140,7 @@ export const addToCart = async (payload: AddToCartPayload): Promise<CartResponse
     
     const data = await response.json();
     
-    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    //  إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
     if (data.result && data.data?.cart?.guest_token) {
       setGuestToken(data.data.cart.guest_token);
     }
@@ -180,7 +162,7 @@ export const getCart = async (): Promise<CartResponse> => {
     
     const data = await response.json();
     
-    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    //  إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
     if (data.result && data.data?.cart?.guest_token) {
       setGuestToken(data.data.cart.guest_token);
     }
@@ -203,7 +185,7 @@ export const updateCartItemQuantity = async (cartItemId: number, quantity: numbe
     
     const data = await response.json();
     
-    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    //  إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
     if (data.result && data.data?.cart?.guest_token) {
       setGuestToken(data.data.cart.guest_token);
     }
@@ -225,7 +207,7 @@ export const removeFromCart = async (cartItemId: number): Promise<CartResponse> 
     
     const data = await response.json();
     
-    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    //  إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
     if (data.result && data.data?.cart?.guest_token) {
       setGuestToken(data.data.cart.guest_token);
     }
@@ -247,7 +229,7 @@ export const clearCart = async (): Promise<ClearCartResponse> => {
     
     const data = await response.json();
     
-    // ✅ إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
+    //  إذا كان الـ response يحتوي على guest_token، نقوم بحفظه
     if (data.result && data.data?.cart?.guest_token) {
       setGuestToken(data.data.cart.guest_token);
     }

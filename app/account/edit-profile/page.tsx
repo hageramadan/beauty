@@ -9,8 +9,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { changePassword, updateUserProfile, getUserProfile } from "@/services/api";
 import { Loader } from "lucide-react";
 import PhoneInput from "@/components/contact/PhoneInput";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function EditProfilePage() {
+  const { t , language } = useTranslation();
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading, logoutUser, updateUserData } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -18,7 +20,7 @@ export default function EditProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  
+  const isEnglish = language === 'en';
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -45,14 +47,10 @@ export default function EditProfilePage() {
   // دالة مساعدة لمعالجة رابط الصورة
   const getImageUrl = (imagePath: string | null | undefined): string | null => {
     if (!imagePath) return null;
-    
-    // إذا كان الرابط كاملًا (يبدأ بـ http أو https)
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-    
-    // إذا كان مسارًا نسبيًا
-    return `https://alsas.admin.t-carts.com${imagePath}`;
+    return `https://beauty.admin.t-carts.com${imagePath}`;
   };
 
   // دالة لجلب بيانات المستخدم
@@ -71,8 +69,6 @@ export default function EditProfilePage() {
             newPassword: "",
             confirmPassword: "",
           });
-          
-          // معالجة الصورة بشكل صحيح
           setExistingAvatar(getImageUrl(result.data.user.image));
         } else if (user) {
           setFormData({
@@ -84,8 +80,6 @@ export default function EditProfilePage() {
             newPassword: "",
             confirmPassword: "",
           });
-          
-          // معالجة الصورة بشكل صحيح
           setExistingAvatar(getImageUrl(user.image));
         }
       }
@@ -115,7 +109,7 @@ export default function EditProfilePage() {
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      toast.error("الرجاء تسجيل الدخول أولاً", {
+      toast.error(t('account.pleaseLogin'), {
         duration: 2000,
         position: "top-center",
       });
@@ -123,7 +117,7 @@ export default function EditProfilePage() {
         router.push("/auth/login");
       }, 1500);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, t]);
 
   // تنظيف معاينة الصورة
   useEffect(() => {
@@ -138,30 +132,25 @@ export default function EditProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        toast.error("حجم الصورة يجب أن يكون أقل من 2 ميجابايت");
+        toast.error(t('account.imageSizeError'));
         return;
       }
-      
       if (!file.type.startsWith('image/')) {
-        toast.error("الرجاء اختيار ملف صورة صالح");
+        toast.error(t('account.invalidImage'));
         return;
       }
-      
       setAvatar(file);
       const previewUrl = URL.createObjectURL(file);
       setAvatarPreview(previewUrl);
     }
   };
 
-  // دالة معالجة تغيير رقم الهاتف من مكون PhoneInput
   const handlePhoneChange = (phoneNumber: string, countryCode: string) => {
     setFormData({
       ...formData,
       phone: phoneNumber,
       country_code: countryCode,
     });
-    
-    // مسح أخطاء الهاتف وكود الدولة
     if (errors.phone) {
       setErrors(prev => ({ ...prev, phone: undefined }));
     }
@@ -173,55 +162,50 @@ export default function EditProfilePage() {
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    // التحقق من الاسم
     if (!formData.name.trim()) {
-      newErrors.name = "الاسم الكامل مطلوب";
+      newErrors.name = t('account.nameRequired');
     } else if (formData.name.trim().length < 3) {
-      newErrors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
+      newErrors.name = t('account.nameMinLength');
     }
 
-    // التحقق من البريد الإلكتروني
     if (formData.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        newErrors.email = "البريد الإلكتروني غير صحيح";
+        newErrors.email = t('account.invalidEmail');
       }
     }
 
-    // التحقق من رقم الهاتف مع كود الدولة
     if (formData.phone) {
       const phoneRegex = /^[0-9]{10,15}$/;
       if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
-        newErrors.phone = "رقم الهاتف غير صحيح (10-15 رقم)";
+        newErrors.phone = t('account.invalidPhone');
       }
     }
 
-    // التحقق من كود الدولة
     if (formData.country_code && !formData.country_code.startsWith('+')) {
-      newErrors.country_code = "كود الدولة يجب أن يبدأ بـ +";
+      newErrors.country_code = t('account.invalidCountryCode');
     }
 
-    // التحقق من كلمة المرور
     const hasCurrentPassword = formData.currentPassword.trim() !== "";
     const hasNewPassword = formData.newPassword.trim() !== "";
     const hasConfirmPassword = formData.confirmPassword.trim() !== "";
 
     if (hasCurrentPassword || hasNewPassword || hasConfirmPassword) {
       if (!hasCurrentPassword) {
-        newErrors.currentPassword = "الرجاء إدخال كلمة المرور الحالية";
+        newErrors.currentPassword = t('account.currentPasswordRequired');
       }
       if (!hasNewPassword) {
-        newErrors.newPassword = "الرجاء إدخال كلمة المرور الجديدة";
+        newErrors.newPassword = t('account.newPasswordRequired');
       }
       if (!hasConfirmPassword) {
-        newErrors.confirmPassword = "الرجاء تأكيد كلمة المرور الجديدة";
+        newErrors.confirmPassword = t('account.confirmPasswordRequired');
       }
       if (hasCurrentPassword && hasNewPassword && hasConfirmPassword) {
         if (formData.newPassword.length < 6) {
-          newErrors.newPassword = "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل";
+          newErrors.newPassword = t('account.passwordMinLength');
         }
         if (formData.newPassword !== formData.confirmPassword) {
-          newErrors.confirmPassword = "كلمة المرور الجديدة غير متطابقة";
+          newErrors.confirmPassword = t('account.passwordMismatch');
         }
       }
     }
@@ -230,17 +214,14 @@ export default function EditProfilePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // دالة للتحقق مما إذا كانت هناك تغييرات حقيقية
   const hasChanges = useCallback((): boolean => {
     if (formData.name !== user?.name) return true;
     if (formData.email !== user?.email) return true;
     if (formData.phone !== user?.phone) return true;
     if (formData.country_code !== user?.country_code) return true;
     if (avatar !== null) return true;
-    
     const hasPasswordChange = formData.currentPassword || formData.newPassword || formData.confirmPassword;
     if (hasPasswordChange) return true;
-    
     return false;
   }, [formData, user, avatar]);
 
@@ -248,29 +229,26 @@ export default function EditProfilePage() {
     if (!formData.currentPassword && !formData.newPassword && !formData.confirmPassword) {
       return true;
     }
-    
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
-      toast.error("الرجاء ملء جميع حقول كلمة المرور");
+      toast.error(t('account.fillPasswordFields'));
       return false;
     }
-    
     try {
       const result = await changePassword({
         current_password: formData.currentPassword,
         new_password: formData.newPassword,
         new_password_confirmation: formData.confirmPassword,
       });
-
       if (result.result) {
-        toast.success("تم تغيير كلمة المرور بنجاح! ✅");
+        toast.success(t('account.passwordChanged'));
         return true;
       } else {
-        toast.error(result.message || "فشل تغيير كلمة المرور");
+        toast.error(result.message || t('account.passwordChangeFailed'));
         return false;
       }
     } catch (error) {
       console.error("Error changing password:", error);
-      toast.error("حدث خطأ أثناء تغيير كلمة المرور");
+      toast.error(t('account.passwordChangeError'));
       return false;
     }
   };
@@ -283,9 +261,7 @@ export default function EditProfilePage() {
       formData.country_code !== user?.country_code ||
       avatar !== null;
     
-    if (!hasProfileChanges) {
-      return true;
-    }
+    if (!hasProfileChanges) return true;
     
     const profileData: any = {
       name: formData.name,
@@ -296,32 +272,28 @@ export default function EditProfilePage() {
     if (formData.email && formData.email !== user?.email) {
       profileData.email = formData.email;
     }
-    
     if (formData.phone && formData.phone !== user?.phone) {
       profileData.phone = formData.phone;
     }
-    
     if (formData.country_code && formData.country_code !== user?.country_code) {
       profileData.country_code = formData.country_code;
     }
-    
     if (avatar) {
       profileData.image = avatar;
     }
     
     try {
       const result = await updateUserProfile(profileData);
-      
       if (result.result) {
         await fetchUserProfile();
         return true;
       } else {
-        toast.error(result.message || "فشل تحديث المعلومات الشخصية");
+        toast.error(result.message || t('account.profileUpdateFailed'));
         return false;
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("حدث خطأ أثناء تحديث المعلومات الشخصية");
+      toast.error(t('account.profileUpdateError'));
       return false;
     }
   };
@@ -338,7 +310,7 @@ export default function EditProfilePage() {
     }
     
     if (!hasChanges()) {
-      toast.error("لا توجد تغييرات لحفظها", {
+      toast.error(t('account.noChanges'), {
         duration: 2000,
         position: "top-center",
       });
@@ -350,18 +322,15 @@ export default function EditProfilePage() {
     try {
       let passwordChanged = true;
       const hasPasswordChange = formData.currentPassword || formData.newPassword || formData.confirmPassword;
-      
       if (hasPasswordChange) {
         passwordChanged = await handleChangePassword();
       }
-
       if (!passwordChanged) {
         setIsSubmitting(false);
         return;
       }
 
       const profileUpdated = await handleUpdateProfile();
-
       if (!profileUpdated) {
         setIsSubmitting(false);
         return;
@@ -382,7 +351,7 @@ export default function EditProfilePage() {
         confirmPassword: "",
       }));
       
-      toast.success("تم تحديث الملف الشخصي بنجاح ✅", {
+      toast.success(t('account.profileUpdated'), {
         duration: 3000,
         position: "top-center",
       });
@@ -392,7 +361,7 @@ export default function EditProfilePage() {
       }, 1500);
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("حدث خطأ أثناء تحديث الملف الشخصي", {
+      toast.error(t('account.profileUpdateError'), {
         duration: 3000,
         position: "top-center",
       });
@@ -407,14 +376,13 @@ export default function EditProfilePage() {
     }
   };
 
-  // عرض شاشة تحميل كاملة أثناء تحميل الصفحة أو المصادقة
   if (authLoading || isPageLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
             <div className="w-8 h-8 md:w-12 md:h-12 border-4 border-gray-200 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-8 h-8 md:w-12 md:h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-8 h-8 md:w-12 md:h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -432,7 +400,6 @@ export default function EditProfilePage() {
 
   const displayAvatar = avatarPreview || existingAvatar;
 
-  // دالة لعرض رقم الهاتف مع كود الدولة
   const getFullPhoneNumber = () => {
     if (formData.phone) {
       return `${formData.country_code || '+20'}${formData.phone}`;
@@ -440,7 +407,6 @@ export default function EditProfilePage() {
     return "";
   };
 
-  // القيمة الكاملة للهاتف لإرسالها إلى مكون PhoneInput
   const fullPhoneValue = formData.phone ? `${formData.country_code || '+20'}${formData.phone}` : "";
 
   return (
@@ -453,9 +419,11 @@ export default function EditProfilePage() {
               onClick={() => router.back()}
               className="p-2 hover:bg-gray-100 rounded-full transition"
             >
-              <FaArrowRight className="w-5 h-5 text-gray-600" />
+              <FaArrowRight  className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
+                    isEnglish ? 'rotate-180' : ''
+                  }`}  />
             </button>
-            <h1 className="text-lg md:text-xl font-bold text-[#180100]">تعديل الملف الشخصي</h1>
+            <h1 className="text-lg md:text-xl font-bold text-[#180100]">{t('account.editProfile')}</h1>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -476,7 +444,7 @@ export default function EditProfilePage() {
                       }}
                     />
                   ) : (
-                    <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#FF7700] flex items-center justify-center shadow-lg">
+                    <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#E60076] flex items-center justify-center shadow-lg">
                       <span className="text-white text-xl md:text-2xl font-bold">
                         {getUserInitial()}
                       </span>
@@ -516,13 +484,13 @@ export default function EditProfilePage() {
               {/* المعلومات الشخصية */}
               <div className="mb-6">
                 <h2 className="text-lg font-bold text-gray-800 pb-2 mb-4">
-                  المعلومات الشخصية
+                  {t('account.personalInfo')}
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-3">
                   <div className="mb-4">
                     <label className="block text-gray-700 font-medium mb-2">
-                      الاسم الكامل <span className="text-red-500">*</span>
+                      {t('account.fullName')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -531,7 +499,7 @@ export default function EditProfilePage() {
                         setFormData({ ...formData, name: e.target.value });
                         clearFieldError("name");
                       }}
-                      placeholder="أدخل الاسم الكامل"
+                      placeholder={t('account.enterFullName')}
                       disabled={isSubmitting}
                       className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.name ? "border-red-500" : "border-gray-300"
@@ -542,51 +510,49 @@ export default function EditProfilePage() {
                     )}
                   </div>
 
-                  
+                  <div className="mb-4">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      {t('account.phone')}
+                    </label>
+                    <PhoneInput
+                      value={fullPhoneValue}
+                      onChange={handlePhoneChange}
+                    />
+                  </div>
+                </div>
 
-                  {/* حقل رقم الهاتف باستخدام مكون PhoneInput */}
                 <div className="mb-4">
                   <label className="block text-gray-700 font-medium mb-2">
-                    رقم الجوال
+                    {t('account.email')}
                   </label>
-                  <PhoneInput
-                    value={fullPhoneValue}
-                    onChange={handlePhoneChange}
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      clearFieldError("email");
+                    }}
+                    placeholder={t('account.emailPlaceholder')}
+                    disabled={isSubmitting}
+                    className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      errors.email ? "border-red-500" : "border-gray-300"
+                    } ${isSubmitting ? "opacity-50" : ""}`}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
                 </div>
-                </div>
-<div className="mb-4">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      البريد الإلكتروني
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        clearFieldError("email");
-                      }}
-                      placeholder="example@email.com"
-                      disabled={isSubmitting}
-                      className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
-                        errors.email ? "border-red-500" : "border-gray-300"
-                      } ${isSubmitting ? "opacity-50" : ""}`}
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                    )}
-                  </div>
-                
               </div>
-  {/* تغيير كلمة المرور */}
+
+              {/* تغيير كلمة المرور */}
               <div className="my-6">
                 <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
-                  تغيير كلمة المرور
+                  {t('account.changePassword')}
                 </h2>
 
                 <div className="mb-4">
                   <label className="block text-gray-700 font-medium mb-2">
-                    كلمة المرور الحالية
+                    {t('account.currentPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -606,7 +572,7 @@ export default function EditProfilePage() {
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       disabled={isSubmitting}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                     >
                       {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -618,7 +584,7 @@ export default function EditProfilePage() {
 
                 <div className="mb-4">
                   <label className="block text-gray-700 font-medium mb-2">
-                    كلمة المرور الجديدة
+                    {t('account.newPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -628,7 +594,7 @@ export default function EditProfilePage() {
                         setFormData({ ...formData, newPassword: e.target.value });
                         clearFieldError("newPassword");
                       }}
-                      placeholder="************ (6 أحرف على الأقل)"
+                      placeholder={`************ (6 ${t('account.minChars')})`}
                       disabled={isSubmitting}
                       className={`w-full px-4 py-2 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.newPassword ? "border-red-500" : "border-gray-300"
@@ -638,7 +604,7 @@ export default function EditProfilePage() {
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       disabled={isSubmitting}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                     >
                       {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -650,7 +616,7 @@ export default function EditProfilePage() {
 
                 <div className="mb-4">
                   <label className="block text-gray-700 font-medium mb-2">
-                    تأكيد كلمة المرور
+                    {t('account.confirmPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -670,7 +636,7 @@ export default function EditProfilePage() {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       disabled={isSubmitting}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                      className="absolute end-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                     >
                       {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -679,11 +645,7 @@ export default function EditProfilePage() {
                     <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
                   )}
                 </div>
-
-            
               </div>
-
-            
 
               {/* أزرار الإجراءات */}
               <div className="flex gap-3">
@@ -693,20 +655,20 @@ export default function EditProfilePage() {
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition disabled:opacity-50"
                 >
-                  إلغاء
+                  {t('account.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 flex justify-center gap-1 px-4 py-2 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#39aff3] transition disabled:opacity-50"
+                  className="flex-1 flex justify-center gap-1 px-4 py-2 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      جاري الحفظ...
+                      {t('account.saving')}
                     </>
                   ) : (
-                    "حفظ "
+                    t('account.save')
                   )}
                 </button>
               </div>

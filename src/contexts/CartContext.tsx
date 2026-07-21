@@ -15,6 +15,7 @@ import {
   clearGuestToken,
 } from '@/services/cart';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CartContextType {
   cart: CartData | null;
@@ -32,19 +33,20 @@ interface CartContextType {
   updateCart: (newCart: CartData | null) => void;
   getItemQuantity: (productId: number) => number;
   setGuestToken: (token: string) => void;
-  clearGuestMode: () => void; // ✅ دالة جديدة لمسح وضع الضيف
+  clearGuestMode: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  
   const [cart, setCart] = useState<CartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [guestToken, setGuestTokenState] = useState<string | null>(() => {
-    // ✅ إذا كان هناك auth_token، لا نستخدم guest_token
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
       if (token) {
@@ -57,9 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   
   const isMountedRef = useRef(true);
 
-  // ✅ التحقق إذا كان المستخدم ضيف
   const isGuest = useMemo(() => {
-    // إذا كان هناك auth_token، فالمستخدم ليس ضيف
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
       if (token) {
@@ -67,13 +67,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // إذا كان هناك guest_token وليس هناك user في السلة
     return !!guestToken && !cart?.user;
   }, [guestToken, cart]);
 
-  // ✅ دالة لحفظ الـ guest_token
   const setGuestToken = useCallback((token: string) => {
-    // ✅ إذا كان هناك auth_token، لا نحفظ guest_token
     if (typeof window !== 'undefined') {
       const authToken = localStorage.getItem('auth_token');
       if (authToken) {
@@ -85,7 +82,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setGuestTokenInService(token);
   }, []);
 
-  // ✅ دالة لمسح وضع الضيف
   const clearGuestMode = useCallback(() => {
     clearGuestToken();
     setGuestTokenState(null);
@@ -99,7 +95,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (response.result === true && response.data && response.data.cart) {
         const cartData = response.data.cart;
         
-        // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
         if (cartData.guest_token) {
           const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
           if (!authToken) {
@@ -137,7 +132,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItemCount(newCart.total_quantity || 0);
       setTotalAmount(newCart.total_amount || 0);
       
-      // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
       if (newCart.guest_token) {
         const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         if (!authToken) {
@@ -172,7 +166,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await addToCart(payload);
       
       if (response.result === true && response.data) {
-        // ✅ حفظ الـ guest_token فقط إذا لم يكن هناك auth_token
         if (response.data.cart?.guest_token) {
           const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
           if (!authToken) {
@@ -180,15 +173,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        toast.success(response.message || 'تم إضافة المنتج إلى السلة');
+        toast.success(t('cart.addSuccess'));
         await fetchCartData(false);
         return true;
       } else {
-        toast.error(response.message || 'فشل في إضافة المنتج');
+        toast.error(t('cart.addFailed'));
         return false;
       }
     } catch (error) {
-      toast.error('حدث خطأ في إضافة المنتج');
+      toast.error(t('cart.addError'));
       return false;
     } finally {
       setIsMutating(false);
@@ -202,15 +195,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await updateCartItemQuantity(cartItemId, quantity);
       
       if (response.result === true && response.data) {
-        toast.success('تم تحديث الكمية بنجاح');
+        toast.success(t('cart.updateSuccess'));
         await fetchCartData(false);
         return true;
       } else {
-        toast.error(response.message || 'فشل في تحديث الكمية');
+        toast.error(response.message || t('cart.updateFailed'));
         return false;
       }
     } catch (error) {
-      toast.error('حدث خطأ في تحديث الكمية');
+      toast.error(t('cart.updateError'));
       return false;
     } finally {
       setIsMutating(false);
@@ -224,15 +217,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await removeFromCart(cartItemId);
       
       if (response.result === true) {
-        toast.success('تم إزالة المنتج من السلة');
+        toast.success(t('cart.removeSuccess'));
         await fetchCartData(false);
         return true;
       } else {
-        toast.error(response.message || 'فشل في إزالة المنتج');
+        toast.error(response.message || t('cart.removeFailed'));
         return false;
       }
     } catch (error) {
-      toast.error('حدث خطأ في إزالة المنتج');
+      toast.error(t('cart.removeError'));
       return false;
     } finally {
       setIsMutating(false);
@@ -246,15 +239,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const response = await clearCart();
       
       if (response.result === true) {
-        toast.success('تم تفريغ السلة بنجاح');
+        toast.success(t('cart.clearSuccess'));
         await fetchCartData(false);
         return true;
       } else {
-        toast.error(response.message || 'فشل في تفريغ السلة');
+        toast.error(response.message || t('cart.clearFailed'));
         return false;
       }
     } catch (error) {
-      toast.error('حدث خطأ في تفريغ السلة');
+      toast.error(t('cart.clearError'));
       return false;
     } finally {
       setIsMutating(false);
@@ -284,7 +277,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     updateCart,
     getItemQuantity,
     setGuestToken,
-    clearGuestMode, // ✅ دالة جديدة
+    clearGuestMode,
   };
 
   return (

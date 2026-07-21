@@ -113,17 +113,17 @@ export default function RegisterWithPhone() {
   const result = await registerWithPhone(
     formData.name,
     formData.phoneNumber,
-    formData.password,
+    // formData.password,
     formData.countryCode
   );
 
   if (result.success) {
-    toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ✅", {
+    toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ", {
       duration: 4000,
       position: "top-center",
     });
 
-    // ✅ التوجيه مباشرة إلى صفحة OTP للهاتف
+    //  التوجيه مباشرة إلى صفحة OTP للهاتف
     const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
     setTimeout(() => {
       router.push(`/auth/verify-otp/phone?phone=${encodeURIComponent(fullPhone)}&isRegister=true`);
@@ -182,7 +182,7 @@ export default function RegisterWithPhone() {
                     الاسم <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <FaUser className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <FaUser className="absolute  start-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       value={formData.name}
@@ -192,7 +192,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="أدخل اسمك"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 border text-base rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2  ps-10 border text-base rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.name ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -209,7 +209,7 @@ export default function RegisterWithPhone() {
                     البريد الإلكتروني <span className="text-gray-400 text-xs">(اختياري)</span>
                   </label>
                   <div className="relative">
-                    <FaEnvelope className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <FaEnvelope className="absolute  start-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="email"
                       value={formData.email}
@@ -219,7 +219,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="example@email.com"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 pr-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2  ps-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.email ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -252,7 +252,7 @@ export default function RegisterWithPhone() {
                     كلمة المرور <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <FaLock className="absolute  start-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
@@ -262,7 +262,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="•••••••• (6 أحرف على الأقل)"
                       disabled={isLoading}
-                      className={`w-full px-4 text-sm  py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 text-sm  py-2  ps-10  pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.password ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -271,7 +271,7 @@ export default function RegisterWithPhone() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute  end-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -289,7 +289,7 @@ export default function RegisterWithPhone() {
                     تأكيد كلمة المرور <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <FaLock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <FaLock className="absolute  start-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       value={formData.confirmPassword}
@@ -299,7 +299,7 @@ export default function RegisterWithPhone() {
                       }}
                       placeholder="••••••••"
                       disabled={isLoading}
-                      className={`w-full px-4 py-2 text-sm  pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
+                      className={`w-full px-4 py-2 text-sm   ps-10  pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none transition-colors ${
                         errors.confirmPassword ? "border-red-500" : "border-gray-300"
                       } ${isLoading ? "opacity-50" : ""}`}
                       dir="rtl"
@@ -308,7 +308,7 @@ export default function RegisterWithPhone() {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       disabled={isLoading}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute  end-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -324,7 +324,7 @@ export default function RegisterWithPhone() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
+                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition font-medium ${
                     isLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -345,7 +345,7 @@ export default function RegisterWithPhone() {
                     <button
                       type="button"
                       onClick={() => router.push("/auth/login")}
-                      className="text-[#FF7700] font-medium hover:underline"
+                      className="text-[#E60076] font-medium hover:underline"
                     >
                       تسجيل الدخول
                     </button>

@@ -4,6 +4,8 @@
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getHeaders } from "@/services/api";
 
 interface PromoCodeInputProps {
   onApply: (code: string, discount: number) => void;
@@ -11,12 +13,9 @@ interface PromoCodeInputProps {
   appliedCode: string;
 }
 
-// const API_URL = 'https://alsas.admin.t-carts.com/api';
+const API_URL = 'https://beauty.admin.t-carts.com/api';
 
-// API URL
-const API_URL = 'https://alsas.admin.t-carts.com/api';
-
-// دالة جلب التوكن
+//  دالة جلب التوكن
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('auth_token');
@@ -24,16 +23,18 @@ const getToken = (): string | null => {
   return null;
 };
 
-// دالة جلب الهيدرز
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-  };
+//  دالة جلب الـ Guest Token (مضافة)
+const getGuestToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('guest_cart_token');
+  }
+  return null;
 };
 
-// دالة تطبيق كود الخصم من الـ API
+//  دالة جلب الهيدرز مع دعم Guest Token (محدثة)
+
+
+// دالة تطبيق كود الخصم
 const applyCouponAPI = async (code: string): Promise<{ success: boolean; discount: number; message: string }> => {
   try {
     const response = await fetch(`${API_URL}/coupons/apply`, {
@@ -45,7 +46,6 @@ const applyCouponAPI = async (code: string): Promise<{ success: boolean; discoun
     const data = await response.json();
     
     if (data.result === true && data.data) {
-      // استخراج نسبة الخصم من الرد
       const discount = data.data?.coupon?.discount_percentage || 
                        data.data?.discount_percentage || 
                        data.data?.discount || 
@@ -103,13 +103,14 @@ const removeCouponAPI = async (): Promise<{ success: boolean; message: string }>
 };
 
 export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInputProps) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleApply = async () => {
     if (!code.trim()) {
-      setError("الرجاء إدخال كود الخصم");
+      setError(t('promoCode.enterCode'));
       return;
     }
 
@@ -129,8 +130,8 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
         toast.error(result.message);
       }
     } catch (err) {
-      setError("حدث خطأ غير متوقع");
-      toast.error("حدث خطأ غير متوقع");
+      setError(t('promoCode.unexpectedError'));
+      toast.error(t('promoCode.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -151,27 +152,30 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
         toast.error(result.message);
       }
     } catch (err) {
-      toast.error("حدث خطأ غير متوقع");
+      toast.error(t('promoCode.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  //  حالة عرض الكود المطبق مع زر الإلغاء (مفعل)
   if (appliedCode) {
     return (
       <div className="mt-4">
-        <div className="flex items-center justify-between bg-green-50  rounded-[8px]  p-3">
+        <div className="flex items-center justify-between bg-green-50 rounded-[8px] p-3">
           <div className="flex items-center gap-2">
-            <span className="text-green-600 text-sm">✓ تم تطبيق الكود</span>
+            <span className="text-green-600 text-sm">{t('promoCode.applied')}</span>
             <span className="text-green-800 font-semibold text-sm">{appliedCode}</span>
           </div>
-          <button
+          {/*  زر إلغاء الكود - ظاهر ومفعل */}
+          {/* <button
             onClick={handleRemove}
             disabled={isLoading}
             className="text-gray-400 hover:text-red-500 transition disabled:opacity-50"
+            title={t('promoCode.remove') || "إلغاء الكود"}
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-          </button>
+          </button> */}
         </div>
         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
@@ -193,19 +197,19 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
               handleApply();
             }
           }}
-          placeholder="أدخل كود الخصم..."
+          placeholder={t('promoCode.placeholder')}
           disabled={isLoading}
-          className={` px-2 md:px-4 py-2.5 w-[90%] lg:w-full  border  rounded-[8px]  focus:outline-none focus:ring-2 focus:ring-[#FF7700] focus:border-transparent text-sm disabled:bg-gray-100 ${
+          className={`px-2 md:px-4 py-2.5 w-[90%] lg:w-full border rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#E60076] focus:border-transparent text-sm disabled:bg-gray-100 ${
             error ? 'border-red-500' : 'border-gray-200'
           }`}
         />
         <button
           onClick={handleApply}
           disabled={!code.trim() || isLoading}
-          className="px-3 md:px-5 w-fit md:py-2.5 bg-[#FF7700] text-white  rounded-[8px]  text-sm font-semibold hover:bg-[#3eadf7] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-3 md:px-5 w-fit md:py-2.5 bg-[#E60076] text-white rounded-[8px] text-sm font-semibold hover:bg-[#f0278f] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {isLoading ? "جاري.." : "تطبيق"}
+          {isLoading ? t('promoCode.applying') : t('promoCode.apply')}
         </button>
       </div>
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}

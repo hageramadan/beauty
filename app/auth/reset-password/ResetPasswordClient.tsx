@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaLock, FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { resetPassword } from "@/services/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ResetPasswordClient() {
   const router = useRouter();
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -27,24 +29,24 @@ export default function ResetPasswordClient() {
 
   useEffect(() => {
     if (!email) {
-      toast.error("البريد الإلكتروني مطلوب");
+      toast.error(t("auth.emailRequired"));
       setTimeout(() => router.push("/auth/forgot-password"), 2000);
     }
-  }, [email, router]);
+  }, [email, router, t]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
     if (!formData.new_password) {
-      newErrors.new_password = "كلمة المرور الجديدة مطلوبة";
+      newErrors.new_password = t("auth.newPasswordRequired");
     } else if (formData.new_password.length < 6) {
-      newErrors.new_password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+      newErrors.new_password = t("auth.passwordMinLength");
     }
 
     if (!formData.new_password_confirmation) {
-      newErrors.new_password_confirmation = "تأكيد كلمة المرور مطلوب";
+      newErrors.new_password_confirmation = t("auth.confirmPasswordRequired");
     } else if (formData.new_password !== formData.new_password_confirmation) {
-      newErrors.new_password_confirmation = "كلمة المرور غير متطابقة";
+      newErrors.new_password_confirmation = t("auth.passwordMismatch");
     }
 
     setErrors(newErrors);
@@ -71,7 +73,7 @@ export default function ResetPasswordClient() {
     });
 
     if (result.result) {
-      toast.success("تم إعادة تعيين كلمة المرور بنجاح! ✅", {
+      toast.success(t("auth.resetSuccess"), {
         duration: 3000,
       });
       
@@ -79,7 +81,7 @@ export default function ResetPasswordClient() {
         router.push("/auth/login?reset=true");
       }, 1500);
     } else {
-      toast.error(result.message || "فشل إعادة تعيين كلمة المرور", {
+      toast.error(result.message || t("auth.resetFailed"), {
         duration: 4000,
       });
     }
@@ -89,7 +91,6 @@ export default function ResetPasswordClient() {
 
   return (
     <>
-      <Toaster position="top-center" />
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
           {/* زر الرجوع */}
@@ -98,13 +99,13 @@ export default function ResetPasswordClient() {
             className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition"
           >
             <FaArrowLeft className="w-4 h-4" />
-            <span className="text-sm">رجوع</span>
+            <span className="text-sm">{t("auth.back")}</span>
           </button>
 
           <div className="text-center mb-8">
-            <h1 className="text-xl font-bold text-gray-800 mb-2">إنشاء كلمة مرور جديدة</h1>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">{t("auth.createNewPassword")}</h1>
             <p className="text-gray-500 text-sm">
-              أدخل كلمة المرور الجديدة لحسابك
+              {t("auth.enterNewPassword")}
             </p>
             <p className="text-gray-700 font-medium mt-2 break-all">{email}</p>
           </div>
@@ -113,10 +114,10 @@ export default function ResetPasswordClient() {
             {/* كلمة المرور الجديدة */}
             <div className="mb-5">
               <label className="block text-gray-700 font-medium mb-2">
-                كلمة المرور الجديدة <span className="text-red-500">*</span>
+                {t("auth.newPassword")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaLock className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.new_password}
@@ -124,16 +125,16 @@ export default function ResetPasswordClient() {
                     setFormData({ ...formData, new_password: e.target.value });
                     if (errors.new_password) setErrors({ ...errors, new_password: undefined });
                   }}
-                  placeholder="•••••••• (6 أحرف على الأقل)"
+                  placeholder={t("auth.newPasswordPlaceholder")}
                   disabled={isLoading}
-                  className={`w-full px-4 text-sm py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 text-sm py-2 ps-10 pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.new_password ? "border-red-500" : "border-gray-300"
                   } ${isLoading ? "opacity-50" : ""}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -146,10 +147,10 @@ export default function ResetPasswordClient() {
             {/* تأكيد كلمة المرور */}
             <div className="mb-6">
               <label className="block text-gray-700 font-medium mb-2">
-                تأكيد كلمة المرور <span className="text-red-500">*</span>
+                {t("auth.confirmPassword")} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaLock className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   value={formData.new_password_confirmation}
@@ -157,16 +158,16 @@ export default function ResetPasswordClient() {
                     setFormData({ ...formData, new_password_confirmation: e.target.value });
                     if (errors.new_password_confirmation) setErrors({ ...errors, new_password_confirmation: undefined });
                   }}
-                  placeholder="••••••••"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
                   disabled={isLoading}
-                  className={`w-full px-4 py-2 text-sm pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 py-2 text-sm ps-10 pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.new_password_confirmation ? "border-red-500" : "border-gray-300"
                   } ${isLoading ? "opacity-50" : ""}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -179,20 +180,20 @@ export default function ResetPasswordClient() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#e06a00] transition disabled:opacity-50"
+              className="w-full py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50"
             >
-              {isLoading ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
+              {isLoading ? t("auth.resetting") : t("auth.resetPassword")}
             </button>
 
             <div className="text-center mt-6 pt-4 border-t">
               <p className="text-gray-600 text-sm">
-                تذكرت كلمة المرور؟{" "}
+                {t("auth.rememberPassword")}{" "}
                 <button
                   type="button"
                   onClick={() => router.push("/auth/login")}
-                  className="text-[#FF7700] font-medium hover:underline"
+                  className="text-[#E60076] font-medium hover:underline"
                 >
-                  تسجيل الدخول
+                  {t("auth.login")}
                 </button>
               </p>
             </div>

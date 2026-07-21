@@ -34,37 +34,37 @@ export default function ServicesSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await fetch('https://alsas.admin.t-carts.com/api/contact-us');
-        
-        
-        if (!response.ok) {
-          throw new Error('فشل في جلب البيانات');
-        }
-        
-        const result = await response.json();
-        
-        if (result.result && result.data) {
-          // تصفية الخدمات النشطة فقط وترتيبها حسب sort_order
-          const activeServices = result.data.contact_cards
-            .filter((item: ServiceItem) => item.is_active)
-            .sort((a: ServiceItem, b: ServiceItem) => a.sort_order - b.sort_order);
-          setServices(activeServices);
-        } else {
-          throw new Error(result.message || 'حدث خطأ في جلب البيانات');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'حدث خطأ غير معروف');
-        console.error('Error fetching services:', err);
-      } finally {
-        setLoading(false);
+ useEffect(() => {
+  const fetchServices = async () => {
+    try {
+      const response = await fetch('https://beauty.admin.t-carts.com/api/contact-cards');
+      
+      if (!response.ok) {
+        // يمكنك التعامل مع الخطأ هنا
+        throw new Error('فشل في جلب البيانات');
       }
-    };
+      
+      const result = await response.json();
+      
+      if (result.result && result.data) {
+        // البيانات موجودة مباشرة في result.data
+        const activeServices = result.data
+          .filter((item: ServiceItem) => item.is_active)
+          .sort((a: ServiceItem, b: ServiceItem) => a.sort_order - b.sort_order);
+        setServices(activeServices);
+      } else {
+        throw new Error(result.message || 'حدث خطأ في جلب البيانات');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير معروف');
+      console.error('Error fetching services:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchServices();
-  }, []);
+  fetchServices();
+}, []);
 
   // دالة للحصول على الأيقونة المناسبة
   const getIcon = (type: string): React.ElementType => {
@@ -85,28 +85,20 @@ export default function ServicesSection() {
   // عرض حالة الخطأ
   if (error) {
     return (
-      <div className="bg-[#102637] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm mb-5">
-        <div className="text-center py-8 text-red-500">
-          <p>عذراً، حدث خطأ في تحميل البيانات</p>
-          <p className="text-sm text-gray-400 mt-2">{error}</p>
-        </div>
-      </div>
+      <></>
     );
   }
 
   // عرض الرسالة في حال عدم وجود بيانات
   if (services.length === 0) {
     return (
-      <div className="bg-[#102637] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm mb-5">
-        <div className="text-center py-8 text-gray-400">
-          <p>لا توجد خدمات متاحة حالياً</p>
-        </div>
-      </div>
+     <></>
     );
   }
 
   return (
-    <div className="bg-[#102637] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm mb-5">
+    <div>
+      { services.length > 0 &&( <div className="bg-[#102637] rounded-2xl border border-gray-100 p-6 md:p-8 shadow-sm mb-5">
       <div className="grid grid-cols-1 gap-3 md:gap-6">
         {services.map((service) => {
           const Icon = getIcon(service.type);
@@ -139,6 +131,8 @@ export default function ServicesSection() {
       </div>
       <div className="w-full h-[1px] mt-7 bg-white/40"></div>
       <SocialLinks />
+    </div>)}
     </div>
+   
   );
 }

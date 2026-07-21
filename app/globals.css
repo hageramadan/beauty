@@ -24,7 +24,8 @@ label{
 }
           
 /* app/search/page.module.css */
-.search-grid {
+.search-grid,
+.wishlist-grid  {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
@@ -33,7 +34,8 @@ label{
 
 /* للشاشات المتوسطة (تابلت) */
 @media (max-width: 1024px) {
-  .search-grid {
+  .search-grid,
+.wishlist-grid  {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
@@ -41,7 +43,8 @@ label{
 
 /* للشاشات الصغيرة (موبايل) */
 @media (max-width: 768px) {
-  .search-grid {
+  .search-grid,
+.wishlist-grid  {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
@@ -49,7 +52,8 @@ label{
 
 /* للشاشات الصغيرة جداً */
 @media (max-width: 480px) {
-  .search-grid {
+  .search-grid,
+.wishlist-grid  {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
@@ -265,7 +269,7 @@ label{
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #FF7700;
+  background: #E60076;
   border-radius: 10px;
 }
 

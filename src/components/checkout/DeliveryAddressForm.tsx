@@ -12,6 +12,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Address } from "@/types/address";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getHeaders } from "@/services/api";
 
 interface SavedAddress {
   id: number;
@@ -75,6 +77,7 @@ export default function DeliveryAddressForm({
   onCitySelected,
   isGuest = false,
 }: DeliveryAddressFormProps) {
+  const { t } = useTranslation();
   const [useSavedAddress, setUseSavedAddress] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<number | null>(null);
@@ -89,20 +92,20 @@ export default function DeliveryAddressForm({
   const [isLoadingGovernorates, setIsLoadingGovernorates] = useState(true);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   
-  // ✅ منع التكرار
+  //  منع التكرار
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
   const hasFetchedAddressesRef = useRef(false);
   
-  const API_URL = 'https://alsas.admin.t-carts.com/api';
+  const API_URL = 'https://beauty.admin.t-carts.com/api';
 
   const getFieldValue = (value: string): string => {
-    return value && value.trim() !== "" ? value.trim() : "1";
+    return value && value.trim() !== "" ? value.trim() : "";
   };
 
-  // ✅ جلب العناوين المحفوظة (للمستخدمين المسجلين فقط)
+  //  جلب العناوين المحفوظة (للمستخدمين المسجلين فقط)
   const fetchSavedAddresses = async () => {
-    // ✅ إذا كان المستخدم ضيف، لا تجلب العناوين
+    //  إذا كان المستخدم ضيف، لا تجلب العناوين
     if (isGuest) {
       console.log("🟢 Guest user - skipping saved addresses fetch");
       return;
@@ -113,17 +116,14 @@ export default function DeliveryAddressForm({
     setIsLoadingAddresses(true);
     try {
       const token = localStorage.getItem('auth_token');
-      // ✅ إذا لم يوجد توكن، لا تجلب
+      //  إذا لم يوجد توكن، لا تجلب
       if (!token) {
         console.log("🟢 No auth token - skipping saved addresses fetch");
         return;
       }
       
       const response = await fetch(`${API_URL}/addresses`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers:getHeaders(),
       });
       const result = await response.json();
       
@@ -157,10 +157,7 @@ export default function DeliveryAddressForm({
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_URL}/governates`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers: getHeaders(),
       });
       const result = await response.json();
       
@@ -195,10 +192,7 @@ export default function DeliveryAddressForm({
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${API_URL}/governates/${governorateId}/cities`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers: getHeaders()
       });
       const result = await response.json();
       
@@ -239,11 +233,11 @@ export default function DeliveryAddressForm({
 
     const fetchData = async () => {
       try {
-        // ✅ جلب المحافظات دائماً
+        //  جلب المحافظات دائماً
         await fetchGovernorates();
         hasFetchedRef.current = true;
         
-        // ✅ جلب العناوين فقط إذا كان المستخدم مسجل
+        //  جلب العناوين فقط إذا كان المستخدم مسجل
         if (!isGuest) {
           await fetchSavedAddresses();
         }
@@ -265,7 +259,7 @@ export default function DeliveryAddressForm({
     return city?.id || null;
   };
 
-  // ✅ عند اختيار المدينة (للضيف والمستخدم)
+  //  عند اختيار المدينة (للضيف والمستخدم)
   const handleCitySelect = (value: string | null) => {
     if (!value) {
       console.log("🟢 No city selected");
@@ -289,12 +283,12 @@ export default function DeliveryAddressForm({
     setSaveError(null);
     
     if (!addressData.governorate) {
-      setSaveError("الرجاء اختيار المحافظة");
+      setSaveError(t('checkout.selectGovernorate'));
       return null;
     }
     
     if (!addressData.city) {
-      setSaveError("الرجاء اختيار المدينة");
+      setSaveError(t('checkout.selectCity'));
       return null;
     }
     
@@ -304,7 +298,7 @@ export default function DeliveryAddressForm({
       const cityId = getCityIdByName(addressData.city);
       
       if (!cityId) {
-        setSaveError("لم يتم العثور على المدينة في النظام");
+        setSaveError(t('checkout.cityNotFound'));
         return null;
       }
       
@@ -329,10 +323,7 @@ export default function DeliveryAddressForm({
       
       const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers: getHeaders(),
         body: JSON.stringify(addressToSave),
       });
       
@@ -355,12 +346,12 @@ export default function DeliveryAddressForm({
         
         return result.data;
       } else {
-        setSaveError(result.message || "حدث خطأ في حفظ العنوان");
+        setSaveError(result.message || t('checkout.saveAddressError'));
         return null;
       }
     } catch (error) {
       console.error("❌ خطأ في حفظ العنوان:", error);
-      setSaveError("حدث خطأ في الاتصال بالخادم");
+      setSaveError(t('checkout.serverError'));
       return null;
     } finally {
       setIsSavingAddress(false);
@@ -369,12 +360,12 @@ export default function DeliveryAddressForm({
 
   const handleManualSave = async () => {
     if (useSavedAddress) {
-      setSaveError("لا يمكن حفظ عنوان مستخدم بالفعل");
+      setSaveError(t('checkout.cannotSaveUsedAddress'));
       return;
     }
     
     if (!addressData.governorate || !addressData.city) {
-      setSaveError("الرجاء اختيار المحافظة والمدينة أولاً");
+      setSaveError(t('checkout.selectCityFirst'));
       return;
     }
     
@@ -455,14 +446,14 @@ export default function DeliveryAddressForm({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-5">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">عنوان التوصيل</h2>
+      <h2 className="text-lg font-bold text-gray-800 mb-4">{t('checkout.deliveryAddress')}</h2>
       
       {!useSavedAddress && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المحافظة <span className="text-[#FF7700]">*</span>
+                {t('checkout.governorate')} <span className="text-[#E60076]">*</span>
               </label>
               <Select
                 value={addressData.governorate}
@@ -470,7 +461,7 @@ export default function DeliveryAddressForm({
                 disabled={isLoadingGovernorates}
               >
                 <SelectTrigger className="w-full bg-white rounded-[8px]">
-                  <SelectValue placeholder={isLoadingGovernorates ? "جاري التحميل..." : "اختر المحافظة"} />
+                  <SelectValue placeholder={isLoadingGovernorates ? t('checkout.loading') : t('checkout.selectGovernorate')} />
                 </SelectTrigger>
                 <SelectContent>
                   {getGovernoratesList().map((gov) => (
@@ -482,7 +473,7 @@ export default function DeliveryAddressForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المدينة <span className="text-[#FF7700]">*</span>
+                {t('checkout.city')} <span className="text-[#E60076]">*</span>
               </label>
               <Select
                 value={addressData.city}
@@ -493,21 +484,21 @@ export default function DeliveryAddressForm({
                   <SelectValue 
                     placeholder={
                       !addressData.governorate 
-                        ? "اختر المحافظة أولاً" 
+                        ? t('checkout.selectCityFirst')
                         : isLoadingCities 
-                        ? "جاري تحميل المدن..." 
-                        : "اختر المدينة"
+                        ? t('checkout.loading')
+                        : t('checkout.selectCity')
                     } 
                   />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoadingCities ? (
                     <div className="p-4 text-center text-gray-500">
-                      جاري تحميل المدن...
+                      {t('checkout.loading')}
                     </div>
                   ) : getCitiesList().length === 0 ? (
                     <div className="p-4 text-center text-gray-500">
-                      لا توجد مدن متاحة
+                      {t('checkout.noCities')}
                     </div>
                   ) : (
                     getCitiesList().map((city) => (
@@ -519,15 +510,15 @@ export default function DeliveryAddressForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">اسم الشارع</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.streetName')}</label>
               <div className="relative">
-                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MapPin className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={addressData.street}
                   onChange={(e) => updateAddress("street", e.target.value)}
-                  placeholder="مثال: شارع النيل"
-                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
+                  placeholder={t('checkout.streetPlaceholder')}
+                  className="w-full ps-10 p-3 border border-gray-200 rounded-[8px] focus:border-black focus:outline-none"
                 />
               </div>
             </div>
@@ -535,73 +526,59 @@ export default function DeliveryAddressForm({
 
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">رقم الشقة</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.apartment')}</label>
               <div className="relative">
-                <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Building className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={addressData.apartmentNo}
                   onChange={(e) => updateAddress("apartmentNo", e.target.value)}
-                  placeholder="رقم الشقة"
-                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
+                  placeholder={t('checkout.apartmentPlaceholder')}
+                  className="w-full ps-10 p-3 border border-gray-200 rounded-[8px] focus:border-black focus:outline-none"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">رقم الدور</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('checkout.floor')}</label>
               <div className="relative">
-                <Home className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Home className="absolute start-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   value={addressData.floorNo}
                   onChange={(e) => updateAddress("floorNo", e.target.value)}
-                  placeholder="رقم الدور"
-                  className="w-full pr-10 p-3 border border-gray-200  rounded-[8px]  focus:border-black focus:outline-none"
+                  placeholder={t('checkout.floorPlaceholder')}
+                  className="w-full ps-10 p-3 border border-gray-200 rounded-[8px] focus:border-black focus:outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* ✅ زر الحفظ يظهر فقط للمستخدمين المسجلين */}
+          {/*  زر الحفظ يظهر فقط للمستخدمين المسجلين */}
           {!isGuest && !addressSaved && (
             <div className="pt-2 mt-3">
               <button
                 onClick={handleManualSave}
                 disabled={isSavingAddress || !addressData.governorate || !addressData.city}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3  text-white  rounded-[8px] bg-[#FF7700] hover:bg-[#ff8b26] transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white rounded-[8px] bg-[#E60076] hover:bg-[#f0278f] transition disabled:opacity-50"
               >
                 {isSavingAddress ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>جاري الحفظ...</span>
+                    <span>{t('checkout.saving')}</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    <span>حفظ العنوان</span>
+                    <span>{t('checkout.saveAddress')}</span>
                   </>
                 )}
               </button>
             </div>
           )}
 
-          {/* ✅ رسالة للضيف عند اختيار المدينة */}
-          {/* {isGuest && addressData.city && (
-            <div className="pt-2 mt-2">
-              <div className="p-3 bg-green-50  rounded-[8px]  border border-green-200">
-                <p className="text-sm font-medium text-green-800">
-                  ✅ تم اختيار المدينة: {addressData.city}
-                </p>
-                <p className="text-xs text-green-600 mt-1">
-                  تم تحديث رسوم التوصيل تلقائياً
-                </p>
-              </div>
-            </div>
-          )} */}
-
           {saveError && (
             <div className="pt-2 mt-2">
-              <div className="p-3  bg-blue-50   rounded-[8px]  border border-red-200">
+              <div className="p-3 bg-blue-50 rounded-[8px] border border-red-200">
                 <p className="text-sm font-medium text-red-800">{saveError}</p>
               </div>
             </div>
@@ -609,22 +586,22 @@ export default function DeliveryAddressForm({
 
           {!isGuest && addressSaved && (
             <div className="pt-2 mt-2">
-              <div className="p-3 bg-blue-50  rounded-[8px]  border border-blue-200">
-                <p className="text-sm font-medium text-blue-800">تم حفظ عنوانك بنجاح</p>
+              <div className="p-3 bg-blue-50 rounded-[8px] border border-blue-200">
+                <p className="text-sm font-medium text-blue-800">{t('checkout.addressSaved')}</p>
               </div>
             </div>
           )}
         </>
       )}
 
-      {/* ✅ العناوين المحفوظة تظهر فقط للمستخدمين المسجلين */}
+      {/*  العناوين المحفوظة تظهر فقط للمستخدمين المسجلين */}
       {!isGuest && savedAddresses.length > 0 && (
         <>
           <div className="border-t border-gray-200 my-4 relative">
-            <span className="absolute bottom-[-10px] left-[50%] bg-white px-2">أو</span>
+            <span className="absolute bottom-[-10px] left-[50%] bg-white px-2">{t('checkout.or')}</span>
           </div>
           
-          <div className="mb-5 p-4 bg-gray-50  rounded-[8px] ">
+          <div className="mb-5 p-4 bg-gray-50 rounded-[8px]">
             <div className="flex items-center gap-2 cursor-pointer mb-3">
               <Checkbox
                 id="useSavedAddress"
@@ -640,12 +617,12 @@ export default function DeliveryAddressForm({
                 }}
               />
               <Label htmlFor="useSavedAddress" className="text-sm font-medium text-gray-700 cursor-pointer">
-                اختر من العناوين المحفوظة
+                {t('checkout.useSavedAddress')}
               </Label>
             </div>
 
             {useSavedAddress && (
-              <div className="mt-3 space-y-3 pr-2">
+              <div className="mt-3 space-y-3 ps-2">
                 {isLoadingAddresses ? (
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
@@ -653,25 +630,25 @@ export default function DeliveryAddressForm({
                 ) : (
                   <>
                     {selectedAddressDetails ? (
-                      <div className="p-4 bg-white  rounded-[8px]  border-2 border-[#FF7700] relative">
+                      <div className="p-4 bg-white rounded-[8px] border-2 border-[#E60076] relative">
                         <button
                           onClick={clearSelectedAddress}
                           className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition"
-                          title="إلغاء الاختيار"
+                          title={t('checkout.clearSelection')}
                         >
                           <X className="w-5 h-5 text-gray-600" />
                         </button>
-                        <div className="pr-8">
+                        <div className="ps-8">
                           <p className="font-medium text-gray-800">{selectedAddressDetails.street}</p>
                           <p className="text-sm text-gray-500 mt-1">
-                            {selectedAddressDetails.building && `مبنى ${selectedAddressDetails.building} `}
-                            {selectedAddressDetails.floor && `دور ${selectedAddressDetails.floor} `}
-                            {selectedAddressDetails.apartment && `شقة ${selectedAddressDetails.apartment}`}
+                            {selectedAddressDetails.building && `${t('checkout.building')} ${selectedAddressDetails.building} `}
+                            {selectedAddressDetails.floor && `${t('checkout.floor')} ${selectedAddressDetails.floor} `}
+                            {selectedAddressDetails.apartment && `${t('checkout.apartment')} ${selectedAddressDetails.apartment}`}
                           </p>
                           <p className="text-sm text-gray-500">{selectedAddressDetails.city}، {selectedAddressDetails.governorate}</p>
                           <div className="mt-2">
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                              ✓ تم الاختيار
+                              ✓ {t('checkout.selected')}
                             </span>
                           </div>
                         </div>
@@ -680,9 +657,9 @@ export default function DeliveryAddressForm({
                       savedAddresses.map((address) => (
                         <label
                           key={address.id}
-                          className={`flex items-start gap-3 p-3  rounded-[8px]  border cursor-pointer transition-all ${
+                          className={`flex items-start gap-3 p-3 rounded-[8px] border cursor-pointer transition-all ${
                             selectedSavedAddressId === address.id
-                              ? "border-[#FF7700]  bg-orange-50 "
+                              ? "border-[#E60076] bg-pink-50"
                               : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectSavedAddress(address.id)}
@@ -692,14 +669,14 @@ export default function DeliveryAddressForm({
                             name="savedAddress"
                             checked={selectedSavedAddressId === address.id}
                             onChange={() => handleSelectSavedAddress(address.id)}
-                            className="mt-0.5 w-4 h-4 text-[#FF7700]"
+                            className="mt-0.5 w-4 h-4 text-[#E60076]"
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-800">{address.street}</p>
                             <p className="text-sm text-gray-500 mt-1">
-                              {address.building && `مبنى ${address.building} `}
-                              {address.floor && `دور ${address.floor} `}
-                              {address.apartment && `شقة ${address.apartment}`}
+                              {address.building && `${t('checkout.building')} ${address.building} `}
+                              {address.floor && `${t('checkout.floor')} ${address.floor} `}
+                              {address.apartment && `${t('checkout.apartment')} ${address.apartment}`}
                             </p>
                             <p className="text-sm text-gray-500">{address.city}، {address.governorate}</p>
                           </div>

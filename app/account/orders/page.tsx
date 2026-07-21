@@ -20,6 +20,8 @@ import { IoCopyOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useRouter } from 'next/navigation';
 import Pagination from '@/components/products/Pagination';
+import { getHeaders } from "@/services/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // ========== تعريف الأنواع ==========
 type OrderStatus = 
@@ -117,31 +119,139 @@ interface PaginationData {
 }
 
 // ========== إعدادات API ==========
-const API_URL = "https://alsas.admin.t-carts.com/api";
-
-const getToken = (): string | null => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
-  }
-  return null;
-};
-
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-};
+const API_URL = "https://beauty.admin.t-carts.com/api";
 
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
 
-// ✅ متغيرات لمنع التكرار على مستوى الدالة
+//  متغيرات لمنع التكرار على مستوى الدالة
 let isFetching = false;
 let lastFetchTime = 0;
 
+// ========== دوال التحويل ==========
+const mapStatusToEnglish = (statusLabel: string): OrderStatus => {
+  const statusMap: Record<string, OrderStatus> = {
+    ordered: "ordered",
+    processing: "processing",
+    ready_for_receive: "ready_for_receive",
+    delivering: "delivering",
+    delivered: "delivered",
+    not_delivered: "not_delivered",
+    cancelled: "cancelled",
+  };
+  return statusMap[statusLabel] || "ordered";
+};
+
+//  دالة تنسيق التاريخ - تدعم اللغة
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    // استخراج السنة والشهر واليوم فقط
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return dateString;
+  }
+};
+
+const cleanImageUrl = (url: string): string => {
+  if (!url) return PLACEHOLDER_IMAGE;
+  if (url.startsWith("/storage")) {
+    return `https://beauty.admin.t-carts.com${url}`;
+  }
+  return url;
+};
+
+// ========== دوال جديدة لجلب خصائص المنتج ==========
+
+// جلب الذاكرة
+const getMemory = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const memoryAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "الذاكرة"
+  );
+  return memoryAttr?.value || null;
+};
+
+// جلب الهارد ديسك
+const getStorage = (item: OrderItem): string | null => {
+  if (!item.variant?.attributes) return null;
+  const storageAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "هارد ديسك"
+  );
+  return storageAttr?.value || null;
+};
+
+// جلب اللون (مع دعم عرض اللون)
+const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
+  if (!item.variant?.attributes) return null;
+  const colorAttr = item.variant.attributes.find(
+    (attr) => attr.attribute_type.name === "لون"
+  );
+  if (!colorAttr) return null;
+  
+  return {
+    name: colorAttr.value,
+    hex: colorAttr.meta?.color || null,
+  };
+};
+
+// ========== تحويل بيانات الطلب بشكل آمن ==========
+const transformOrder = (apiOrder: any, locale: string = "ar-EG"): Order => {
+  //  التحقق من وجود البيانات الأساسية
+  if (!apiOrder || !apiOrder.id) {
+    console.warn("⚠️ Invalid order data:", apiOrder);
+    return {
+      id: 0,
+      orderNumber: "N/A",
+      date: "N/A",
+      status: "ordered" as OrderStatus,
+      status_label: "ordered",
+      payment_method: "N/A",
+      payment_status: "N/A",
+      delivery_method: "N/A",
+      subtotal: 0,
+      coupon_discount_amount: 0,
+      total_discount_amount: 0,
+      subtotal_after_discount: 0,
+      shipping_amount: 0,
+      tax_amount: 0,
+      total_amount: 0,
+      notes: null,
+      address: null,
+      items: [],
+      created_at: new Date().toISOString(),
+    };
+  }
+
+  const englishStatus = mapStatusToEnglish(apiOrder.status_label || "ordered");
+
+  return {
+    id: apiOrder.id,
+    orderNumber: apiOrder.order_number || `ORD-${apiOrder.id}`,
+    date: formatDate(apiOrder.created_at), //  تمرير اللغة
+    status: englishStatus,
+    status_label: apiOrder.status_label || "ordered",
+    payment_method: apiOrder.payment_method || "N/A",
+    payment_status: apiOrder.payment_status || "N/A",
+    delivery_method: apiOrder.delivery_method || "N/A",
+    subtotal: apiOrder.subtotal || 0,
+    coupon_discount_amount: apiOrder.coupon_discount_amount || 0,
+    total_discount_amount: apiOrder.total_discount_amount || 0,
+    subtotal_after_discount: apiOrder.subtotal_after_discount || 0,
+    shipping_amount: apiOrder.shipping_amount || 0,
+    tax_amount: apiOrder.tax_amount || 0,
+    total_amount: apiOrder.total_amount || 0,
+    notes: apiOrder.notes || null,
+    address: apiOrder.address || null,
+    items: apiOrder.items || [],
+    created_at: apiOrder.created_at || new Date().toISOString(),
+  };
+};
+
 // ========== دالة جلب الطلبات ==========
-const fetchOrders = async (page: number = 1, perPage: number = 10): Promise<{ orders: Order[], pagination: PaginationData }> => {
+const fetchOrders = async (page: number = 1, perPage: number = 10, locale: string = "ar-EG"): Promise<{ orders: Order[], pagination: PaginationData }> => {
   const now = Date.now();
   if (isFetching || (now - lastFetchTime < 300)) {
     console.log("⏳ Skipping duplicate fetch request");
@@ -174,10 +284,10 @@ const fetchOrders = async (page: number = 1, perPage: number = 10): Promise<{ or
     console.log(`📥 Response for page ${page}:`, data);
 
     if (data.result === true && data.data) {
-      // ✅ تحويل البيانات بشكل آمن
+      //  تحويل البيانات بشكل آمن مع تمرير اللغة
       const orders = data.data.orders.map((order: any) => {
         try {
-          return transformOrder(order);
+          return transformOrder(order, locale); //  تمرير اللغة
         } catch (error) {
           console.error(`❌ Error transforming order ${order.id}:`, error);
           return null;
@@ -186,7 +296,7 @@ const fetchOrders = async (page: number = 1, perPage: number = 10): Promise<{ or
       
       const pagination = data.data.pagination;
       
-      console.log(`✅ Loaded ${orders.length} orders for page ${page}`);
+      console.log(` Loaded ${orders.length} orders for page ${page}`);
       console.log(`📊 Pagination:`, pagination);
       
       return {
@@ -230,173 +340,49 @@ const fetchOrders = async (page: number = 1, perPage: number = 10): Promise<{ or
   }
 };
 
-// ========== دوال التحويل ==========
-const mapStatusToEnglish = (statusLabel: string): OrderStatus => {
-  const statusMap: Record<string, OrderStatus> = {
-    ordered: "ordered",
-    processing: "processing",
-    ready_for_receive: "ready_for_receive",
-    delivering: "delivering",
-    delivered: "delivered",
-    not_delivered: "not_delivered",
-    cancelled: "cancelled",
-  };
-  return statusMap[statusLabel] || "ordered";
-};
-
-const formatDate = (dateString: string): string => {
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ar-EG", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  } catch {
-    return dateString;
-  }
-};
-
-const cleanImageUrl = (url: string): string => {
-  if (!url) return PLACEHOLDER_IMAGE;
-  if (url.startsWith("/storage")) {
-    return `https://alsas.admin.t-carts.com${url}`;
-  }
-  return url;
-};
-
-// ========== دوال جديدة لجلب خصائص المنتج ==========
-
-// جلب الذاكرة
-const getMemory = (item: OrderItem): string | null => {
-  if (!item.variant?.attributes) return null;
-  const memoryAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "الذاكرة"
-  );
-  return memoryAttr?.value || null;
-};
-
-// جلب الهارد ديسك
-const getStorage = (item: OrderItem): string | null => {
-  if (!item.variant?.attributes) return null;
-  const storageAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "هارد ديسك"
-  );
-  return storageAttr?.value || null;
-};
-
-// جلب اللون (مع دعم عرض اللون)
-const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
-  if (!item.variant?.attributes) return null;
-  const colorAttr = item.variant.attributes.find(
-    (attr) => attr.attribute_type.name === "لون"
-  );
-  if (!colorAttr) return null;
-  
-  return {
-    name: colorAttr.value,
-    hex: colorAttr.meta?.color || null,
-  };
-};
-
-// ========== تحويل بيانات الطلب بشكل آمن ==========
-const transformOrder = (apiOrder: any): Order => {
-  // ✅ التحقق من وجود البيانات الأساسية
-  if (!apiOrder || !apiOrder.id) {
-    console.warn("⚠️ Invalid order data:", apiOrder);
-    return {
-      id: 0,
-      orderNumber: "N/A",
-      date: "N/A",
-      status: "ordered" as OrderStatus,
-      status_label: "ordered",
-      payment_method: "N/A",
-      payment_status: "N/A",
-      delivery_method: "N/A",
-      subtotal: 0,
-      coupon_discount_amount: 0,
-      total_discount_amount: 0,
-      subtotal_after_discount: 0,
-      shipping_amount: 0,
-      tax_amount: 0,
-      total_amount: 0,
-      notes: null,
-      address: null,
-      items: [],
-      created_at: new Date().toISOString(),
-    };
-  }
-
-  const englishStatus = mapStatusToEnglish(apiOrder.status_label || "ordered");
-
-  return {
-    id: apiOrder.id,
-    orderNumber: apiOrder.order_number || `ORD-${apiOrder.id}`,
-    date: formatDate(apiOrder.created_at),
-    status: englishStatus,
-    status_label: apiOrder.status_label || "ordered",
-    payment_method: apiOrder.payment_method || "N/A",
-    payment_status: apiOrder.payment_status || "N/A",
-    delivery_method: apiOrder.delivery_method || "N/A",
-    subtotal: apiOrder.subtotal || 0,
-    coupon_discount_amount: apiOrder.coupon_discount_amount || 0,
-    total_discount_amount: apiOrder.total_discount_amount || 0,
-    subtotal_after_discount: apiOrder.subtotal_after_discount || 0,
-    shipping_amount: apiOrder.shipping_amount || 0,
-    tax_amount: apiOrder.tax_amount || 0,
-    total_amount: apiOrder.total_amount || 0,
-    notes: apiOrder.notes || null,
-    address: apiOrder.address || null,
-    items: apiOrder.items || [],
-    created_at: apiOrder.created_at || new Date().toISOString(),
-  };
-};
-
 // ========== تكوين حالات الطلب ==========
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; color: string; icon: any }
-> = {
+const getStatusConfig = (t: any) => ({
   ordered: { 
-    label: "تم الطلب", 
+    label: t('orders.statusOrdered'), 
     color: "status-ordered", 
     icon: Clock 
   },
   processing: { 
-    label: "قيد المعالجة", 
+    label: t('orders.statusProcessing'), 
     color: "status-processing", 
     icon: Box 
   },
   ready_for_receive: { 
-    label: "جاهز للاستلام", 
+    label: t('orders.statusReady'), 
     color: "status-ready", 
     icon: PackageCheck 
   },
   delivering: { 
-    label: "جارٍ التوصيل", 
+    label: t('orders.statusDelivering'), 
     color: "status-delivering", 
     icon: Truck 
   },
   delivered: { 
-    label: "تم التسليم", 
+    label: t('orders.statusDelivered'), 
     color: "status-delivered", 
     icon: CheckCircle 
   },
   not_delivered: { 
-    label: "لم يتم التسليم", 
+    label: t('orders.statusNotDelivered'), 
     color: "status-not-delivered", 
     icon: AlertCircle 
   },
   cancelled: { 
-    label: "ملغي", 
+    label: t('orders.statusCancelled'), 
     color: "status-cancelled", 
     icon: XCircle 
   },
-};
+});
 
 type FilterStatus = "all" | OrderStatus;
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
@@ -417,9 +403,12 @@ export default function OrdersPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const itemsPerPage = 10;
 
+  // ========== تكوين الحالات مع الترجمة ==========
+  const statusConfig = getStatusConfig(t);
+
   // ========== جلب الطلبات ==========
   const loadOrders = useCallback(async (page: number = 1) => {
-    // ✅ إلغاء الطلب السابق
+    //  إلغاء الطلب السابق
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -428,7 +417,9 @@ export default function OrdersPage() {
     
     setLoading(true);
     try {
-      const result = await fetchOrders(page, itemsPerPage);
+      //  تحديد اللغة بناءً على الترجمة الحالية
+      const locale = t('locale') || 'ar-EG';
+      const result = await fetchOrders(page, itemsPerPage, locale);
       
       if (!abortControllerRef.current?.signal.aborted) {
         console.log(`🟢 Setting orders for page ${page}:`, result.orders.length);
@@ -441,14 +432,14 @@ export default function OrdersPage() {
     } catch (error) {
       if (!abortControllerRef.current?.signal.aborted) {
         console.error("❌ Error loading orders:", error);
-        toast.error("حدث خطأ في تحميل الطلبات");
+        toast.error(t('orders.loadError'));
       }
     } finally {
       if (!abortControllerRef.current?.signal.aborted) {
         setLoading(false);
       }
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, t]);
 
   // ========== تحميل الصفحة الأولى ==========
   useEffect(() => {
@@ -466,7 +457,7 @@ export default function OrdersPage() {
 
   // ========== تغيير الصفحة ==========
   const handlePageChange = useCallback((newPage: number) => {
-    console.log(`🔄 Changing to page ${newPage}`);
+
     if (newPage >= 1 && newPage <= pagination.last_page) {
       loadOrders(newPage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -475,14 +466,10 @@ export default function OrdersPage() {
 
   // ========== فلترة الطلبات ==========
   const filteredOrders = useMemo(() => {
-    console.log(`🔄 Filtering orders with status: ${filterStatus}`);
-    console.log(`📦 Current orders count: ${orders.length}`);
-    
     if (filterStatus === "all") {
       return orders;
     }
     const filtered = orders.filter((order) => order.status === filterStatus);
-    console.log(`✅ Filtered to ${filtered.length} orders`);
     return filtered;
   }, [orders, filterStatus]);
 
@@ -492,22 +479,22 @@ export default function OrdersPage() {
 
   const copyOrderNumber = useCallback((orderNumber: string) => {
     navigator.clipboard.writeText(orderNumber);
-    toast.success("تم نسخ رقم الطلب");
-  }, []);
+    toast.success(t('orders.copySuccess'));
+  }, [t]);
 
   const goToOrderDetails = useCallback((orderId: number) => {
     router.push(`/account/orders/${orderId}`);
   }, [router]);
 
   const statusFilters: { value: FilterStatus; label: string }[] = [
-    { value: "all", label: "الكل" },
-    { value: "ordered", label: "تم الطلب" },
-    { value: "processing", label: "قيد المعالجة" },
-    { value: "ready_for_receive", label: "جاهز للاستلام" },
-    { value: "delivering", label: "جارٍ التوصيل" },
-    { value: "delivered", label: "تم التسليم" },
-    { value: "not_delivered", label: "لم يتم التسليم" },
-    { value: "cancelled", label: "ملغي" },
+    { value: "all", label: t('orders.filterAll') },
+    { value: "ordered", label: t('orders.statusOrdered') },
+    { value: "processing", label: t('orders.statusProcessing') },
+    { value: "ready_for_receive", label: t('orders.statusReady') },
+    { value: "delivering", label: t('orders.statusDelivering') },
+    { value: "delivered", label: t('orders.statusDelivered') },
+    { value: "not_delivered", label: t('orders.statusNotDelivered') },
+    { value: "cancelled", label: t('orders.statusCancelled') },
   ];
 
   if (loading) {
@@ -516,8 +503,8 @@ export default function OrdersPage() {
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
-              <p className="text-gray-500 mt-4">جاري تحميل الطلبات...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
+              {/* <p className="text-gray-500 mt-4">{t('orders.loading')}</p> */}
             </div>
           </div>
         </div>
@@ -530,11 +517,10 @@ export default function OrdersPage() {
       <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 md:py-6">
         {/* العنوان */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#FF7700]" />
+          <Package className="w-6 h-6 sm:w-7 sm:h-7 text-[#E60076]" />
           <h1 className="text-xl sm:text-xl font-bold text-gray-800">
-            طلباتي
+            {t('orders.title')}
           </h1>
-         
         </div>
 
         {/* فلتر الحالات */}
@@ -548,7 +534,7 @@ export default function OrdersPage() {
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
                 filterStatus === filter.value
-                  ? "bg-[#FF7700] text-white"
+                  ? "bg-[#E60076] text-white"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
             >
@@ -560,18 +546,26 @@ export default function OrdersPage() {
         {/* قائمة الطلبات */}
         <div className="space-y-3 sm:space-y-4">
           {loading ? (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
-      <p className="text-gray-500 mt-4">جاري تحميل الطلبات...</p>
-    </div>
-  </div>
-) : filteredOrders.length === 0 ? (
-            <div className="mt-8 md:mt-12 rounded-2xl p-8 sm:p-12 text-center">
-              <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-              <p className="text-gray-500 text-sm sm:text-base">
-                {orders.length === 0 && !loading ? "لا توجد طلبات حالياً" : "لا توجد طلبات في هذه الفئة"}
+            <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
+                <p className="text-gray-500 mt-4">{t('orders.loading')}</p>
+              </div>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="text-center rounded-2xl mt-5">
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-12 h-12 text-gray-400" />
+              </div>
+              <p className="text-gray-500 mb-6">
+                {orders.length === 0 && !loading ? t('orders.noOrders') : t('orders.noOrders')}
               </p>
+              <Link
+                href="/products"
+                className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#f0278f] transition-all duration-300 shadow-md hover:shadow-lg"
+              >
+                {t('orders.shopNow')}
+              </Link>
             </div>
           ) : (
             filteredOrders.map((order) => {
@@ -583,7 +577,7 @@ export default function OrdersPage() {
               return (
                 <div
                   key={order.id}
-                  className="bg-white  rounded-[8px]  sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                  className="bg-white rounded-[8px] sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
                 >
                   {/* رأس الطلب */}
                   <div
@@ -600,7 +594,7 @@ export default function OrdersPage() {
                             }}
                             className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100] cursor-pointer hover:opacity-70 transition"
                           >
-                            <h1 className="text-sm sm:text-base">رقم الطلب</h1>
+                            <h1 className="text-sm sm:text-base">{t('orders.orderNumber')}</h1>
                             <div className="flex gap-1 sm:gap-2 items-center">
                               <p className="font-bold text-gray-800 text-sm sm:text-base">
                                 <span>
@@ -610,7 +604,7 @@ export default function OrdersPage() {
                                 </span>
                               </p>
                               <IoCopyOutline
-                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#FF7700] transition"
+                                className="w-4 h-4 sm:w-5 sm:h-5 cursor-pointer hover:text-[#E60076] transition"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   copyOrderNumber(order.orderNumber);
@@ -633,12 +627,13 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
+                      {/*  التاريخ - سيتم عرضه حسب اللغة المحددة */}
                       <p className="text-sm sm:text-[18px] text-[#333333]">
                         {order.date}
                       </p>
 
                       <div className="flex gap-2 items-center text-sm sm:text-base">
-                        <p className="text-[#180100]">المنتجات</p>
+                        <p className="text-[#180100]">{t('orders.products')}</p>
                         <span className="text-gray-500">({itemsCount})</span>
                       </div>
                     </div>
@@ -646,8 +641,8 @@ export default function OrdersPage() {
 
                   {/* تفاصيل الطلب الموسعة */}
                   {isExpanded && order.items.length > 0 && (
-                    <div className=" p-4 sm:p-5 ">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-5 ">
+                    <div className="p-4 sm:p-5">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-5">
                         {order.items.map((item, idx) => {
                           const variantImage = item.variant?.variant_image 
                             ? cleanImageUrl(item.variant.variant_image) 
@@ -673,7 +668,7 @@ export default function OrdersPage() {
                                 href={`/account/orders/${order.id}`}
                                 className="flex-shrink-0"
                               >
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px] sm: rounded-[8px]  overflow-hidden hover:opacity-80 transition cursor-pointer relative">
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-[8px] overflow-hidden hover:opacity-80 transition cursor-pointer relative">
                                   <Image
                                     src={displayImage}
                                     alt={item.title}
@@ -695,7 +690,7 @@ export default function OrdersPage() {
                                       href={`/account/orders/${order.id}`}
                                       className="hover:underline"
                                     >
-                                      <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#FF7700] transition">
+                                      <p className="font-medium text-gray-800 text-sm sm:text-base cursor-pointer hover:text-[#E60076] transition">
                                         {item.title}
                                       </p>
                                     </Link>
@@ -705,7 +700,7 @@ export default function OrdersPage() {
                                       {/* عرض الذاكرة */}
                                       {memory && (
                                         <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
-                                          <span className="font-medium">الذاكرة:</span>
+                                          <span className="font-medium">{t('orders.memory')}:</span>
                                           <span>{memory}</span>
                                         </span>
                                       )}
@@ -713,7 +708,7 @@ export default function OrdersPage() {
                                       {/* عرض الهارد ديسك */}
                                       {storage && (
                                         <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
-                                          <span className="font-medium">هارد ديسك:</span>
+                                          <span className="font-medium">{t('orders.storage')}:</span>
                                           <span>{storage}</span>
                                         </span>
                                       )}
@@ -721,7 +716,7 @@ export default function OrdersPage() {
                                       {/* عرض اللون */}
                                       {color && (
                                         <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
-                                          <span className="font-medium">اللون:</span>
+                                          <span className="font-medium">{t('orders.color')}:</span>
                                           <span>{color.name}</span>
                                           {color.hex && (
                                             <span 
@@ -734,15 +729,15 @@ export default function OrdersPage() {
                                     </div>
                                     
                                     <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
-                                      <span>الكمية: x{item.quantity}</span>
+                                      <span>{t('orders.quantity')}: x{item.quantity}</span>
                                       <span>
-                                        السعر: EGP {item.unit_price.toFixed(2)}
+                                        {t('orders.price')}: $ {item.unit_price.toFixed(2)}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="text-left sm:text-right">
                                     <p className="font-semibold text-[#000000] text-sm sm:text-base">
-                                      EGP {item.total_price.toFixed(2)}
+                                      $ {item.total_price.toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -750,28 +745,26 @@ export default function OrdersPage() {
                             </div>
                           );
                         })}
-
-                        
                       </div>
                       <div className="pt-2 sm:pt-3 flex justify-between items-center">
-                          <Link
-                            href={`/account/orders/${order.id}`}
-                            className="text-[#FF7700] text-sm sm:text-base font-medium hover:underline"
-                          >
-                            عرض تفاصيل الطلب
-                          </Link>
-                          <div className="text-right">
-                            <p className="text-xs sm:text-sm text-gray-500">
-                              إجمالي الطلب
-                            </p>
-                            <p className="text-base sm:text-xl font-bold text-[#FF7700]">
-                              <span className="text-xs md:text-base font-bold text-[#FF7700]">
-                                EGP
-                              </span>
-                              {order.total_amount.toFixed(2)}
-                            </p>
-                          </div>
+                        <Link
+                          href={`/account/orders/${order.id}`}
+                          className="text-[#E60076] text-sm sm:text-base font-medium hover:underline"
+                        >
+                          {t('orders.viewDetails')}
+                        </Link>
+                        <div className="text-right">
+                          <p className="text-xs sm:text-sm text-gray-500">
+                            {t('orders.total')}
+                          </p>
+                          <p className="text-base sm:text-xl font-bold text-[#E60076]">
+                            <span className="text-xs md:text-base font-bold text-[#E60076]">
+                              $
+                            </span>
+                            {order.total_amount.toFixed(2)}
+                          </p>
                         </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -780,7 +773,7 @@ export default function OrdersPage() {
           )}
         </div>
 
-        {/* ✅ مكون Pagination */}
+        {/*  مكون Pagination */}
         {pagination.last_page > 1 && (
           <Pagination
             currentPage={pagination.current_page}
@@ -793,7 +786,7 @@ export default function OrdersPage() {
 
       <style jsx global>{`
         .status-ordered {
-         background-color: #f181173D; color: #f18117; 
+          background-color: #f181173D; color: #f18117; 
         }
         .status-processing {
           background-color: #ed89363d;

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getProductReviews, ReviewData } from "@/services/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CustomerReviewsProps {
   productId: number;
@@ -50,19 +51,23 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 // مكون البطاقة الواحدة
-const ReviewCard = ({ review }: { review: ReviewData }) => {
-  // تنسيق التاريخ
-  const formatDate = (dateString: string) => {
+const ReviewCard = ({ review, language }: { review: ReviewData; language: string }) => {
+  // تنسيق التاريخ حسب اللغة
+const formatDate = (dateString: string): string => {
+  try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+    // استخراج السنة والشهر واليوم فقط
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return dateString;
+  }
+};
 
   return (
-    <div className="bg-white  rounded-[8px]  p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white rounded-[8px] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
       {/* معلومات المستخدم والتقييم */}
       <div className="flex items-center justify-between mb-4">
         <div className="gap-3">
@@ -107,6 +112,9 @@ const ReviewCard = ({ review }: { review: ReviewData }) => {
 };
 
 export function CustomerReviews({ productId }: CustomerReviewsProps) {
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
+  
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +123,64 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
   const [averageRating, setAverageRating] = useState(0);
   const [sortBy, setSortBy] = useState<"الأحدث" | "الأقدم" | "أعلى تقييم" | "أقل تقييم">("الأحدث");
   const reviewsPerPage = 5;
+
+  // الحصول على الترجمات حسب اللغة
+  const getTranslations = (lang: string) => {
+    if (lang === 'en') {
+      return {
+        productReviews: "Product Reviews",
+        reviews: "reviews",
+        addReview: "Add Review",
+        noReviews: "No reviews for this product yet",
+        beFirst: "Be the first to rate this product",
+        loadingReviews: "Loading reviews...",
+        sortBy: "Sort by",
+        newest: "Newest",
+        oldest: "Oldest",
+        highest: "Highest Rated",
+        lowest: "Lowest Rated",
+        review: "Review",
+        verified: "Verified",
+      };
+    }
+    return {
+      productReviews: "تقييمات المنتج",
+      reviews: "تقييم",
+      addReview: "أضف تقييمًا",
+      noReviews: "لا توجد تقييمات لهذا المنتج بعد",
+      beFirst: "كن أول من يقيم المنتج",
+      loadingReviews: "جاري تحميل التقييمات...",
+      sortBy: "ترتيب حسب",
+      newest: "الأحدث",
+      oldest: "الأقدم",
+      highest: "أعلى تقييم",
+      lowest: "أقل تقييم",
+      review: "تقييم",
+      verified: "موثق",
+    };
+  };
+
+  const t = getTranslations(language);
+
+  // خيارات الترتيب حسب اللغة
+  const getSortOptions = (lang: string) => {
+    if (lang === 'en') {
+      return [
+        { value: "الأحدث", label: t.newest },
+        { value: "الأقدم", label: t.oldest },
+        { value: "أعلى تقييم", label: t.highest },
+        { value: "أقل تقييم", label: t.lowest },
+      ];
+    }
+    return [
+      { value: "الأحدث", label: t.newest },
+      { value: "الأقدم", label: t.oldest },
+      { value: "أعلى تقييم", label: t.highest },
+      { value: "أقل تقييم", label: t.lowest },
+    ];
+  };
+
+  const sortOptions = getSortOptions(language);
 
   // جلب التقييمات من الـ API
   const fetchReviews = async () => {
@@ -144,7 +210,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSortChange = (value: string|null) => {
+  const handleSortChange = (value: string | null) => {
     setSortBy(value as typeof sortBy);
     setCurrentPage(1);
   };
@@ -156,19 +222,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
     return (count / totalReviews) * 100;
   };
 
-  const fiveStarPercentage = getRatingPercentage(5);
-  const fourStarPercentage = getRatingPercentage(4);
-  const threeStarPercentage = getRatingPercentage(3);
-  const twoStarPercentage = getRatingPercentage(2);
-  const oneStarPercentage = getRatingPercentage(1);
-
-  // خيارات الترتيب
-  const sortOptions = [
-    { value: "الأحدث", label: "الأحدث" },
-    { value: "الأقدم", label: "الأقدم" },
-    { value: "أعلى تقييم", label: "أعلى تقييم" },
-    { value: "أقل تقييم", label: "أقل تقييم" },
-  ];
+ 
 
   if (isLoading && reviews.length === 0) {
     return (
@@ -176,8 +230,8 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
         <div className="container-custom">
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500">جاري تحميل التقييمات...</p>
+              <div className="w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">{t.loadingReviews}</p>
             </div>
           </div>
         </div>
@@ -192,58 +246,57 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex gap-1 items-center">
             <h1 className="text-xl font-bold text-[#181818]">
-              تقييمات المنتج
+              {t.productReviews}
             </h1>
             <div className="text-sm font-bold text-[#3A4980]">
-              ({totalReviews} تقييم)
+              ({totalReviews} {t.reviews})
             </div>
           </div>
           
           <div className="flex gap-3 items-center">
             {/* خيارات الترتيب */}
-            {totalReviews>0&&( <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#FF7700] focus:ring-offset-0">
-                <SelectValue placeholder="ترتيب حسب" />
-              </SelectTrigger>
-              <SelectContent className="bg-white  rounded-[8px]  shadow-lg border-gray-100">
-                {sortOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    className="cursor-pointer hover: bg-blue-50  hover:text-[#FF7700] focus: bg-blue-50  focus:text-[#FF7700]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{option.label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>)}
-           
+            {totalReviews > 0 && (
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#E60076] focus:ring-offset-0">
+                  <SelectValue placeholder={t.sortBy} />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-[8px] shadow-lg border-gray-100">
+                  {sortOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="cursor-pointer hover:bg-blue-50 hover:text-[#E60076] focus:bg-blue-50 focus:text-[#E60076]"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{option.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-            <button className="bg-[#FF7700] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#3daae9] transition-all duration-300">
-              أضف تقييمًا
+            <button className="bg-[#E60076] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#E60076] transition-all duration-300">
+              {t.addReview}
             </button>
           </div>
         </div>
-
-     
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* قائمة التقييمات */}
           <div className="lg:col-span-2">
             {reviews.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50  rounded-[8px] ">
-                <p className="text-gray-500">لا توجد تقييمات لهذا المنتج بعد</p>
-                <button className="mt-4 bg-[#FF7700] text-white px-6 py-2 rounded-full text-sm">
-                  كن أول من يقيم المنتج
+              <div className="text-center py-12 bg-gray-50 rounded-[8px]">
+                <p className="text-gray-500">{t.noReviews}</p>
+                <button className="mt-4 bg-[#E60076] text-white px-6 py-2 rounded-full text-sm">
+                  {t.beFirst}
                 </button>
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
+                    <ReviewCard key={review.id} review={review} language={language} />
                   ))}
                 </div>
 
@@ -253,16 +306,20 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="p-2 rounded-[8px]  border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      className="p-2 rounded-[8px] border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      {isRTL ? (
+                        <ChevronRight className="w-5 h-5" />
+                      ) : (
+                        <ChevronLeft className="w-5 h-5" />
+                      )}
                     </button>
 
                     {[...Array(totalPages)].map((_, i) => (
                       <button
                         key={i}
                         onClick={() => handlePageChange(i + 1)}
-                        className={`w-8 h-8 rounded-[8px]  transition ${
+                        className={`w-8 h-8 rounded-[8px] transition ${
                           currentPage === i + 1
                             ? "bg-black text-white"
                             : "border border-gray-200 hover:bg-gray-50"
@@ -275,9 +332,13 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="p-2 rounded-[8px]  border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                      className="p-2 rounded-[8px] border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      {isRTL ? (
+                        <ChevronLeft className="w-5 h-5" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 )}

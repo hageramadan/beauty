@@ -15,9 +15,11 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { YouMayAlsoLike } from '@/components/home/YouMayAlsoLike';
 import { CustomerReviews } from '@/components/products/CustomerReviews';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // تحويل بيانات الـ API إلى الشكل المطلوب للـ ProductDetails
-const transformProductData = (apiProduct: ProductData) => {
+const transformProductData = (apiProduct: ProductData, t: any) => {
   const colors = extractColorsFromProduct(apiProduct);
   const sizes = extractSizesFromProduct(apiProduct);
   const finalPrice = getFinalPrice(apiProduct);
@@ -28,7 +30,7 @@ const transformProductData = (apiProduct: ProductData) => {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://alsas.admin.t-carts.com${url}`;
+      return `https://beauty.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -36,11 +38,11 @@ const transformProductData = (apiProduct: ProductData) => {
   // معالجة الصور
   const processedImages = apiProduct.images?.map(cleanImageUrl) || ["/images/placeholder.jpg"];
   
-  // إذا لم يكن هناك ألوان، أضف ألوان افتراضية
+  // إذا لم يكن هناك ألوان، أضف ألوان افتراضية حسب اللغة
   const finalColors = colors.length > 0 ? colors : [
-    { name: "أحمر", code: "#FF7700" },
-    { name: "أزرق", code: "#252B42" },
-    { name: "أخضر", code: "#23856D" },
+    { name: t("product.defaultColors.red"), code: "#E60076" },
+    { name: t("product.defaultColors.blue"), code: "#252B42" },
+    { name: t("product.defaultColors.green"), code: "#23856D" },
   ];
   
   // إذا لم يكن هناك مقاسات، أضف مقاسات افتراضية
@@ -53,8 +55,8 @@ const transformProductData = (apiProduct: ProductData) => {
     price: finalPrice,
     originalPrice: originalPrice || undefined,
     discount: discountPercentage || undefined,
-    brand: apiProduct.brand?.name || apiProduct.category?.name || "ماركة",
-    category: apiProduct.category?.name || "منتج",
+    brand: apiProduct.brand?.name || apiProduct.category?.name || t("product.defaultBrand"),
+    category: apiProduct.category?.name || t("product.defaultCategory"),
     images: processedImages,
     colors: finalColors,
     sizes: finalSizes,
@@ -62,14 +64,17 @@ const transformProductData = (apiProduct: ProductData) => {
     reviewsCount: apiProduct.total_reviews || 0,
     sku: `SKU-${apiProduct.id}`,
     availability: apiProduct.is_active && (apiProduct.quantity > 0 || apiProduct.has_variants),
-    // ✅ إضافة variants و has_variants (الأهم)
+    //  إضافة variants و has_variants (الأهم)
     variants: apiProduct.variants || [],
     has_variants: apiProduct.has_variants || false,
-     video: apiProduct.video || null,
+    video: apiProduct.video || null,
   };
 };
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useTranslation(); //  استخدام hook الترجمة
+  const { language } = useLanguage(); //  الحصول على اللغة
+  
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,26 +99,26 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         const apiProduct = await getProductById(productId);
         
         if (apiProduct) {
-          const transformedProduct = transformProductData(apiProduct);
+          const transformedProduct = transformProductData(apiProduct, t);
           setProduct(transformedProduct);
         } else {
-          setError("المنتج غير موجود");
+          setError(t("product.notFound"));
         }
       } catch (err) {
         console.error("Error fetching product:", err);
-        setError("حدث خطأ أثناء تحميل المنتج");
+        setError(t("product.error"));
       } finally {
         setLoading(false);
       }
     };
     
     fetchProduct();
-  }, [productId]);
+  }, [productId, t]);
 
   if (loading) {
     return (
       <div className="min-h-screen page-with-padding flex items-center justify-center">
-        <LoadingSpinner size="lg" text="جاري تحميل المنتج..." />
+        <LoadingSpinner size="lg" text='' />
       </div>
     );
   }
@@ -121,12 +126,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   if (error || !product) {
     return (
       <div className="min-h-screen page-with-padding flex flex-col items-center justify-center">
-        <p className="text-red-500 text-xl mb-4">{error || "المنتج غير موجود"}</p>
+        {/* <p className="text-red-500 text-xl mb-4">{error || t("product.notFound")}</p> */}
         <button 
           onClick={() => window.location.href = '/'}
-          className="bg-[#FF7700] text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#E60076] hover:bg-[#f0278f] text-white px-6 py-2 rounded-[8px]"
         >
-          العودة إلى الرئيسية
+          {t("product.backToHome")}
         </button>
       </div>
     );

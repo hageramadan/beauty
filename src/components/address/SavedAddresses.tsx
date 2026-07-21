@@ -1,4 +1,3 @@
-// components/address/SavedAddresses.tsx
 "use client";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { CiEdit } from "react-icons/ci";
@@ -7,50 +6,46 @@ import { FaRegTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { Address } from "@/types/address";
 import Pagination from '@/components/products/Pagination';
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SavedAddressesProps {
   addresses: Address[];
   onDelete: (id: number) => void;
   onEdit: (address: Address) => void;
-  itemsPerPage?: number; // ✅ عدد العناصر في كل صفحة (اختياري)
+  itemsPerPage?: number;
 }
 
 export default function SavedAddresses({
   addresses,
   onDelete,
   onEdit,
-  itemsPerPage = 5, // ✅ القيمة الافتراضية 5 عناصر في الصفحة
+  itemsPerPage = 5,
 }: SavedAddressesProps) {
+  const { t } = useTranslation();
   const [deleteConfirm, setDeleteConfirm] = useState<{
     show: boolean;
     id: number | null;
   }>({ show: false, id: null });
   
-  // ✅ حالة Pagination
   const [currentPage, setCurrentPage] = useState(1);
   
-  // ✅ إعادة تعيين الصفحة إلى 1 عندما يتغير عدد العناوين
   useEffect(() => {
     setCurrentPage(1);
   }, [addresses.length]);
 
-  // ✅ حساب عدد الصفحات
   const totalPages = useMemo(() => {
     return Math.ceil(addresses.length / itemsPerPage);
   }, [addresses.length, itemsPerPage]);
 
-  // ✅ الحصول على العناوين في الصفحة الحالية
   const currentAddresses = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return addresses.slice(startIndex, endIndex);
   }, [addresses, currentPage, itemsPerPage]);
 
-  // ✅ تغيير الصفحة
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      // ✅ التمرير إلى أعلى القائمة
       const element = document.getElementById('saved-addresses-container');
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -58,7 +53,6 @@ export default function SavedAddresses({
     }
   }, [totalPages]);
 
-  // دالة للحصول على الأيقونة المناسبة لنوع العنوان
   const getAddressIcon = (type: string) => {
     switch (type) {
       case 'home':
@@ -77,8 +71,6 @@ export default function SavedAddresses({
   const confirmDelete = () => {
     if (deleteConfirm.id) {
       onDelete(deleteConfirm.id);
-      // ✅ إذا كان العنصر المحذوف هو آخر عنصر في الصفحة الحالية
-      // وكانت الصفحة الحالية أكبر من 1، ننتقل للصفحة السابقة
       const remainingItems = addresses.length - 1;
       const newTotalPages = Math.ceil(remainingItems / itemsPerPage);
       if (currentPage > newTotalPages && currentPage > 1) {
@@ -94,7 +86,7 @@ export default function SavedAddresses({
 
   if (!addresses || addresses.length === 0) {
     return (
-      <div className="bg-white  rounded-[8px]  shadow-sm p-8 text-center" id="saved-addresses-container">
+      <div className="bg-white rounded-[8px] shadow-sm p-8 text-center" id="saved-addresses-container">
         <div className="text-gray-400 mb-3">
           <svg
             className="w-16 h-16 mx-auto"
@@ -116,8 +108,8 @@ export default function SavedAddresses({
             />
           </svg>
         </div>
-        <p className="text-gray-600">لا توجد عناوين محفوظة</p>
-        <p className="text-gray-400 text-sm mt-2">أضف عنوانك الأول الآن</p>
+        <p className="text-gray-600">{t('address.noSavedAddresses')}</p>
+        <p className="text-gray-400 text-sm mt-2">{t('address.addFirstAddress')}</p>
       </div>
     );
   }
@@ -128,11 +120,8 @@ export default function SavedAddresses({
         className="grid gap-4 p-2 md:p-4 rounded-[8px] bg-white"
         id="saved-addresses-container"
       >
-       
-
-        {/* ✅ عرض العناوين في الصفحة الحالية */}
         {currentAddresses.map((address) => (
-          <div key={address.id} className=" rounded-[8px]  p-2 bg-[#f5f5f5e1]">
+          <div key={address.id} className="rounded-[8px] p-2 bg-[#f5f5f5e1]">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-3">
                 <div className="flex items-center">
@@ -145,15 +134,15 @@ export default function SavedAddresses({
               <div className="flex gap-2">
                 <button
                   onClick={() => onEdit(address)}
-                  className="text-[#FF7700] transition p-2 hover:bg-[#fcb8b075] rounded-full"
-                  aria-label="تعديل العنوان"
+                  className="text-[#E60076] transition p-2 hover:bg-[#fcb8b075] rounded-full"
+                  aria-label={t('address.edit')}
                 >
                   <CiEdit className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleDeleteClick(address.id)}
-                  className="text-red-500 hover:text-red-700 transition p-2 hover: bg-blue-50  rounded-full"
-                  aria-label="حذف العنوان"
+                  className="text-red-500 hover:text-red-700 transition p-2 hover:bg-blue-50 rounded-full"
+                  aria-label={t('address.delete')}
                 >
                   <FaRegTrashAlt />
                 </button>
@@ -175,16 +164,15 @@ export default function SavedAddresses({
               </div>
               {(address.building || address.floor || address.apartment) && (
                 <div className="flex gap-2 mt-2 text-gray-600 text-xs flex-wrap">
-                  {address.building && <span> مبنى {address.building}</span>}
-                  {address.floor && <span> دور {address.floor}</span>}
-                  {address.apartment && <span> شقة {address.apartment}</span>}
+                  {address.building && <span>{t('address.buildingLabel')} {address.building}</span>}
+                  {address.floor && <span>{t('address.floorLabel')} {address.floor}</span>}
+                  {address.apartment && <span>{t('address.apartmentLabel')} {address.apartment}</span>}
                 </div>
               )}
             </div>
           </div>
         ))}
 
-        {/* ✅ مكون Pagination */}
         {totalPages > 1 && (
           <div className="mt-6">
             <Pagination
@@ -197,16 +185,16 @@ export default function SavedAddresses({
         )}
       </div>
 
-      {/* Custom Delete Confirmation Popup */}
+      {/* Delete Confirmation Popup */}
       {deleteConfirm.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800">تأكيد الحذف</h3>
+              <h3 className="text-lg font-bold text-gray-800">{t('address.deleteConfirmation')}</h3>
               <button
                 onClick={cancelDelete}
                 className="text-gray-400 hover:text-gray-600 transition"
-                aria-label="إلغاء"
+                aria-label={t('address.cancel')}
               >
                 <IoClose size={24} />
               </button>
@@ -214,10 +202,10 @@ export default function SavedAddresses({
             
             <div className="mb-6">
               <p className="text-gray-700 text-center">
-                هل أنت متأكد من حذف هذا العنوان؟
+                {t('address.deleteConfirmMessage')}
               </p>
               <p className="text-gray-500 text-sm text-center mt-2">
-                لا يمكنك التراجع عن هذا الإجراء.
+                {t('address.deleteWarning')}
               </p>
             </div>
 
@@ -226,13 +214,13 @@ export default function SavedAddresses({
                 onClick={cancelDelete}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
               >
-                إلغاء
+                {t('address.cancel')}
               </button>
               <button
                 onClick={confirmDelete}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[8px] hover:bg-red-700 transition"
               >
-                حذف
+                {t('address.delete')}
               </button>
             </div>
           </div>

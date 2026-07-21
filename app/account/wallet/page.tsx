@@ -4,11 +4,14 @@ import Link from "next/link";
 import { FaChevronRight } from "react-icons/fa";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getHeaders } from "@/services/api";
 
 export default function WalletPage() {
+  const { t } = useTranslation();
   // حالات البيانات
   const [balance, setBalance] = useState<number | null>(null);
-  const [currency, setCurrency] = useState<string>("EGP");
+  const [currency, setCurrency] = useState<string>("$");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,40 +21,32 @@ export default function WalletPage() {
     setError(null);
 
     try {
-      // 1. استرجاع التوكن من localStorage (أو من أي مكان آخر تخزنه فيه)
-      const token = localStorage.getItem("auth_token"); // غير "authToken" إلى الاسم الذي تستخدمه
+      const token = localStorage.getItem("auth_token");
 
       if (!token) {
-        throw new Error("لم يتم العثور على توكن المصادقة. الرجاء تسجيل الدخول مرة أخرى.");
+        throw new Error(t('account.noToken'));
       }
 
-      // 2. عنوان الـ API - استبدل YOUR_API_URL بالعنوان الحقيقي
-      const apiUrl ="https://alsas.admin.t-carts.com/api";
+      const apiUrl = "https://beauty.admin.t-carts.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // إرسال التوكن في الـ Header
-        },
+        headers: getHeaders(),
       });
 
-      // 3. معالجة الاستجابة
       const data = await response.json();
 
       if (data.result === true && data.errNum === 200) {
-        // استخراج الرصيد من البيانات
-        // البيانات تأتي بصيغة "EGP 0.00" - نحتاج لفصل الرقم والعملة
-        const balanceString = data.data.balance; // مثال: "EGP 371.56"
+        const balanceString = data.data.balance;
         const [currencyPart, balancePart] = balanceString.split(" ");
         
-        setCurrency(currencyPart || "EGP");
+        setCurrency(currencyPart || "$");
         setBalance(parseFloat(balancePart) || 0);
       } else {
-        throw new Error(data.message || "حدث خطأ أثناء جلب الرصيد");
+        throw new Error(data.message || t('account.fetchBalanceError'));
       }
     } catch (err: any) {
       console.error("Error fetching wallet balance:", err);
-      setError(err.message || "فشل في الاتصال بالخادم");
+      setError(err.message || t('account.serverError'));
     } finally {
       setLoading(false);
     }
@@ -67,8 +62,8 @@ export default function WalletPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل رصيد المحفظة...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto mb-4"></div>
+          <p className="text-gray-600">{t('account.loadingWallet')}</p>
         </div>
       </div>
     );
@@ -82,19 +77,19 @@ export default function WalletPage() {
           <div className="mb-6">
             <Link
               href="/account"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#FF7700] transition mb-4"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#E60076] transition mb-4"
             >
               <FaChevronRight className="w-4 h-4" />
-              <span>رجوع إلى حسابي</span>
+              <span>{t('account.backToAccount')}</span>
             </Link>
           </div>
-          <div className=" bg-blue-50  border border-red-200 rounded-2xl p-6 text-center">
+          <div className="bg-blue-50 border border-red-200 rounded-2xl p-6 text-center">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchWalletBalance}
-              className="px-4 py-2 bg-[#FF7700] text-white rounded-[8px]  hover:bg-[#e63520] transition"
+              className="px-4 py-2 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition"
             >
-              إعادة المحاولة
+              {t('account.retry')}
             </button>
           </div>
         </div>
@@ -110,12 +105,12 @@ export default function WalletPage() {
         <div className="mb-6">
           <Link
             href="/account"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#FF7700] transition mb-4"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#E60076] transition mb-4"
           >
             <FaChevronRight className="w-4 h-4" />
-            <span>رجوع إلى حسابي</span>
+            <span>{t('account.backToAccount')}</span>
           </Link>
-          <h1 className="text-xl font-bold text-[#180100]">المحفظة</h1>
+          <h1 className="text-xl font-bold text-[#180100]">{t('account.wallet')}</h1>
         </div>
 
         {/* بطاقة الرصيد - Wallet Card */}
@@ -133,15 +128,14 @@ export default function WalletPage() {
                   />
                 </div>
                 <p className="text-white text-lg md:text-xl font-medium">
-                  المحفظة
+                  {t('account.wallet')}
                 </p>
               </div>
               <div className="flex flex-col items-center gap-3">
                 <span className="text-white text-xl font-medium">
-                  الرصيد الحالي
+                  {t('account.currentBalance')}
                 </span>
 
-                {/* المبلغ - يعرض الرصيد من الـ API */}
                 <div className="mb-6">
                   <span className="text-white text-xl md:text-xl font-black tracking-tight">
                     {currency} {balance !== null ? balance.toFixed(2) : "0.00"}

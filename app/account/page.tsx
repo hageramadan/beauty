@@ -17,15 +17,18 @@ import {
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getHeaders } from "@/services/api";
 
 export default function AccountPage() {
+  const { t , language } = useTranslation();
   const router = useRouter();
   const { user, isAuthenticated, loading, logoutUser } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  
+    const isEnglish = language === 'en';
   // حالات الرصيد
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [walletCurrency, setWalletCurrency] = useState<string>("EGP");
+  const [walletCurrency, setWalletCurrency] = useState<string>("$");
   const [loadingWallet, setLoadingWallet] = useState<boolean>(true);
 
   // دالة مساعدة لمعالجة رابط الصورة
@@ -38,7 +41,7 @@ export default function AccountPage() {
     }
     
     // إذا كان مسارًا نسبيًا
-    return `https://alsas.admin.t-carts.com${imagePath}`;
+    return `https://beauty.admin.t-carts.com${imagePath}`;
   };
 
   // دالة لجلب رصيد المحفظة من الـ API
@@ -54,13 +57,10 @@ export default function AccountPage() {
         return;
       }
 
-      const apiUrl = "https://alsas.admin.t-carts.com/api";
+      const apiUrl = "https://beauty.admin.t-carts.com/api";
       const response = await fetch(`${apiUrl}/wallet`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getHeaders(),
       });
 
       const data = await response.json();
@@ -69,7 +69,7 @@ export default function AccountPage() {
         const balanceString = data.data.balance;
         const [currencyPart, balancePart] = balanceString.split(" ");
         
-        setWalletCurrency(currencyPart || "EGP");
+        setWalletCurrency(currencyPart || "$");
         setWalletBalance(parseFloat(balancePart) || 0);
       } else {
         console.error("Error fetching wallet:", data.message);
@@ -93,7 +93,7 @@ export default function AccountPage() {
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      toast.error("الرجاء تسجيل الدخول أولاً", {
+      toast.error(t('account.pleaseLogin'), {
         duration: 2000,
         position: "top-center",
       });
@@ -101,7 +101,7 @@ export default function AccountPage() {
         router.push("/auth/login");
       }, 1500);
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, router, t]);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -112,7 +112,7 @@ export default function AccountPage() {
     
     await logoutUser();
     
-    toast.success("تم تسجيل الخروج بنجاح 👋", {
+    toast.success(t('account.logoutSuccess'), {
       duration: 2000,
       position: "top-center",
     });
@@ -129,25 +129,25 @@ export default function AccountPage() {
   const menuItems = [
     {
       id: 1,
-      title: "طلباتي",
+      title: t('account.myOrders'),
       icon: <TbChecklist className="w-5 h-5" />,
       href: "/account/orders",
     },
     {
       id: 2,
-      title: "المرتجعات",
+      title: t('account.returns'),
       icon: <TbTruckReturn className="w-5 h-5" />,
       href: "/account/returns",
     },
     {
       id: 3,
-      title: "العناوين المحفوظة",
+      title: t('account.savedAddresses'),
       icon: <SlLocationPin className="w-5 h-5" />,
       href: "/account/address",
     },
     {
       id: 4,
-      title: "المفضلة",
+      title: t('account.wishlist'),
       icon: <FaRegHeart className="w-5 h-5" />,
       href: "/account/wishlist",
     },
@@ -158,8 +158,8 @@ export default function AccountPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#FF7700] rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل بيانات الحساب...</p>
+          <div className="w-12 h-12 border-4 border-gray-300 border-t-[#E60076] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">{t('account.loading')}</p>
         </div>
       </div>
     );
@@ -182,7 +182,7 @@ export default function AccountPage() {
   // تنسيق عرض الرصيد
   const displayBalance = () => {
     if (loadingWallet) {
-      return <span className="text-[#0A0500] text-base md:text-xl font-extrabold">جاري التحميل...</span>;
+      return <span className="text-[#0A0500] text-base md:text-xl font-extrabold">{t('account.loading')}</span>;
     }
     if (walletBalance !== null) {
       return (
@@ -200,13 +200,13 @@ export default function AccountPage() {
         <div className="container mx-auto pb-4">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-xl font-bold text-[#180100]">حسابي</h1>
+            <h1 className="text-xl font-bold text-[#180100]">{t('account.myAccount')}</h1>
           </div>
 
           {/* Profile Card */}
           <div className="bg-white rounded-2xl shadow-sm px-4 py-2 mb-3 md:mb-8 flex flex-col md:flex-row justify-between md:items-center">
             <div className="flex items-center">
-              {/* Profile Image - عرض الصورة من الـ API */}
+              {/* Profile Image */}
               <div className="relative mb-4 md:mb-0">
                 {userImage ? (
                   <Image
@@ -216,13 +216,10 @@ export default function AccountPage() {
                     height={70}
                     unoptimized
                     className="rounded-full object-cover h-16 w-16 md:w-24 md:h-24 border-4 border-white shadow-lg"
-                    onError={() => {
-                      // في حالة فشل تحميل الصورة، استخدم الحرف الأول
-                      // يمكنك إضافة حالة للتعامل مع الخطأ
-                    }}
+                    onError={() => {}}
                   />
                 ) : (
-                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#FF7700] flex items-center justify-center shadow-lg">
+                  <div className="h-16 w-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-[#ff6b6b] to-[#E60076] flex items-center justify-center shadow-lg">
                     <span className="text-white text-xl md:text-2xl font-bold">
                       {getUserInitial()}
                     </span>
@@ -236,13 +233,12 @@ export default function AccountPage() {
                 </button>
               </div>
 
-              {/* User Info - بيانات حقيقية من Context */}
+              {/* User Info */}
               <div className="mr-2 md:mr-4">
                 <h2 className="text-xl font-bold text-gray-800 mb-1">
                   {user.name || "مستخدم"}
                 </h2>
                
-                {/* عرض رقم الهاتف مع كود الدولة */}
                 {user.phone && (
                   <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                     <span dir="ltr"> {user.country_code || '+20'} <></>
@@ -264,21 +260,21 @@ export default function AccountPage() {
                 className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-[8px] hover:bg-gray-50 transition text-gray-700"
               >
                 <FaRegEdit className="w-4 h-4" />
-                <span>تعديل الملف الشخصي</span>
+                <span>{t('account.editProfile')}</span>
               </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover:bg-red-50 transition text-red-600"
               >
                 <FaSignOutAlt className="w-4 h-4" />
-                <span>تسجيل الخروج</span>
+                <span>{t('account.logout')}</span>
               </button>
             </div>
           </div>
 
-          {/* Wallet Section - الرصيد من الـ API */}
+          {/* Wallet Section */}
           <div className="space-y-3 bg-wallet rounded-[8px] p-2 md:p-4 shadow-sm mb-6">
-            <h2 className="text-lg font-bold text-gray-800">المحفظة</h2>
+            <h2 className="text-lg font-bold text-gray-800">{t('account.wallet')}</h2>
             <Link
               href="/account/wallet"
               className="flex items-center justify-between bg-white rounded-[8px] p-3 lg:p-4 hover:shadow-md transition-shadow border border-gray-200"
@@ -289,9 +285,8 @@ export default function AccountPage() {
                     <Image src="/images/wallet.png" alt="Wallet" width={20} height={20} />
                   </div>
                 </div>
-                <span className="text-gray-700 text-sm md:text-xl font-bold">الرصيد الحالي</span>
+                <span className="text-gray-700 text-sm md:text-xl font-bold">{t('account.currentBalance')}</span>
               </div>
-              {/* عرض الرصيد من الـ API */}
               {displayBalance()}
             </Link>
           </div>
@@ -310,7 +305,11 @@ export default function AccountPage() {
                   </div>
                   <span className="text-gray-700 text-base md:text-xl font-medium">{item.title}</span>
                 </div>
-                <FaChevronLeft className="w-4 h-4 text-gray-400" />
+                 <FaChevronLeft 
+                  className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
+                    isEnglish ? 'rotate-180' : ''
+                  }`} 
+                />
               </Link>
             ))}
              <button
@@ -318,7 +317,7 @@ export default function AccountPage() {
                 className="md:hidden w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 rounded-[8px] hover:bg-red-50 transition text-red-600"
               >
                 <FaSignOutAlt className="w-4 h-4" />
-                <span>تسجيل الخروج</span>
+                <span>{t('account.logout')}</span>
               </button>
           </div>
         </div>
@@ -329,7 +328,7 @@ export default function AccountPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-lg font-bold text-gray-800">تسجيل الخروج</h3>
+              <h3 className="text-lg font-bold text-gray-800">{t('account.logout')}</h3>
               <button
                 onClick={cancelLogout}
                 className="text-gray-400 hover:text-gray-600 transition"
@@ -344,10 +343,10 @@ export default function AccountPage() {
                   <FaSignOutAlt className="w-8 h-8 text-red-600" />
                 </div>
                 <p className="text-gray-700 text-lg font-medium mb-2">
-                  هل أنت متأكد من تسجيل الخروج؟
+                  {t('account.logoutConfirmation')}
                 </p>
                 <p className="text-gray-500 text-sm">
-                  ستحتاج إلى تسجيل الدخول مرة أخرى للوصول إلى حسابك.
+                  {t('account.logoutWarning')}
                 </p>
               </div>
             </div>
@@ -357,13 +356,13 @@ export default function AccountPage() {
                 onClick={cancelLogout}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-[8px] hover:bg-gray-50 transition"
               >
-                إلغاء
+                {t('account.cancel')}
               </button>
               <button
                 onClick={confirmLogout}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[8px] hover:bg-red-700 transition"
               >
-                تسجيل الخروج
+                {t('account.logout')}
               </button>
             </div>
           </div>

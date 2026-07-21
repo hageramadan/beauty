@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ChevronRight, CheckCircle, User, Mail, Phone, MapPin, Building, Home, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { IoLockClosedOutline } from "react-icons/io5";
+import { ChevronRight, CheckCircle, User, Mail, Phone, MapPin, Building, Home, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   CartItem,
   CheckoutFormData,
@@ -10,7 +12,7 @@ import {
 } from "@/components/checkout/types";
 import { useCartContext } from "@/contexts/CartContext";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 import toast from "react-hot-toast";
 
 // استيراد المكونات
@@ -21,46 +23,15 @@ import PaymentMethodForm from "@/components/checkout/PaymentMethodForm";
 import NotesForm from "@/components/checkout/NotesForm";
 import OrderSummary from "@/components/checkout/OrderSummary";
 import PhoneInput from "@/components/contact/PhoneInput";
+import { getHeaders } from "@/services/api";
 
-const API_URL = "https://dukanah.admin.t-carts.com/api";
+const API_URL = "https://beauty.admin.t-carts.com/api";
 
-// دالة جلب التوكن
-const getToken = (): string | null => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
-  }
-  return null;
-};
 
-// ✅ دالة جلب الـ guest_token
-const getGuestToken = (): string | null => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("guest_cart_token");
-  }
-  return null;
-};
 
-// دالة جلب الهيدرز مع التوكن و X-Guest-Token
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  const guestToken = getGuestToken();
-  
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-  
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  
-  if (guestToken) {
-    headers["X-Guest-Token"] = guestToken;
-  }
-  
-  return headers;
-};
 
-// ✅ دالة جلب السلة مع البارامترات (delivery_method و city_id)
+
+// دالة جلب السلة مع البارامترات (delivery_method و city_id)
 const fetchCartWithParams = async (
   deliveryMethod: string,
   cityId?: string,
@@ -100,6 +71,90 @@ const fetchCartWithParams = async (
   }
 };
 
+// دالة التحقق من رقم الهاتف حسب الدولة (مترجمة)
+const validatePhoneNumberByCountry = (
+  phoneNumber: string,
+  countryCode: string,
+  t: any,
+): { isValid: boolean; error: string } => {
+  const cleanNumber = phoneNumber.replace(/[\s\-]/g, "");
+
+  if (!cleanNumber) {
+    return { isValid: false, error: t('checkout.phoneRequired') };
+  }
+
+  if (!/^\d+$/.test(cleanNumber)) {
+    return { isValid: false, error: t('checkout.phoneDigitsOnly') };
+  }
+
+  const rules: Record<
+    string,
+    {
+      minLength: number;
+      maxLength: number;
+      startsWith: string[];
+      pattern: RegExp;
+      name: string;
+    }
+  > = {
+    "+20": {
+      name: t('checkout.egypt'),
+      minLength: 11,
+      maxLength: 11,
+      startsWith: ["010", "011", "012", "015"],
+      pattern: /^01[0125][0-9]{8}$/,
+    },
+    "+966": {
+      name: t('checkout.saudi'),
+      minLength: 9,
+      maxLength: 10,
+      startsWith: ["05"],
+      pattern: /^05[0-9]{8}$/,
+    },
+    "+964": {
+      name: t('checkout.iraq'),
+      minLength: 11,
+      maxLength: 11,
+      startsWith: ["07"],
+      pattern: /^07[0-9]{9}$/,
+    },
+    "+971": {
+      name: t('checkout.uae'),
+      minLength: 9,
+      maxLength: 9,
+      startsWith: ["05"],
+      pattern: /^05[0-9]{8}$/,
+    },
+  };
+
+  const rule = rules[countryCode];
+  if (!rule) {
+    return { isValid: false, error: t('checkout.invalidCountryCode') };
+  }
+
+  const startsWithValid = rule.startsWith.some((prefix) =>
+    cleanNumber.startsWith(prefix),
+  );
+  if (!startsWithValid) {
+    return {
+      isValid: false,
+      error: t('checkout.phoneStartsWithError', { 
+        country: rule.name, 
+        prefixes: rule.startsWith.join(" أو ") 
+      }),
+    };
+  }
+
+  if (!rule.pattern.test(cleanNumber)) {
+    return {
+      isValid: false,
+      error: t('checkout.phoneInvalidForCountry', { country: rule.name }),
+    };
+  }
+
+  return { isValid: true, error: "" };
+};
+
 // دالة إنشاء الطلب
 const createOrder = async (orderData: any): Promise<any> => {
   try {
@@ -117,8 +172,28 @@ const createOrder = async (orderData: any): Promise<any> => {
   }
 };
 
-// تحويل بيانات السلة
-const transformCartItems = (cart: any): CartItem[] => {
+// دالة الحصول على رسالة الخطأ حسب السبب (مترجمة)
+const getErrorMessage = (reason: string | null, t: any): string => {
+  const messages: Record<string, string> = {
+    'payment_declined': t('checkout.paymentDeclined') || 'تم رفض الدفع من قبل البنك أو جهة الإصدار',
+    'insufficient_funds': t('checkout.insufficientFunds') || 'الرصيد غير كافٍ لإتمام العملية',
+    'card_expired': t('checkout.cardExpired') || 'البطاقة منتهية الصلاحية',
+    'invalid_card': t('checkout.invalidCard') || 'بيانات البطاقة غير صحيحة',
+    'technical_error': t('checkout.technicalError') || 'حدث خطأ تقني أثناء معالجة الدفع',
+    'timeout': t('checkout.timeout') || 'انتهت مهلة الدفع، يرجى المحاولة مرة أخرى',
+    'cancelled_by_user': t('checkout.cancelledByUser') || 'تم إلغاء الدفع من قبلك',
+    'fraud_suspected': t('checkout.fraudSuspected') || 'تم رفض العملية للاشتباه في احتيال',
+    'authentication_failed': t('checkout.authenticationFailed') || 'فشل التحقق من الهوية',
+  };
+
+  if (reason && messages[reason]) {
+    return messages[reason];
+  }
+  return t('checkout.paymentError') || 'حدثت مشكلة أثناء معالجة الدفع. يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى.';
+};
+
+// تحويل بيانات السلة (مترجم)
+const transformCartItems = (cart: any, t: any): CartItem[] => {
   if (!cart || !cart.items) return [];
 
   return cart.items.map((item: any) => {
@@ -136,7 +211,7 @@ const transformCartItems = (cart: any): CartItem[] => {
       }
     }
 
-    let brandName = "ماركة";
+    let brandName = t('checkout.defaultBrand');
     if (item.product.brand) {
       if (typeof item.product.brand === "string") {
         brandName = item.product.brand;
@@ -151,7 +226,7 @@ const transformCartItems = (cart: any): CartItem[] => {
     const cleanImageUrl = (url: string) => {
       if (!url) return "/images/placeholder.jpg";
       if (url.startsWith("/storage")) {
-        return `https://dukanah.admin.t-carts.com${url}`;
+        return `https://beauty.admin.t-carts.com${url}`;
       }
       return url;
     };
@@ -173,14 +248,14 @@ const transformCartItems = (cart: any): CartItem[] => {
   });
 };
 
-// ✅ نوع بيانات الطلب الناجح
+// نوع بيانات الطلب الناجح
 interface CompletedOrderResult {
   orderNumber: string | number;
   itemsCount: number;
   total: number;
 }
 
-// ✅ واجهة بيانات إنشاء الحساب
+// واجهة بيانات إنشاء الحساب
 interface AccountData {
   email: string;
   phone: string;
@@ -190,14 +265,17 @@ interface AccountData {
 }
 
 export default function CheckoutPage() {
+  const { t } = useTranslation();
   const {
     cart,
     isLoading: cartLoading,
     refetchCart,
     updateCart,
+    clearAllItems,
     isGuest,
   } = useCartContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [orderResult, setOrderResult] = useState<CompletedOrderResult | null>(
@@ -209,8 +287,10 @@ export default function CheckoutPage() {
     null,
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-
-  // ✅ حالة خيار إنشاء حساب
+  
+  const [showRedirectPopup, setShowRedirectPopup] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  
   const [createAccount, setCreateAccount] = useState(false);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -224,26 +304,19 @@ export default function CheckoutPage() {
   });
   const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
 
-  // ✅ استخدم useRef لتخزين cityId بشكل فوري
   const selectedCityIdRef = useRef<string | null>(null);
-  
-  // ✅ منع الاستدعاء المتكرر للـ API
   const isFetchingRef = useRef<boolean>(false);
-  
-  // ✅ تتبع آخر قيمة لـ deliveryMethod لمنع الاستدعاء المتكرر
   const lastDeliveryMethodRef = useRef<string | null>(null);
-  
-  // ✅ تتبع آخر قيمة لـ cityId لمنع الاستدعاء المتكرر
   const lastFetchedCityIdRef = useRef<string | null>(null);
 
-  const cartItems = useMemo(() => transformCartItems(cart), [cart]);
+  const cartItems = useMemo(() => transformCartItems(cart, t), [cart, t]);
 
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: "",
     phone: "",
     phoneNumber: "",
     phoneCountryCode: "+20",
-    email: "", // ✅ إضافة email إلى formData
+    email: "",
     deliveryAddress: {
       street: "",
       city: "",
@@ -289,16 +362,61 @@ export default function CheckoutPage() {
     };
   }, [cart, formData.deliveryMethod, selectedCityId]);
 
-  // ✅ التعديل المهم: لا تقم بإعادة التوجيه إلى الرئيسية عند فراغ السلة إذا كان الطلب قد تم بنجاح
+  // التحقق من وجود order_number في URL (عند العودة من Paymob)
   useEffect(() => {
+    const orderNumber = searchParams.get('order_number');
+    const status = searchParams.get('status');
+    const reason = searchParams.get('reason');
+    
+    if (orderNumber) {
+      if (status === 'success' || status === 'paid' || status === null) {
+        toast.dismiss();
+        toast.success(t('checkout.paymentSuccess'), {
+          duration: 3000,
+          position: 'top-center',
+        });
+        
+        setTimeout(() => {
+          router.push(`/account/orders?order=${orderNumber}`);
+        }, 2000);
+        
+        setIsOrderCompleted(true);
+        return;
+      }
+      
+      if (status === 'failed') {
+        toast.error(`❌ ${t('checkout.paymentFailed')}: ${getErrorMessage(reason, t)}`, {
+          duration: 5000,
+          position: 'top-center',
+        });
+        
+        setTimeout(() => {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }, 3000);
+        
+        setIsOrderCompleted(true);
+        return;
+      }
+    }
+  }, [searchParams, router, t]);
+
+  // التعديل المهم: لا تقم بإعادة التوجيه إلى الرئيسية عند فراغ السلة إذا كان الطلب قد تم بنجاح
+  useEffect(() => {
+    const orderNumber = searchParams.get('order_number');
+    if (orderNumber) {
+      setIsOrderCompleted(true);
+      return;
+    }
+
     if (isOrderCompleted) return;
 
     if (!cartLoading && (!cart || cart.items?.length === 0)) {
       router.replace("/");
     }
-  }, [cart, cartLoading, router, isOrderCompleted]);
+  }, [cart, cartLoading, router, isOrderCompleted, searchParams]);
   
-  // ✅ استدعاء الـ API عند تغيير طريقة التوصيل أو المدينة (محسّن)
+  // استدعاء الـ API عند تغيير طريقة التوصيل أو المدينة (محسّن)
   useEffect(() => {
     if (isOrderCompleted) return;
     if (!cart || cart.items?.length === 0) return;
@@ -306,20 +424,16 @@ export default function CheckoutPage() {
     if (isFetchingRef.current) return;
 
     const currentDeliveryMethod = formData.deliveryMethod;
-    // ✅ استخدم الـ ref بدلاً من الـ state
     const currentCityId = selectedCityIdRef.current;
 
-    // ✅ التحقق: هل تغيرت طريقة التوصيل أم المدينة؟
     const deliveryMethodChanged = lastDeliveryMethodRef.current !== currentDeliveryMethod;
     const cityIdChanged = lastFetchedCityIdRef.current !== currentCityId;
 
-    // ✅ إذا لم يتغير شيء، لا نستدعي الـ API
     if (!deliveryMethodChanged && !cityIdChanged) {
       console.log("🟢 Skipping - no changes detected");
       return;
     }
 
-    // ✅ تحديث القيم المخزنة
     lastDeliveryMethodRef.current = currentDeliveryMethod;
     lastFetchedCityIdRef.current = currentCityId;
 
@@ -329,7 +443,6 @@ export default function CheckoutPage() {
       try {
         isFetchingRef.current = true;
         
-        // ✅ إذا كانت طريقة التوصيل delivery ولدينا cityId
         if (currentDeliveryMethod === "delivery" && currentCityId) {
           console.log(`🟢 Fetching cart with delivery and city_id: ${currentCityId}`);
           const cartData = await fetchCartWithParams("delivery", currentCityId);
@@ -337,7 +450,6 @@ export default function CheckoutPage() {
             updateCart(cartData);
           }
         } 
-        // ✅ إذا كانت طريقة التوصيل pickup
         else if (currentDeliveryMethod === "pickup") {
           console.log("🟢 Fetching cart with pickup (receive)");
           const cartData = await fetchCartWithParams("pickup");
@@ -345,7 +457,6 @@ export default function CheckoutPage() {
             updateCart(cartData);
           }
         } 
-        // ✅ إذا كانت delivery ولكن لم يتم اختيار مدينة بعد
         else if (currentDeliveryMethod === "delivery" && !currentCityId) {
           console.log("🟢 Fetching cart with delivery (no city yet)");
           const cartData = await fetchCartWithParams("delivery");
@@ -360,7 +471,6 @@ export default function CheckoutPage() {
       }
     };
 
-    // ✅ تأخير بسيط لتجنب الاستدعاءات المتكررة أثناء الكتابة
     const timeoutId = setTimeout(fetchCart, 300);
     
     return () => {
@@ -373,14 +483,14 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
-  // ✅ دالة لاستقبال address_id بعد حفظ العنوان
+  // دالة لاستقبال address_id بعد حفظ العنوان
   const handleAddressSaved = useCallback(
     async (address: any) => {
       if (isFetchingRef.current) return;
 
       if (address && address.id) {
         setSelectedAddressId(address.id);
-        toast.success("تم حفظ العنوان بنجاح");
+        toast.success(t('checkout.addressSaved'));
 
         try {
           let cityId = selectedCityIdRef.current;
@@ -410,10 +520,10 @@ export default function CheckoutPage() {
         }
       }
     },
-    [selectedCityId, formData.deliveryMethod, updateCart],
+    [selectedCityId, formData.deliveryMethod, updateCart, t],
   );
 
-  // ✅ دالة لاستقبال address_id من عنوان محفوظ تم اختياره
+  // دالة لاستقبال address_id من عنوان محفوظ تم اختياره
   const handleAddressSelected = useCallback(
     async (addressId: number) => {
       if (isFetchingRef.current) return;
@@ -448,72 +558,125 @@ export default function CheckoutPage() {
     setSelectedCityId(cityId);
   }, []);
 
-  // ✅ دالة فتح Popup إنشاء الحساب
+  // دالة فتح Popup إنشاء الحساب
   const handleOpenAccountPopup = useCallback(() => {
     setAccountData((prev) => ({
       ...prev,
       name: formData.fullName || "",
       phone: formData.phone || "",
-      email: formData.email || "", // ✅ إضافة email
+      email: formData.email || "",
     }));
     setAccountErrors({});
     setShowAccountPopup(true);
   }, [formData.fullName, formData.phone, formData.email]);
 
-  // ✅ دالة إغلاق Popup إنشاء الحساب
+  // دالة إغلاق Popup إنشاء الحساب
   const handleCloseAccountPopup = useCallback(() => {
     setShowAccountPopup(false);
     setCreateAccount(false);
     setAccountErrors({});
   }, []);
 
-  // ✅ دالة التحقق من بيانات الحساب
+  // دالة التحقق من بيانات الحساب (مترجمة)
   const validateAccountData = (): boolean => {
     const errors: Record<string, string> = {};
 
     if (!accountData.email.trim()) {
-      errors.email = "البريد الإلكتروني مطلوب";
+      errors.email = t('checkout.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountData.email)) {
-      errors.email = "البريد الإلكتروني غير صحيح";
+      errors.email = t('checkout.emailInvalid');
     }
 
     if (!accountData.phone.trim()) {
-      errors.phone = "رقم الهاتف مطلوب";
+      errors.phone = t('checkout.phoneRequired');
+    } else {
+      const phoneValidation = validatePhoneNumberByCountry(
+        accountData.phone.replace(/[\s\-]/g, ""),
+        "+20",
+        t,
+      );
+      if (!phoneValidation.isValid) {
+        errors.phone = phoneValidation.error;
+      }
     }
 
     if (!accountData.name.trim()) {
-      errors.name = "الاسم مطلوب";
+      errors.name = t('checkout.nameRequired');
     } else if (accountData.name.trim().length < 3) {
-      errors.name = "الاسم يجب أن يكون 3 أحرف على الأقل";
+      errors.name = t('checkout.nameMinLength');
     }
 
-    // ✅ كلمة المرور 8 أحرف أو أرقام
     if (!accountData.password) {
-      errors.password = "كلمة المرور مطلوبة";
+      errors.password = t('checkout.passwordRequired');
     } else if (accountData.password.length < 8) {
-      errors.password = "كلمة المرور يجب أن تكون 8 أحرف أو أرقام على الأقل";
+      errors.password = t('checkout.passwordMinLength');
     }
 
     if (!accountData.password_confirmation) {
-      errors.password_confirmation = "تأكيد كلمة المرور مطلوب";
+      errors.password_confirmation = t('checkout.passwordConfirmationRequired');
     } else if (accountData.password !== accountData.password_confirmation) {
-      errors.password_confirmation = "كلمات المرور غير متطابقة";
+      errors.password_confirmation = t('checkout.passwordMismatch');
     }
 
     setAccountErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ دالة تأكيد إنشاء الحساب
+  // دالة تأكيد إنشاء الحساب
   const handleConfirmAccount = useCallback(() => {
     if (validateAccountData()) {
       setCreateAccount(true);
       setShowAccountPopup(false);
-      toast.success("سيتم إنشاء حسابك بعد إتمام الطلب");
+      toast.success(t('checkout.accountCreated'));
     }
-  }, [accountData]);
+  }, [accountData, t]);
 
-  // ✅ تحضير بيانات الطلب
+  // دالة التحقق من صحة البيانات قبل الإرسال (مترجمة)
+  const validateForm = useCallback(() => {
+    if (!formData.fullName.trim()) {
+      toast.error(t('checkout.fullNameRequired'));
+      return false;
+    }
+
+    if (isGuest && formData.paymentMethod !== "cash") {
+      if (!formData.email || !formData.email.trim()) {
+        toast.error(t('checkout.emailRequired'));
+        return false;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        toast.error(t('checkout.emailInvalid'));
+        return false;
+      }
+    }
+
+    const phoneValidation = validatePhoneNumberByCountry(
+      formData.phoneNumber || formData.phone.replace(formData.phoneCountryCode || "", ""),
+      formData.phoneCountryCode || "+20",
+      t,
+    );
+
+    if (!phoneValidation.isValid) {
+      toast.error(phoneValidation.error);
+      return false;
+    }
+
+    if (formData.deliveryMethod === "delivery" && !selectedAddressId && isGuest) {
+      const address = formData.deliveryAddress;
+      if (!address.street || !address.city) {
+        toast.error(t('checkout.addressRequired'));
+        return false;
+      }
+    }
+
+    if (formData.deliveryMethod === "delivery" && !selectedAddressId && !isGuest) {
+      toast.error(t('checkout.saveAddressFirst'));
+      return false;
+    }
+
+    return true;
+  }, [formData, isGuest, selectedAddressId, t]);
+
+  // تحضير بيانات الطلب
   const prepareOrderData = useCallback(() => {
     const paymentMethodMap: Record<string, string> = {
       cash: "cash",
@@ -534,6 +697,13 @@ export default function CheckoutPage() {
       create_account: createAccount,
     };
 
+    if (formData.paymentMethod === "wallet") {
+      orderData.payment_gateway = "wallet";
+    }
+    if (formData.paymentMethod === "card") {
+      orderData.payment_gateway = "paymob";
+    }
+
     if (createAccount && isGuest) {
       orderData.account = {
         email: accountData.email,
@@ -542,10 +712,6 @@ export default function CheckoutPage() {
         password: accountData.password,
         password_confirmation: accountData.password_confirmation,
       };
-    }
-
-    if (formData.paymentMethod === "wallet") {
-      orderData.payment_gateway = "wallet";
     }
 
     if (isGuest) {
@@ -579,37 +745,36 @@ export default function CheckoutPage() {
     return orderData;
   }, [formData, selectedAddressId, createAccount, isGuest, accountData]);
 
-  // ✅ إرسال الطلب
+  // دالة إغلاق Popup التوجيه
+  const closeRedirectPopup = useCallback(() => {
+    setShowRedirectPopup(false);
+    setRedirectUrl(null);
+  }, []);
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      const paymentStarted = sessionStorage.getItem("payment_started");
+
+      if (!paymentStarted) return;
+
+      if (event.persisted) {
+        sessionStorage.removeItem("payment_started");
+        window.location.replace("/");
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
+
+  // إرسال الطلب (محدث مع Popup التوجيه)
   const handleSubmit = async () => {
     if (isSubmitting || isOrderCompleted) return;
 
-    if (!formData.fullName.trim()) {
-      toast.error("الرجاء إدخال الاسم الكامل");
-      return;
-    }
-
-    if (!formData.phone.trim()) {
-      toast.error("الرجاء إدخال رقم الهاتف");
-      return;
-    }
-
-    if (isGuest && !formData.email?.trim()) {
-      toast.error("الرجاء إدخال البريد الإلكتروني");
-      return;
-    }
-
-    if (formData.deliveryMethod === "delivery" && !selectedAddressId && isGuest) {
-      const address = formData.deliveryAddress;
-      if (!address.street || !address.city) {
-        toast.error("الرجاء إدخال بيانات العنوان بالكامل");
-        return;
-      }
-    }
-
-    if (formData.deliveryMethod === "delivery" && !selectedAddressId && !isGuest) {
-      toast.error("الرجاء حفظ العنوان أو اختيار عنوان محفوظ أولاً");
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
@@ -618,25 +783,41 @@ export default function CheckoutPage() {
       const response = await createOrder(orderData);
 
       if (response.result === true && response.data) {
+        const orderNumber = response.data.order?.order_number;
+
+        if (response.data.redirect_url) {
+          sessionStorage.setItem("payment_started", "true");
+
+          setRedirectUrl(response.data.redirect_url);
+          setShowRedirectPopup(true);
+
+          setTimeout(() => {
+            setShowRedirectPopup(false);
+            window.location.href = response.data.redirect_url;
+          }, 3000);
+
+          return;
+        }
+
         const completedOrder: CompletedOrderResult = {
-          orderNumber: response.data.order_number,
+          orderNumber: orderNumber || 'N/A',
           itemsCount: cartItems.length,
-          total: response.data.total_amount,
+          total: response.data.order.total_amount,
         };
 
         setOrderResult(completedOrder);
         setIsOrderCompleted(true);
         setShowSuccessPopup(true);
 
-        refetchCart().catch((err) => {
-          console.error("❌ Error refetching cart after order success:", err);
+        clearAllItems().catch((err) => {
+          console.error("❌ Error clearing cart after order success:", err);
         });
       } else {
-        toast.error(response.message || "حدث خطأ أثناء إنشاء الطلب");
+        toast.error(response.message || t('checkout.orderCreationError'));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      toast.error("حدث خطأ أثناء إنشاء الطلب");
+      toast.error(t('checkout.orderCreationError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -657,7 +838,6 @@ export default function CheckoutPage() {
     router.push("/");
   }, [router]);
 
-  // ✅ دالة معالجة تغيير رقم الهاتف من PhoneInput
   const handlePhoneChange = useCallback((phoneNumber: string, countryCode: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -666,6 +846,27 @@ export default function CheckoutPage() {
       phoneCountryCode: countryCode,
     }));
   }, []);
+
+  // عرض حالة الطلب المكتمل مع order_number في URL (مترجم)
+  if (isOrderCompleted && searchParams.get('order_number')) {
+    return (
+      <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center px-4">
+        <div className="text-center max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-10 h-10 text-green-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('checkout.paymentSuccess')}</h2>
+          <p className="text-gray-500 mb-4">
+            {t('checkout.orderNumber')}: <span className="font-bold text-[#E60076]">{searchParams.get('order_number')}</span>
+          </p>
+          <p className="text-gray-400 text-sm mb-6">{t('checkout.redirecting')}</p>
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-2 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartLoading) {
     return (
@@ -678,12 +879,12 @@ export default function CheckoutPage() {
   if (!isOrderCompleted && (!cart || cart.items?.length === 0)) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <p className="text-gray-500 mb-4">سلة التسوق فارغة</p>
+        <p className="text-gray-500 mb-4">{t('checkout.emptyCart')}</p>
         <Link
           href="/products"
-          className="bg-[#FF7700] text-white px-6 py-2 rounded-[8px] "
+          className="bg-[#E60076] hover:bg-[#f0278f] text-white px-6 py-2 rounded-[8px]"
         >
-          تسوق الآن
+          {t('checkout.shopNow')}
         </Link>
       </div>
     );
@@ -692,44 +893,45 @@ export default function CheckoutPage() {
   return (
     <div className="bg-gradient-to-l min-h-[80vh] from-[#bdcbf12a] to-[#feecea3b]">
       <div className="container page-with-padding mx-auto mb-3">
+        {/* Page Header - مترجم */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-            إتمام الطلب
+            {t('checkout.checkoutTitle')}
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/cart" className="hover:text-[#FF7700] transition">
-              سلة التسوق
+            <Link href="/cart" className="hover:text-[#E60076] transition">
+              {t('checkout.cart')}
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#FF7700] font-medium">إتمام الطلب</span>
+            <span className="text-[#E60076] font-medium">{t('checkout.checkoutTitle')}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* ✅ قسم معلومات الاتصال - استخدام PhoneInput */}
+            {/* Contact Info - مترجم */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                معلومات الاتصال
+                {t('checkout.contactInfo')}
               </h2>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    الاسم الكامل <span className="text-red-500">*</span>
+                    {t('checkout.fullName')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => handleFormChange({ fullName: e.target.value })}
-                    placeholder="أدخل اسمك الكامل"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition"
+                    placeholder={t('checkout.fullNamePlaceholder')}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    رقم الهاتف <span className="text-red-500">*</span>
+                    {t('checkout.phone')} <span className="text-red-500">*</span>
                   </label>
                   <PhoneInput
                     value={`${formData.phoneCountryCode}${formData.phone}`}
@@ -741,14 +943,14 @@ export default function CheckoutPage() {
                 {isGuest && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      البريد الإلكتروني <span className="text-red-500">*</span>
+                      {t('checkout.email')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       value={formData.email || ""}
                       onChange={(e) => handleFormChange({ email: e.target.value })}
-                      placeholder="example@email.com"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition"
+                      placeholder={t('checkout.emailPlaceholder')}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition"
                     />
                   </div>
                 )}
@@ -793,11 +995,11 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                      <User className="w-5 h-5 text-green-600" />
+                      <User className="w-5 h-5 text-pink-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800 text-sm">
-                        إنشاء حساب
+                      <p className="font-semibold text-pink-800 text-sm">
+                        {t('checkout.createAccount')}
                       </p>
                     </div>
                   </div>
@@ -806,10 +1008,10 @@ export default function CheckoutPage() {
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                       createAccount
                         ? "bg-green-100 text-green-700 border border-green-300"
-                        : "bg-black text-white hover:bg-gray-800"
+                        : "bg-[#E60076] text-white hover:bg-[#f0278f]"
                     }`}
                   >
-                    {createAccount ? "✅ تم الاختيار" : "إنشاء حساب"}
+                    {createAccount ? " " + t('checkout.selected') : t('checkout.createAccount')}
                   </button>
                 </div>
               </div>
@@ -818,9 +1020,9 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="hidden md:block w-full bg-black text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
+              className="hidden md:block w-full bg-[#E60076] text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
+              {isSubmitting ? t('checkout.processing') : t('checkout.confirmOrder')}
             </button>
           </div>
 
@@ -833,15 +1035,42 @@ export default function CheckoutPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isOrderCompleted}
-              className="md:hidden block w-full bg-black text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
+              className="md:hidden block w-full bg-[#E60076] text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? "جاري المعالجة..." : "تأكيد الطلب"}
+              {isSubmitting ? t('checkout.processing') : t('checkout.confirmOrder')}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ✅ Popup إنشاء الحساب */}
+      {/* Popup التوجيه إلى بوابة الدفع - مترجم */}
+      {showRedirectPopup && redirectUrl && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              {t('checkout.redirectingToPayment')}
+            </h3>
+            <p className="text-gray-500 text-sm mb-4">
+              {t('checkout.redirectingToPaymentDesc')}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse delay-150"></div>
+              <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse delay-300"></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-4">
+              {t('checkout.redirectingAuto')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Popup إنشاء الحساب - مترجم */}
       {showAccountPopup && (
         <AccountPopup
           isOpen={showAccountPopup}
@@ -854,6 +1083,7 @@ export default function CheckoutPage() {
           setShowPassword={setShowPassword}
           showConfirmPassword={showConfirmPassword}
           setShowConfirmPassword={setShowConfirmPassword}
+          t={t}
         />
       )}
 
@@ -871,13 +1101,14 @@ export default function CheckoutPage() {
           isGuest={isGuest}
           phone={formData.phone || ""}
           email={formData.email || accountData.email || ""}
+          t={t}
         />
       )}
     </div>
   );
 }
 
-// ✅ Popup إنشاء الحساب
+// Popup إنشاء الحساب - مترجم
 interface AccountPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -889,6 +1120,7 @@ interface AccountPopupProps {
   setShowPassword: (show: boolean) => void;
   showConfirmPassword: boolean;
   setShowConfirmPassword: (show: boolean) => void;
+  t: any;
 }
 
 function AccountPopup({
@@ -902,6 +1134,7 @@ function AccountPopup({
   setShowPassword,
   showConfirmPassword,
   setShowConfirmPassword,
+  t,
 }: AccountPopupProps) {
   if (!isOpen) return null;
 
@@ -914,26 +1147,26 @@ function AccountPopup({
       <div className="bg-white rounded-2xl max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 text-center">
-            إنشاء حساب جديد
+            {t('checkout.createAccount')}
           </h3>
           <p className="text-sm text-gray-500 text-center mt-1">
-            أدخل بياناتك لإنشاء حساب وتتبع طلبك
+            {t('checkout.createAccountDescription')}
           </p>
         </div>
 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              الاسم الكامل <span className="text-red-500">*</span>
+              {t('checkout.fullName')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={accountData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="أدخل اسمك الكامل"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
+                placeholder={t('checkout.fullNamePlaceholder')}
+                className={`w-full ps-10 pe-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition ${
                   errors.name ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -945,16 +1178,16 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              البريد الإلكتروني <span className="text-red-500">*</span>
+              {t('checkout.email')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="email"
                 value={accountData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                placeholder="example@email.com"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
+                placeholder={t('checkout.emailPlaceholder')}
+                className={`w-full ps-10 pe-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -966,16 +1199,16 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              رقم الهاتف <span className="text-red-500">*</span>
+              {t('checkout.phone')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="tel"
                 value={accountData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 placeholder="01012345678"
-                className={`w-full pr-10 pl-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
+                className={`w-full ps-10 pe-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition ${
                   errors.phone ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -987,22 +1220,24 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              كلمة المرور <span className="text-red-500">*</span>
+              {t('checkout.password')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
+              <IoLockClosedOutline  className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
               <input
                 type={showPassword ? "text" : "password"}
                 value={accountData.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                placeholder="••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
+                placeholder="••••••••"
+                className={`w-full ps-10 pe-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -1014,22 +1249,24 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              تأكيد كلمة المرور <span className="text-red-500">*</span>
+              {t('checkout.confirmPassword')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
+              <IoLockClosedOutline  className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 value={accountData.password_confirmation}
                 onChange={(e) => handleChange("password_confirmation", e.target.value)}
-                placeholder="••••••"
-                className={`w-full pr-10 pl-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7700] transition ${
+                placeholder="••••••••"
+                className={`w-full ps-10 pe-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E60076] transition ${
                   errors.password_confirmation ? "border-red-500" : "border-gray-300"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -1045,13 +1282,13 @@ function AccountPopup({
             onClick={onClose}
             className="flex-1 py-2.5 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
           >
-            إلغاء
+            {t('checkout.cancel')}
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 bg-[#FF7700] text-white py-2.5 rounded-xl font-medium hover:bg-[#d41c19] transition"
+            className="flex-1 bg-[#E60076] text-white py-2.5 rounded-xl font-medium hover:bg-[#f0278f] transition"
           >
-            إنشاء الحساب
+            {t('checkout.createAccount')}
           </button>
         </div>
       </div>
@@ -1059,7 +1296,7 @@ function AccountPopup({
   );
 }
 
-// ✅ Popup النجاح
+// Popup النجاح - مترجم
 interface SuccessPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1073,6 +1310,7 @@ interface SuccessPopupProps {
   isGuest: boolean;
   phone?: string;
   email?: string;
+  t: any;
 }
 
 function SuccessPopup({
@@ -1085,10 +1323,10 @@ function SuccessPopup({
   isGuest = false,
   phone = "",
   email = "",
+  t,
 }: SuccessPopupProps) {
   if (!isOpen) return null;
 
-  // ✅ تنظيف رقم الهاتف من كود الدولة +20
   const cleanPhone = phone.replace(/^\+?20\s*/, "").trim();
 
   return (
@@ -1101,39 +1339,20 @@ function SuccessPopup({
             </div>
           </div>
           <h3 className="text-xl font-bold text-gray-800">
-            تم إتمام طلبك بنجاح
+            {t('checkout.orderSuccess')}
           </h3>
           <p className="text-gray-500 text-sm mt-2">
-            شكراً لتسوقك معنا، طلبك قيد التحضير الآن.
+            {t('checkout.thankYouMessage')}
           </p>
         </div>
 
         <div className="p-4">
           <div className="bg-gray-50 rounded-xl p-3 text-center mb-3">
-            <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
+            <p className="text-xs text-gray-500 mb-1">{t('checkout.orderNumber')}</p>
             <p className="text-xl font-bold text-gray-800">#{orderNumber}</p>
           </div>
 
-          {/* ✅ عرض الإيميل ورقم الهاتف بدون كود الدولة */}
-          {isGuest && (email || cleanPhone) && (
-            <div className="bg-gray-50 rounded-xl p-3 mb-3">
-              <p className="text-xs text-gray-500 mb-2 text-center">بيانات الاتصال</p>
-              <div className="space-y-2">
-                {email && (
-                  <div className="flex items-center justify-center gap-2 text-sm">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{email}</span>
-                  </div>
-                )}
-                {cleanPhone && (
-                  <div className="flex items-center justify-center gap-2 text-sm">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">{cleanPhone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+         
         </div>
 
         <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
@@ -1141,14 +1360,14 @@ function SuccessPopup({
             onClick={onGoToHome}
             className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
           >
-            العودة إلى الرئيسية
+            {t('checkout.backToHome')}
           </button>
           {!isGuest && (
             <button
               onClick={onGoToOrders}
-              className="w-full bg-[#FF7700] text-white py-2 rounded-xl font-medium hover:bg-[#d41c19] transition"
+              className="w-full bg-[#E60076] text-white py-2 rounded-xl font-medium hover:bg-[#f0278f] transition"
             >
-              متابعة الطلبات
+              {t('checkout.myOrders')}
             </button>
           )}
         </div>

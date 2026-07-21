@@ -19,6 +19,8 @@ import OrderTracker, { type OrderStatus } from "@/components/OrderTracker";
 import { IoCopyOutline } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6";
 import toast from "react-hot-toast";
+import { getHeaders } from "@/services/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // ========== تعريف الأنواع ==========
 interface OrderItem {
@@ -109,7 +111,7 @@ interface OrderDetails {
 }
 
 // ========== إعدادات API ==========
-const API_URL = 'https://alsas.admin.t-carts.com/api';
+const API_URL = 'https://beauty.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -118,19 +120,11 @@ const getToken = (): string | null => {
   return null;
 };
 
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-  };
-};
-
 // صورة ثابتة للمنتجات التي لا تحتوي على صورة
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
 
 // ========== دالة جلب تفاصيل الطلب ==========
-const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> => {
+const fetchOrderDetails = async (orderId: string, locale: string = "ar-EG"): Promise<OrderDetails | null> => {
   try {
     const response = await fetch(`${API_URL}/orders/${orderId}`, {
       method: 'GET',
@@ -147,8 +141,8 @@ const fetchOrderDetails = async (orderId: string): Promise<OrderDetails | null> 
     
     const data = await response.json();
     
-    if (data.result === true && data.data) {
-      return transformOrderDetails(data.data);
+    if (data.result === true || data.data || data.data.order) {
+      return transformOrderDetails(data.data.order, locale);
     }
     return null;
   } catch (error) {
@@ -203,7 +197,7 @@ const cancelOrder = async (orderId: number): Promise<boolean> => {
       toast.success("تم إلغاء الطلب بنجاح", {
         duration: 4000,
         position: "top-center",
-        icon: "✅",
+        icon: "",
       });
       return true;
     } else {
@@ -259,21 +253,26 @@ const mapDeliveryMethod = (method: string): "pickup" | "delivery" => {
   return methodMap[method] || "pickup";
 };
 
-// ========== تحويل تاريخ الطلب ==========
+// ========== تحويل تاريخ الطلب - يدعم اللغة ==========
+// ========== تنسيق التاريخ - فقط التاريخ بدون وقت ==========
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("ar-EG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  try {
+    const date = new Date(dateString);
+    // استخراج السنة والشهر واليوم فقط
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return dateString;
+  }
 };
 
 // ========== تنظيف رابط الصورة ==========
 const cleanImageUrl = (url: string): string => {
   if (!url) return PLACEHOLDER_IMAGE;
   if (url.startsWith("/storage")) {
-    return `https://alsas.admin.t-carts.com${url}`;
+    return `https://beauty.admin.t-carts.com${url}`;
   }
   return url;
 };
@@ -289,7 +288,7 @@ const getUserName = (order: any): string => {
   return "غير متوفر";
 };
 
-// ========== دوال استخراج الخصائص (تم التعديل) ==========
+// ========== دوال استخراج الخصائص ==========
 
 // جلب الذاكرة
 const getMemory = (item: OrderItem): string | null => {
@@ -324,13 +323,13 @@ const getColor = (item: OrderItem): { name: string; hex: string | null } | null 
 };
 
 // ========== تحويل بيانات الطلب ==========
-const transformOrderDetails = (apiOrder: any): OrderDetails => {
+const transformOrderDetails = (apiOrder: any, locale: string = "ar-EG"): OrderDetails => {
   const englishStatus = mapStatusToEnglish(apiOrder.status_label);
   
   return {
     id: apiOrder.id,
-     orderNumber: apiOrder.order_number || `#${apiOrder.id}`,
-    date: formatDate(apiOrder.created_at),
+    orderNumber: apiOrder.order_number || `#${apiOrder.id}`,
+    date: formatDate(apiOrder.created_at), //  تمرير اللغة
     status: englishStatus,
     status_label: apiOrder.status_label,
     return_status_label: apiOrder.return_status_label || null,
@@ -353,17 +352,18 @@ const transformOrderDetails = (apiOrder: any): OrderDetails => {
 };
 
 // ========== حالة الطلب مع التنسيق ==========
-const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
-  ordered: { label: "تم الطلب", color: "status-pending", icon: Clock },
-  processing: { label: "قيد المعالجة", color: "status-processing", icon: Package },
-  ready_for_receive: { label: "جاهز للاستلام", color: "status-ready", icon: PackageCheck },
-  delivering: { label: "جارٍ التوصيل", color: "status-delivering", icon: Truck },
-  delivered: { label: "تم التسليم", color: "status-delivered", icon: CheckCircle },
-  not_delivered: { label: "لم يتم التسليم", color: "status-cancelled", icon: XCircle },
-  cancelled: { label: "ملغي", color: "status-cancelled", icon: XCircle },
-};
+const getStatusConfig = (t: any) => ({
+  ordered: { label: t('orders.statusOrdered'), color: "status-pending", icon: Clock },
+  processing: { label: t('orders.statusProcessing'), color: "status-processing", icon: Package },
+  ready_for_receive: { label: t('orders.statusReady'), color: "status-ready", icon: PackageCheck },
+  delivering: { label: t('orders.statusDelivering'), color: "status-delivering", icon: Truck },
+  delivered: { label: t('orders.statusDelivered'), color: "status-delivered", icon: CheckCircle },
+  not_delivered: { label: t('orders.statusNotDelivered'), color: "status-cancelled", icon: XCircle },
+  cancelled: { label: t('orders.statusCancelled'), color: "status-cancelled", icon: XCircle },
+});
 
 export default function OrderDetailsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -374,13 +374,16 @@ export default function OrderDetailsPage() {
   const [copied, setCopied] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  // ✅ State for Cancel Modal
+  //  State for Cancel Modal
   const [showCancelModal, setShowCancelModal] = useState(false);
+
+  //  تكوين الحالات مع الترجمة
+  const statusConfig = getStatusConfig(t);
 
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      toast.error("يرجى تسجيل الدخول أولاً", {
+      toast.error(t('orders.pleaseLogin'), {
         duration: 3000,
         position: "top-center",
       });
@@ -390,7 +393,9 @@ export default function OrderDetailsPage() {
     
     const loadOrderDetails = async () => {
       setLoading(true);
-      const data = await fetchOrderDetails(orderId);
+      //  تحديد اللغة الحالية
+      const locale = t('locale') || 'ar-EG';
+      const data = await fetchOrderDetails(orderId, locale);
       setOrder(data);
       if (data?.notes) {
         setOrderNotes(data.notes);
@@ -401,13 +406,13 @@ export default function OrderDetailsPage() {
     if (orderId) {
       loadOrderDetails();
     }
-  }, [orderId, router]);
+  }, [orderId, router, t]);
 
   const copyOrderNumber = () => {
     if (order) {
       navigator.clipboard.writeText(order.orderNumber);
       setCopied(true);
-      toast.success("تم نسخ رقم الطلب", {
+      toast.success(t('orders.copySuccess'), {
         duration: 2000,
         position: "top-center",
       });
@@ -419,7 +424,7 @@ export default function OrderDetailsPage() {
     router.push(`/account/orders/${orderId}/return`);
   };
 
-  // ✅ فتح وإغلاق مودال الإلغاء
+  //  فتح وإغلاق مودال الإلغاء
   const openCancelModal = () => {
     setShowCancelModal(true);
   };
@@ -428,7 +433,7 @@ export default function OrderDetailsPage() {
     setShowCancelModal(false);
   };
 
-  // ✅ دالة تأكيد إلغاء الطلب
+  //  دالة تأكيد إلغاء الطلب
   const confirmCancelOrder = async () => {
     if (!order) return;
     
@@ -441,7 +446,7 @@ export default function OrderDetailsPage() {
       setOrder({
         ...order,
         status: "cancelled",
-        status_label: "ملغي"
+        status_label: t('orders.statusCancelled')
       });
       
       setTimeout(() => {
@@ -456,8 +461,8 @@ export default function OrderDetailsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF7700] mx-auto"></div>
-          <p className="text-gray-500 mt-4">جاري تحميل تفاصيل الطلب...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
+          {/* <p className="text-gray-500 mt-4">{t('orders.loadingDetails')}</p> */}
         </div>
       </div>
     );
@@ -468,17 +473,17 @@ export default function OrderDetailsPage() {
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">الطلب غير موجود</h2>
-          <p className="text-gray-500 mb-4">عذراً، لا يمكننا العثور على هذا الطلب</p>
-          <Link href="/account/orders" className="inline-block bg-[#FF7700] text-white px-6 py-2 rounded-[8px] hover:bg-[#35acf1] transition">
-            العودة إلى الطلبات
+          <h2 className="text-xl font-bold text-gray-800 mb-2">{t('orders.orderNotFound')}</h2>
+          <p className="text-gray-500 mb-4">{t('orders.orderNotFoundDesc')}</p>
+          <Link href="/account/orders" className="inline-block bg-[#E60076] text-white px-6 py-2 rounded-[8px] hover:bg-[#f0278f] transition">
+            {t('orders.backToOrders')}
           </Link>
         </div>
       </div>
     );
   }
 
-  // ✅ اختيار الحالة المناسبة للعرض
+  //  اختيار الحالة المناسبة للعرض
   const isRefunded = order.return_status_label === "refunded";
   const isReturnPending = order.return_status_label === "pending";
   const isReturnRejected = order.return_status_label === "rejected";
@@ -486,11 +491,11 @@ export default function OrderDetailsPage() {
   // تحديد الحالة المعروضة
   let displayStatus;
   if (isRefunded) {
-    displayStatus = { label: "مرتجع", color: "status-refunded", icon: GrMoney };
+    displayStatus = { label: t('orders.statusRefunded'), color: "status-refunded", icon: GrMoney };
   } else if (isReturnPending) {
-    displayStatus = { label: "طلب مرتجع قيد الانتظار", color: "status-return-pending", icon: Clock };
+    displayStatus = { label: t('orders.statusReturnPending'), color: "status-return-pending", icon: Clock };
   } else if (isReturnRejected) {
-    displayStatus = { label: "تم رفض الإرجاع", color: "status-return-rejected", icon: XCircle };
+    displayStatus = { label: t('orders.statusReturnRejected'), color: "status-return-rejected", icon: XCircle };
   } else {
     displayStatus = statusConfig[order.status];
   }
@@ -502,17 +507,17 @@ export default function OrderDetailsPage() {
     <>
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto mb-3 px-4 md:px-8">
-       
+          <h1 className="text-[18px] font-bold mb-2 md:text-xl text-[#180100]">{t('orders.orderDetails')}</h1>
           
-          <h1 className="text-[18px] font-bold mb-2  md:text-xl text-[#180100]">تفاصيل الطلب</h1>
-             {/* Breadcrumb */}
+          {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 md:mb-5">
-            <Link href="/account" className="hover:text-[#FF7700] transition">حسابي</Link>
+            <Link href="/account" className="hover:text-[#E60076] transition">{t('account.myAccount')}</Link>
             <ChevronRight className="w-4 h-4" />
-            <Link href="/account/orders" className="hover:text-[#FF7700] transition">طلباتي</Link>
+            <Link href="/account/orders" className="hover:text-[#E60076] transition">{t('orders.title')}</Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#FF7700] font-medium">تفاصيل الطلب</span>
+            <span className="text-[#E60076] font-medium">{t('orders.orderDetails')}</span>
           </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* العمود الأيمن */}
             <div className="lg:col-span-2 space-y-6">
@@ -522,7 +527,7 @@ export default function OrderDetailsPage() {
                   <div className="flex justify-between items-start">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <div className="flex gap-2 sm:gap-4 items-center text-base sm:text-[20px] font-bold text-[#180100]">
-                        <h1 className="text-sm sm:text-base">رقم الطلب</h1>
+                        <h1 className="text-sm sm:text-base">{t('orders.orderNumber')}</h1>
                         <div className="flex gap-1 sm:gap-2 items-center">
                           <p className="font-bold text-gray-800 text-sm sm:text-base">
                             <span>
@@ -530,18 +535,19 @@ export default function OrderDetailsPage() {
                             </span>
                           </p>
                           <IoCopyOutline 
-                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#FF7700]'}`}
+                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? 'text-green-500' : 'hover:text-[#E60076]'}`}
                             onClick={copyOrderNumber}
                           />
                         </div>
                       </div>
                     </div>
-                    {/* ✅ عرض الحالة (مرتجع / قيد الانتظار / مرفوض / الحالة العادية) */}
+                    {/*  عرض الحالة */}
                     <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${displayStatus.color}`}>
                       <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       {displayStatus.label}
                     </div>
                   </div>
+                  {/*  التاريخ - يعتمد على اللغة */}
                   <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
                 </div>
               </div>
@@ -550,10 +556,9 @@ export default function OrderDetailsPage() {
               
               {/* المنتجات */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4">المنتجات ({order.items.length})</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-4">{t('orders.products')} ({order.items.length})</h2>
                 <div className="space-y-4">
                   {order.items.map((item, idx) => {
-                    // ✅ استخدام صورة المتغير أولاً إذا كانت موجودة
                     const variantImage = item.variant?.variant_image 
                       ? cleanImageUrl(item.variant.variant_image) 
                       : null;
@@ -562,17 +567,15 @@ export default function OrderDetailsPage() {
                       ? cleanImageUrl(item.images[0]) 
                       : PLACEHOLDER_IMAGE;
 
-                    // ✅ اختيار الصورة المناسبة (أولوية لصورة المتغير)
                     const displayImage = variantImage || productImage;
                     
-                    // ========== استخدام الدوال الجديدة ==========
                     const memory = getMemory(item);
                     const storage = getStorage(item);
                     const color = getColor(item);
                     
                     return (
                       <div key={idx} className="flex items-center gap-1 border border-gray-200 rounded-[8px] p-3">
-                        <div className="w-20 h-20 bg-gray-100  rounded-[8px]  overflow-hidden flex-shrink-0 relative">
+                        <div className="w-20 h-20 bg-gray-100 rounded-[8px] overflow-hidden flex-shrink-0 relative">
                           <Image
                             src={displayImage}
                             alt={item.title}
@@ -585,32 +588,29 @@ export default function OrderDetailsPage() {
                           />
                         </div>
                         <div className="flex-1">
-                          <div className="flex flex-col md:flex-row gap-3 md:justify-between ">
+                          <div className="flex flex-col md:flex-row gap-3 md:justify-between">
                             <div>
                               <p className="font-bold text-gray-800">{item.title}</p>
                               
-                              {/* ========== عرض جميع الخصائص ========== */}
+                              {/* عرض جميع الخصائص */}
                               <div className="flex flex-wrap gap-2 mt-1.5">
-                                {/* عرض الذاكرة */}
                                 {memory && (
                                   <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
-                                    <span className="font-medium">الذاكرة:</span>
+                                    <span className="font-medium">{t('orders.memory')}:</span>
                                     <span>{memory}</span>
                                   </span>
                                 )}
                                 
-                                {/* عرض الهارد ديسك */}
                                 {storage && (
                                   <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
-                                    <span className="font-medium">هارد ديسك:</span>
+                                    <span className="font-medium">{t('orders.storage')}:</span>
                                     <span>{storage}</span>
                                   </span>
                                 )}
                                 
-                                {/* عرض اللون */}
                                 {color && (
                                   <span className="inline-flex items-center gap-1.5 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
-                                    <span className="font-medium">اللون:</span>
+                                    <span className="font-medium">{t('orders.color')}:</span>
                                     <span>{color.name}</span>
                                     {color.hex && (
                                       <span 
@@ -623,14 +623,14 @@ export default function OrderDetailsPage() {
                               </div>
                               
                               <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
-                                <span>الكمية: <span className="text-gray-500">x{item.quantity}</span></span>
-                                <span>السعر: <span className="text-gray-500">EGP {item.unit_price.toFixed(2)}</span></span>
+                                <span>{t('orders.quantity')}: <span className="text-gray-500">x{item.quantity}</span></span>
+                                <span>{t('orders.price')}: <span className="text-gray-500">$ {item.unit_price.toFixed(2)}</span></span>
                               </div>
                             </div>
                             <div className="text-left">
-                              <p className="font-bold text-[#FF7700]">EGP {item.total_price.toFixed(2)}</p>
+                              <p className="font-bold text-[#E60076]">$ {item.total_price.toFixed(2)}</p>
                               {item.discount_amount > 0 && (
-                                <p className="text-xs text-gray-400">الخصم: {item.discount_amount.toFixed(2)}</p>
+                                <p className="text-xs text-gray-400">{t('orders.discount')}: {item.discount_amount.toFixed(2)}</p>
                               )}
                             </div>
                           </div>
@@ -640,7 +640,7 @@ export default function OrderDetailsPage() {
                   })}
                 </div>
                 
-                {/* 🔥 عرض OrderTracker - يخفي إذا كان مرتجع أو قيد الانتظار أو مرفوض */}
+                {/* عرض OrderTracker */}
                 {!isRefunded && !isReturnPending && !isReturnRejected && (
                   <div className="mt-6">
                     <OrderTracker 
@@ -655,37 +655,37 @@ export default function OrderDetailsPage() {
               
               {/* ملخص الطلب */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">ملخص الطلب</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">{t('orders.orderSummary')}</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">المبلغ الإجمالي</span>
-                    <span className="font-bold text-gray-800">EGP {order.subtotal.toFixed(2)}</span>
+                    <span className="text-gray-500">{t('orders.subtotal')}</span>
+                    <span className="font-bold text-gray-800">$ {order?.subtotal?.toFixed(2)}</span>
                   </div>
                   {order.coupon_discount_amount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">خصم الكوبون</span>
-                      <span className="font-bold text-[#FF7700]">-EGP {order.coupon_discount_amount.toFixed(2)}</span>
+                      <span className="text-gray-500">{t('orders.couponDiscount')}</span>
+                      <span className="font-bold text-[#E60076]">-$ {order?.coupon_discount_amount?.toFixed(2)}</span>
                     </div>
                   )}
                   {order.total_discount_amount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">الخصم الكلي</span>
-                      <span className="font-bold text-[#FF7700]">-EGP {order.total_discount_amount.toFixed(2)}</span>
+                      <span className="text-gray-500">{t('orders.totalDiscount')}</span>
+                      <span className="font-bold text-[#E60076]">-$ {order?.total_discount_amount?.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-500">رسوم التوصيل</span>
-                    <span className="font-bold text-gray-800">EGP {order.shipping_amount.toFixed(2)}</span>
+                    <span className="text-gray-500">{t('orders.deliveryFee')}</span>
+                    <span className="font-bold text-gray-800">$ {order?.shipping_amount?.toFixed(2)}</span>
                   </div>
                   {order.tax_amount > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">الضرائب</span>
-                      <span className="font-bold text-gray-800">EGP {order.tax_amount.toFixed(2)}</span>
+                      <span className="text-gray-500">{t('orders.tax')}</span>
+                      <span className="font-bold text-gray-800">$ {order?.tax_amount?.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
-                    <span className="text-lg font-bold text-gray-800">الإجمالي</span>
-                    <span className="text-xl font-bold text-[#FF7700]">EGP {order.total_amount.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-gray-800">{t('orders.total')}</span>
+                    <span className="text-xl font-bold text-[#E60076]">$ {order?.total_amount?.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -694,16 +694,16 @@ export default function OrderDetailsPage() {
             {/* العمود الأيسر */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-base font-bold text-gray-800 mb-4">معلومات الاتصال</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-4">{t('orders.contactInfo')}</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold">الاسم الكامل</span>
+                    <span className="font-bold">{t('orders.fullName')}</span>
                     <span className="font-medium text-gray-600">{userName}</span>
                   </div>
                   {order.additional_data?.phone && (
                     <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold">رقم الهاتف</span>
-                      <span className="font-medium text-gray-600" dir="ltr">{order.additional_data.phone}</span>
+                      <span className="font-bold">{t('orders.phone')}</span>
+                      <span className="font-medium text-gray-600" dir="ltr">{order.additional_data?.phone}</span>
                     </div>
                   )}
                 </div>
@@ -712,12 +712,12 @@ export default function OrderDetailsPage() {
               <br />
               
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-base font-bold mb-4">طريقة الاستلام</h2>
+                <h2 className="text-base font-bold mb-4">{t('orders.deliveryMethod')}</h2>
                 <span className="font-medium text-gray-800">
-                  {order.delivery_method === "pickup" ? "استلام من الفرع" : "توصيل"}
+                  {order.delivery_method === "pickup" ? t('checkout.pickup') : t('checkout.delivery')}
                 </span>
                 {order.address && (
-                  <div className="flex items-center gap-2 border  rounded-[8px]  px-2 py-3 mt-3">
+                  <div className="flex items-center gap-2 border rounded-[8px] px-2 py-3 mt-3">
                     <FaLocationDot className="text-gray-500 flex-shrink-0" />
                     <p className="font-medium text-gray-400 text-sm">
                       {order.address.street}، {order.address.city?.name}
@@ -729,8 +729,8 @@ export default function OrderDetailsPage() {
               <br/>
               
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-base font-bold mb-4">طريقة الدفع</h2>
-                <div className="flex items-center gap-3 p-2 border border-gray-300  rounded-[8px] ">
+                <h2 className="text-base font-bold mb-4">{t('orders.paymentMethod')}</h2>
+                <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-[8px]">
                   <div className="w-10 h-10 bg-white rounded-[8px] flex items-center justify-center shadow-sm">
                     <GrMoney />
                   </div>
@@ -743,25 +743,24 @@ export default function OrderDetailsPage() {
               <br/>
               
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-base font-bold text-gray-800 mb-4">ملاحظات</h2>
+                <h2 className="text-base font-bold text-gray-800 mb-4">{t('orders.notes')}</h2>
                 <textarea
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
-                  placeholder="لا توجد ملاحظات"
-                  className="w-full p-3 border border-gray-200  rounded-[8px]  focus:outline-none focus:border-[#FF7700] resize-none bg-gray-50"
+                  placeholder={t('orders.noNotes')}
+                  className="w-full p-3 border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#E60076] resize-none bg-gray-50"
                   rows={3}
                   readOnly
                 />
               </div>
 
               <div className="flex gap-3 mt-3 md:mt-6 mx-2">
-                {/* ✅ إخفاء زر الإرجاع إذا كان الطلب مرتجع أو قيد الانتظار أو مرفوض */}
                 {!isRefunded && !isReturnPending && !isReturnRejected && order.status === "delivered" && (
                   <button 
                     onClick={handleReturnClick} 
-                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3  rounded-[8px]  font-medium hover:bg-red-50  transition"
+                    className="flex-1 border-2 border-[#000000] text-[#000000] py-3 rounded-[8px] font-medium hover:bg-red-50 transition"
                   >
-                    إرجاع
+                    {t('orders.return')}
                   </button>
                 )}
                 
@@ -769,15 +768,15 @@ export default function OrderDetailsPage() {
                   <button 
                     onClick={openCancelModal}
                     disabled={isCancelling}
-                    className="flex-1 border-2 border-red-500 text-red-600 py-3  rounded-[8px]  font-medium hover:bg-red-50  transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 border-2 border-red-500 text-red-600 py-3 rounded-[8px] font-medium hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isCancelling ? (
                       <>
                         <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                        جاري الإلغاء...
+                        {t('orders.cancelling')}
                       </>
                     ) : (
-                      "إلغاء الطلب"
+                      t('orders.cancelOrder')
                     )}
                   </button>
                 )}
@@ -793,57 +792,54 @@ export default function OrderDetailsPage() {
           .status-delivering { background-color: #F6AD553D; color: #F6AD55; }
           .status-delivered { background-color: #48BB783D; color: #48BB78; }
           .status-cancelled { background-color: #F565653D; color: #F56565; }
-          .status-refunded { background-color: #9F7AEA3D; color: #9F7AEA; } /* ✅ حالة المرتجع */
-          .status-return-pending { background-color: #F6AD553D; color: #F6AD55; } /* ✅ طلب مرتجع قيد الانتظار */
-          .status-return-rejected { background-color: #F565653D; color: #F56565; } /* ✅ تم رفض الإرجاع */
+          .status-refunded { background-color: #9F7AEA3D; color: #9F7AEA; }
+          .status-return-pending { background-color: #F6AD553D; color: #F6AD55; }
+          .status-return-rejected { background-color: #F565653D; color: #F56565; }
         `}</style>
       </div>
 
-      {/* ✅ Modal تأكيد إلغاء الطلب */}
+      {/*  Modal تأكيد إلغاء الطلب */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fadeIn">
-            {/* أيقونة */}
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
                 <XCircle className="w-8 h-8 text-red-600" />
               </div>
             </div>
             
-            {/* النص */}
             <h3 className="text-xl font-bold text-center text-gray-800 mb-2">
-              تأكيد إلغاء الطلب
+              {t('orders.confirmCancel')}
             </h3>
             <p className="text-center text-gray-600 text-sm mb-1">
-              هل أنت متأكد من إلغاء الطلب؟
+              {t('orders.confirmCancelMessage')}
             </p>
             <p className="text-center text-red-500 font-bold text-sm mb-4">
               #{order?.orderNumber}
             </p>
             <p className="text-center text-gray-400 text-xs mb-6">
-              لا يمكنك التراجع عن هذا الإجراء
+              {t('orders.cancelWarning')}
             </p>
             
-            {/* الأزرار */}
             <div className="flex gap-3">
               <button
                 onClick={closeCancelModal}
-                className="flex-1 py-2.5  rounded-[8px]  border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+                className="flex-1 py-2.5 rounded-[8px] border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
               >
-                إلغاء
+                {t('orders.cancel')}
               </button>
               <button
                 onClick={confirmCancelOrder}
                 disabled={isCancelling}
-                className="flex-1 py-2.5  rounded-[8px]   bg-[#FF7700] text-white font-medium hover:bg-[#2aa9f3] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-[8px] bg-[#E60076] text-white font-medium hover:bg-[#f0278f] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCancelling ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    جاري الإلغاء...
+                    {t('orders.cancelling')}
                   </>
                 ) : (
-                  "نعم، إلغاء الطلب"
+                  t('orders.yesCancel')
                 )}
               </button>
             </div>

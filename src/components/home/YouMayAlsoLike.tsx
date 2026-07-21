@@ -7,8 +7,10 @@ import { ChevronLeft } from "lucide-react";
 import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getMostSellingProducts, getNewProducts, ProductData, getAllProducts } from "@/services/api";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-// ✅ تعريف واجهات الفاريانتات
+//  تعريف واجهات الفاريانتات
 interface VariantAttribute {
   id: number;
   attribute_type: {
@@ -35,7 +37,7 @@ interface ProductVariant {
   attributes: VariantAttribute[];
 }
 
-// ✅ تحديث واجهة Product لإضافة خصائص الفاريانتات
+//  تحديث واجهة Product لإضافة خصائص الفاريانتات
 interface Product {
   id: string;
   name: string;
@@ -49,13 +51,13 @@ interface Product {
   rating?: number;
   reviewsCount?: number;
   isBestSeller?: boolean;
-  // ✅ إضافة خصائص الفاريانتات
+  //  إضافة خصائص الفاريانتات
   hasVariants?: boolean;
   variants?: ProductVariant[];
   variantId?: number | null;
 }
 
-// ✅ دالة استخراج الألوان من جميع الـ variants
+//  دالة استخراج الألوان من جميع الـ variants
 const extractColorsFromVariants = (
   variants: ProductVariant[]
 ): Array<{ color: string; name: string }> => {
@@ -85,15 +87,15 @@ const extractColorsFromVariants = (
   }));
 };
 
-// ✅ تحويل البيانات من API إلى شكل المنتج المطلوب مع دعم الفاريانتات
+//  تحويل البيانات من API إلى شكل المنتج المطلوب مع دعم الفاريانتات
 const transformProduct = (product: ProductData): Product => {
   // معالجة الصور بشكل صحيح
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://alsas.admin.t-carts.com${url}`;
+      return `https://beauty.admin.t-carts.com${url}`;
     }
-    return `https://alsas.admin.t-carts.com${url}`;
+    return `https://beauty.admin.t-carts.com${url}`;
   };
 
   const mainImage =
@@ -119,7 +121,7 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
-  // ✅ استخراج معلومات الفاريانتات
+  //  استخراج معلومات الفاريانتات
   let colors: Array<{ color: string; name: string }> = [];
   let hasVariants = false;
   let variants: ProductVariant[] = [];
@@ -145,7 +147,7 @@ const transformProduct = (product: ProductData): Product => {
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
     isBestSeller: product.is_active,
-    // ✅ إضافة معلومات الفاريانتات
+    //  إضافة معلومات الفاريانتات
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,
@@ -163,6 +165,8 @@ const shuffleProducts = (products: Product[]): Product[] => {
 };
 
 export function YouMayAlsoLike() {
+  const { t } = useTranslation(); //  استخدام hook الترجمة
+
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(8);
@@ -171,7 +175,11 @@ export function YouMayAlsoLike() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
-
+ const [isClient, setIsClient] = useState(false)
+ const {language} = useLanguage()
+   useEffect(() => {
+    setIsClient(true);
+  }, []);
   // استخدام useRef لمنع التحديثات المتكررة
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
@@ -242,7 +250,7 @@ export function YouMayAlsoLike() {
       } catch (err) {
         console.error("Error fetching products:", err);
         if (!isMounted.current) return;
-        setError("فشل في تحميل المنتجات");
+        setError(t("products.failedToLoad"));
         setProducts([]);
       } finally {
         if (!isMounted.current) return;
@@ -251,7 +259,7 @@ export function YouMayAlsoLike() {
         fetchingRef.current = false;
       }
     },
-    []
+    [t]
   );
 
   // استخدام useEffect منفصل للتحميل الأولي
@@ -289,10 +297,10 @@ export function YouMayAlsoLike() {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#FF7700] border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <p className="text-gray-500 text-sm animate-pulse">
-                جاري تحميل المنتجات...
+                {t("products.loading")}
               </p>
             </div>
           </div>
@@ -305,17 +313,17 @@ export function YouMayAlsoLike() {
   if (error && products.length === 0) {
     return (
       <section className="py-6 md:py-12 bg-gray-50">
-        {/* <div className="container-custom">
+        <div className="container-custom">
           <div className="text-center py-12">
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#FF7700] text-white rounded-lg hover:bg-[#3bacee] transition"
+              className="px-4 py-2 bg-[#E60076] text-white rounded-lg hover:bg-[#3bacee] transition"
             >
-              إعادة المحاولة
+              {t("common.retry")}
             </button>
           </div>
-        </div> */}
+        </div>
       </section>
     );
   }
@@ -323,26 +331,28 @@ export function YouMayAlsoLike() {
   return (
     <section className="py-6 md:py-12 bg-gray-50">
       <div className="container-custom">
-        {/* Header */}
+        {/* Header - مترجم */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
-            قد يعجبك أيضاً
+            {t("youMayAlsoLike.youMayAlsoLike")}
           </h2>
           <Link
             href="/products"
-            className="text-[#FF7700] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
+            className="text-[#E60076] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
           >
-            عرض المزيد
-            <ChevronLeft className="w-4 h-4" />
+            {t("youMayAlsoLike.viewMore")}
+            {/* <ChevronLeft className="w-4 h-4" /> */}
+                <ChevronLeft className={`h-4 w-4  ${isClient && language === 'en' ? 'rotate-180' : ''}`} />
+
           </Link>
         </div>
 
-        {/* ✅ مؤشر تحميل عند تحميل المزيد */}
+        {/*  مؤشر تحميل عند تحميل المزيد */}
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#FF7700] rounded-full animate-spin"></div>
-              <span className="text-gray-500 text-sm">جاري تحميل المزيد...</span>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#E60076] rounded-full animate-spin"></div>
+              <span className="text-gray-500 text-sm">{t("products.loadingMore")}</span>
             </div>
           </div>
         )}
@@ -371,7 +381,7 @@ export function YouMayAlsoLike() {
                 rating={product.rating}
                 reviewsCount={product.reviewsCount}
                 isBestSeller={product.isBestSeller}
-                // ✅ تمرير معلومات الفاريانتات
+                //  تمرير معلومات الفاريانتات
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
                 variantId={product.variantId || null}
@@ -380,7 +390,7 @@ export function YouMayAlsoLike() {
           ))}
         </div>
 
-        {/* Load More Button */}
+        {/* Load More Button - مترجم */}
         {showLoadMoreButton && !isLoadingMore && (
           <div className="text-center mt-4">
             <Button
@@ -388,20 +398,20 @@ export function YouMayAlsoLike() {
               className="px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: "transparent",
-                color: "#FF7700",
-                border: "2px solid #FF7700",
+                color: "#E60076",
+                border: "2px solid #E60076",
                 borderRadius: "8px",
               }}
             >
-              عرض المزيد
+              {t("youMayAlsoLike.loadMore")}
             </Button>
           </div>
         )}
 
-        {/* No Products Message */}
+        {/* No Products Message - مترجم */}
         {products.length === 0 && !isInitialLoading && (
           <div className="text-center py-12">
-            <p className="text-gray-500">لا توجد منتجات حالياً</p>
+            <p className="text-gray-500">{t("products.noProducts")}</p>
           </div>
         )}
       </div>

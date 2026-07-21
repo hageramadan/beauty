@@ -37,7 +37,7 @@ export default function LoginWithPhone() {
   useEffect(() => {
     const registered = searchParams.get("registered");
     if (registered === "true") {
-      toast.success("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول ✅", {
+      toast.success("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول ", {
         duration: 5000,
         position: "top-center",
       });
@@ -60,7 +60,7 @@ export default function LoginWithPhone() {
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    // ✅ التحقق من رقم الهاتف - فقط أن الحقل ليس فارغاً
+    //  التحقق من رقم الهاتف - فقط أن الحقل ليس فارغاً
     if (!formData.phoneNumber) {
       newErrors.phone = "رقم الهاتف مطلوب";
     }
@@ -85,17 +85,17 @@ export default function LoginWithPhone() {
     // استخدام API حقيقي عبر الـ Context
     const result = await loginWithPhone(
       formData.phoneNumber,
-      formData.password,
+      // formData.password,
       formData.countryCode,
     );
 
     if (result.success) {
-      toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ✅", {
+      toast.success(result.message || "تم إرسال رمز التحقق إلى هاتفك! ", {
         duration: 3000,
         position: "top-center",
       });
       
-      // ✅ التوجيه إلى صفحة OTP بعد تسجيل الدخول
+      //  التوجيه إلى صفحة OTP بعد تسجيل الدخول
       const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
       setTimeout(() => {
         router.push(`/auth/verify-otp/phone?phone=${encodeURIComponent(fullPhone)}&isLogin=true`);
@@ -119,19 +119,7 @@ export default function LoginWithPhone() {
   const isLoading = loading || isSubmitting;
 
   return (
-    <>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            fontSize: '14px',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            direction: 'rtl',
-          },
-        }}
-      />
-      
+    <>  
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center">
         <div className="container mx-auto px-4 py-6 md:py-12">
           <div className="max-w-md mx-auto">
@@ -163,7 +151,7 @@ export default function LoginWithPhone() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#37afff] transition font-medium ${
+                  className={`w-full flex justify-center items-center gap-2 px-4 py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition font-medium ${
                     isLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -184,7 +172,7 @@ export default function LoginWithPhone() {
                     <button
                       type="button"
                       onClick={() => router.push("/auth/register/phone")}
-                      className="text-[#FF7700] font-medium hover:underline"
+                      className="text-[#E60076] font-medium hover:underline"
                     >
                       إنشاء حساب جديد
                     </button>

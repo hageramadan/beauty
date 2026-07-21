@@ -51,7 +51,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
     return page < 10 ? `0${page}` : `${page}`;
   };
 
-  // ✅ التحقق من صحة البيانات
+  //  التحقق من صحة البيانات
   if (!lastPage || lastPage <= 0) {
     return null;
   }
@@ -67,7 +67,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
     );
   }
 
-  // ✅ منع تجاوز الصفحات
+  //  منع تجاوز الصفحات
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= lastPage) {
       onPageChange(page);
@@ -87,7 +87,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
           className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
             currentPage === 1
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#FF7700]'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#E60076]'
           }`}
           aria-label="الصفحة السابقة"
         >
@@ -106,8 +106,8 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
               onClick={() => handlePageChange(page as number)}
               className={`w-12 h-12 rounded-full transition-all duration-200 font-medium ${
                 page === currentPage
-                  ? 'bg-[#FF7700] text-white border-2 border-[#FF7700]'
-                  : 'bg-white text-[#FF7700] border-2 border-gray-300 hover:border-[#FF7700] hover:bg-gray-50'
+                  ? 'bg-[#E60076] text-white border-2 border-[#E60076]'
+                  : 'bg-white text-[#E60076] border-2 border-gray-300 hover:border-[#E60076] hover:bg-gray-50'
               }`}
               aria-label={`الصفحة ${page}`}
               aria-current={page === currentPage ? 'page' : undefined}
@@ -124,7 +124,7 @@ export default function Pagination({ currentPage, lastPage, onPageChange, total 
           className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center ${
             currentPage === lastPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#FF7700]'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#E60076]'
           }`}
           aria-label="الصفحة التالية"
         >

@@ -41,7 +41,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between md:gap-1.5 rounded-[8px]  border border-gray-200 bg-white px-4 py-2 text-sm whitespace-nowrap transition-all duration-200 outline-none focus:border-[#FF7700] focus:ring-2 focus:ring-[#FF7700]/20 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-gray-400 data-[size=default]:h-10 data-[size=sm]:h-8 hover:border-gray-300 hover:shadow-sm cursor-pointer",
+        "flex w-full items-center justify-between md:gap-1.5 rounded-[8px]  border border-gray-200 bg-white px-4 py-2 text-sm whitespace-nowrap transition-all duration-200 outline-none focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-gray-400 data-[size=default]:h-10 data-[size=sm]:h-8 hover:border-gray-300 hover:shadow-sm cursor-pointer",
         className
       )}
       {...props}
@@ -121,7 +121,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-[8px]  py-2 pr-3 pl-3 text-sm font-medium outline-hidden transition-all duration-150 hover:  hover:text-[#FF7700] focus:bg-blue-50  focus:text-[#FF7700] data-[selected=true]:bg-blue-50  data-[selected=true]:text-[#FF7700] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-[8px]  py-2  ps-3  pe-3 text-sm font-medium outline-hidden transition-all duration-150 hover:  hover:text-[#E60076] focus:bg-blue-50  focus:text-[#E60076] data-[selected=true]:bg-blue-50  data-[selected=true]:text-[#E60076] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -131,7 +131,7 @@ function SelectItem({
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
         render={
-          <span className="pointer-events-none flex size-4 items-center justify-center text-[#FF7700]">
+          <span className="pointer-events-none flex size-4 items-center justify-center text-[#E60076]">
             <CheckIcon className="size-4" />
           </span>
         }

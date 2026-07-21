@@ -10,7 +10,7 @@ import { getSliders, getCategories } from "@/services/api";
 import HomeLoading from "./HomeLoading";
 import HomeError from "./HomeError";
 
-const API_BASE_URL = 'https://alsas.admin.t-carts.com';
+const API_BASE_URL = 'https://beauty.admin.t-carts.com';
 
 interface Slide {
   id: number;
@@ -94,7 +94,7 @@ async function getHomeData() {
     const categories: Category[] = categoriesData.map(cat => ({
       id: cat.id,
       name: cat.name,
-      image: `https://alsas.admin.t-carts.com${cat.image}`,
+      image: `https://beauty.admin.t-carts.com${cat.image}`,
       slug: generateSlug(cat.name)
     }));
 
@@ -120,10 +120,10 @@ export default async function Home() {
   return (
     <div>
       <Hero  />
-      <CategoriesSection categories={categories} />
+      <CategoriesSection  />
       <LatestProducts />
-
-      <BestProducts />
+      <AdsHome/>
+   
       <BestProducts />
      
       <BestDiscounts />

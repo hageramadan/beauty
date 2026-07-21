@@ -1,133 +1,478 @@
+// components/Hero.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { getSliders } from "@/services/api";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FaArrowLeft } from "react-icons/fa";
+import { getSliders, getFullImageUrl } from "@/services/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-export function Hero() {
-  const [sliders, setSliders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface Slide {
+  id: number;
+  image: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  buttonLink: string;
+}
 
-  // جلب البيانات من API
+//  دالة للحصول على الترجمات حسب اللغة (نفس الهيرو الأول)
+const getTranslations = (lang: string) => {
+  if (lang === 'en') {
+    return {
+      loadingSlides: "Loading slides...",
+      shopNow: "Shop Now",
+      noSlides: "No slides available",
+      defaultTitle: "Integrated Technology Experience",
+      defaultDescription: "Original products from top brands with guaranteed quality you deserve. Discover exclusive offers and fast delivery.",
+    };
+  }
+  // Arabic (default)
+  return {
+    loadingSlides: "جاري تحميل العروض...",
+    shopNow: "تسوق الآن",
+    noSlides: "لا توجد عروض متاحة",
+    defaultTitle: "تجربة تقنية متكاملة",
+    defaultDescription: "منتجات أصلية من أشهر العلامات التجارية مع ضمان وجودة تستحقها اكتشف عروض حصرية وتوصيل سريع.",
+  };
+};
+
+// Individual Slider Component with Touch Support
+function IndividualSlider({ 
+  slides, 
+  position,
+  startDelay = 0,
+  onSlideChange
+}: { 
+  slides: Slide[]; 
+  position: 'left' | 'right';
+  startDelay?: number;
+  onSlideChange?: (index: number) => void;
+}) {
+  const { language } = useLanguage();
+  const t = getTranslations(language);
+  
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
+  // متغيرات السحب باللمس
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const [dragProgress, setDragProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isSwipingHorizontal = useRef<boolean>(false);
+  
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-play functionality with delay for right slider
   useEffect(() => {
-    const fetchSliders = async () => {
-      try {
-        setLoading(true);
-        const data = await getSliders();
-        setSliders(data);
-        setError(null);
-      } catch (err) {
-        setError("حدث خطأ في تحميل الصور");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (!isAutoPlaying || slides.length === 0) return;
+
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(() => {
+        setCurrentSlide((prev) => {
+          const next = (prev + 1) % slides.length;
+          onSlideChange?.(next);
+          return next;
+        });
+      }, 4000);
+    }, startDelay);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
+  }, [isAutoPlaying, slides.length, startDelay, onSlideChange]);
 
-    fetchSliders();
-  }, []);
-
-  // دالة للحصول على مسار الصورة الكامل
-  const getFullImageUrl = (imagePath: string) => {
-    if (imagePath.startsWith('http')) {
-      return imagePath;
+  const goToNextSlide = () => {
+    if (slides.length === 0) return;
+    setIsAutoPlaying(false);
+    setCurrentSlide((prev) => {
+      const next = (prev + 1) % slides.length;
+      onSlideChange?.(next);
+      return next;
+    });
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
-    return `https://alsas.admin.t-carts.com${imagePath}`;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    setTimeout(() => {
+      setIsAutoPlaying(true);
+    }, 10000);
   };
 
-  if (loading) {
-    return (
-      <section className="relative w-full h-[668px] py-[20px] md:py-[46px] md:h-[400px] lg:h-[660px] overflow-hidden">
-        <div className="container-custom h-full mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF7700]"></div>
-          </div>
-        </div>
-      </section>
-    );
+  const goToPrevSlide = () => {
+    if (slides.length === 0) return;
+    setIsAutoPlaying(false);
+    setCurrentSlide((prev) => {
+      const prevSlide = (prev - 1 + slides.length) % slides.length;
+      onSlideChange?.(prevSlide);
+      return prevSlide;
+    });
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    setTimeout(() => {
+      setIsAutoPlaying(true);
+    }, 10000);
+  };
+
+  // دوال السحب للموبايل
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+    setIsAutoPlaying(false);
+    isSwipingHorizontal.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartX.current;
+    const diffY = currentY - touchStartY.current;
+    
+    // تحديد الاتجاه - أفقي أم عمودي
+    if (!isSwipingHorizontal.current && Math.abs(diffX) > 5) {
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        isSwipingHorizontal.current = true;
+        e.preventDefault();
+      }
+    }
+    
+    if (isSwipingHorizontal.current) {
+      e.preventDefault();
+      const containerWidth = containerRef.current.clientWidth;
+      let progress = diffX / containerWidth;
+      // تحديد حدود السحب
+      progress = Math.min(Math.max(progress, -0.8), 0.8);
+      setDragProgress(progress);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    const minSwipeDistance = 0.15; // 15% عتبة السحب
+    
+    if (Math.abs(dragProgress) > minSwipeDistance && isSwipingHorizontal.current) {
+      // سحب ناجح - تغيير الصورة فوراً
+      if (dragProgress < 0) {
+        goToNextSlide(); // سحب لليسار -> التالي
+      } else if (dragProgress > 0) {
+        goToPrevSlide(); // سحب لليمين -> السابق
+      }
+    }
+    
+    // إعادة التعيين
+    setIsDragging(false);
+    setDragProgress(0);
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+    isSwipingHorizontal.current = false;
+    
+    // استئناف التشغيل التلقائي بعد 10 ثواني
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
+
+  // حساب مؤشرات السلايدات المجاورة
+  const getPrevIndex = () => {
+    return currentSlide === 0 ? slides.length - 1 : currentSlide - 1;
+  };
+
+  const getNextIndex = () => {
+    return (currentSlide + 1) % slides.length;
+  };
+
+  if (slides.length === 0) {
+    return null;
   }
 
-  if (error || sliders.length < 4) {
-    return (
-      <section className="relative w-full h-[668px] py-[20px] md:py-[46px] md:h-[400px] lg:h-[660px] overflow-hidden">
-        <div className="container-custom h-full mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex flex-col justify-center items-center h-full text-center">
-            <p className="text-red-500 mb-4">{error || "لا توجد صور كافية لعرضها (يحتاج 4 صور على الأقل)"}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-[#FF7700] text-white rounded-md"
-            >
-              إعادة المحاولة
-            </button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // نفس التصميم الأصلي ولكن مع صور من API
   return (
-    <section className="relative w-full h-[668px] py-[20px] md:py-[46px] md:h-[400px] lg:h-[660px] overflow-hidden">
-      <div className="container-custom h-full mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row h-full gap-4 md:gap-6">
-          
-          {/* الجانب الأيمن - صورة كبيرة (أول صورة من API) */}
-          <div className="w-full md:w-1/2 h-full relative overflow-hidden group">
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ 
+        touchAction: isDragging && isSwipingHorizontal.current ? 'none' : 'pan-y',
+      }}
+    >
+      <div className="relative w-full h-full">
+        {/* السلايد الحالي + السحب المباشر */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress * 100}%)`,
+            zIndex: 10,
+          }}
+        >
+          <div className="relative w-full h-full">
             <Image
-              src={getFullImageUrl(sliders[0].image)}
-              alt={sliders[0].name || "Main image"}
+              src={slides[currentSlide].image}
+              alt={slides[currentSlide].title || `Slide ${currentSlide + 1}`}
               fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
-              quality={90}
+              loading="eager"
+              className="object-cover"
               priority
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
             />
           </div>
-          
-          {/* الجانب الأيسر - صورتين مكدستين */}
-          <div className="w-full md:w-1/2 h-full flex flex-col gap-4 md:gap-6">
-            
-            {/* الصورة العلوية (ثاني صورة من API) */}
-            <div className="relative flex-1 overflow-hidden group">
-              <Image
-                src={getFullImageUrl(sliders[1].image)}
-                alt={sliders[1].name || "Image top"}
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
-                quality={85}
-              />
-            </div>
-            
-            {/* القسم السفلي - صورتين جنباً إلى جنب */}
-            <div className="flex-1 flex gap-4 md:gap-6">
-              
-              {/* الصورة السفلية اليسرى (ثالث صورة من API) */}
-              <div className="relative w-1/2 overflow-hidden group">
-                <Image
-                  src={getFullImageUrl(sliders[2].image)}
-                  alt={sliders[2].name || "Image bottom left"}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                  className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
-                  quality={85}
-                />
-              </div>
-              
-              {/* الصورة السفلية اليمنى (رابع صورة من API) */}
-              <div className="relative w-1/2 overflow-hidden group">
-                <Image
-                  src={getFullImageUrl(sliders[3].image)}
-                  alt={sliders[3].name || "Image bottom right"}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                  className="object-cover transition-all duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
-                  quality={85}
-                />
-              </div>
-            </div>
+        </div>
+
+        {/* السلايد التالي - يظهر من اليمين عند السحب لليسار */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress < 0 ? (100 + dragProgress * 100) : 100}%)`,
+            zIndex: dragProgress < 0 ? 15 : 5,
+          }}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src={slides[getNextIndex()].image}
+              alt={slides[getNextIndex()].title || `Slide ${getNextIndex() + 1}`}
+              fill
+              className="object-cover"
+              priority={false}
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
+            />
           </div>
+        </div>
+
+        {/* السلايد السابق - يظهر من اليسار عند السحب لليمين */}
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: `translateX(${dragProgress > 0 ? (-100 + dragProgress * 100) : -100}%)`,
+            zIndex: dragProgress > 0 ? 15 : 5,
+          }}
+        >
+          <div className="relative w-full h-full">
+            <Image
+              src={slides[getPrevIndex()].image}
+              alt={slides[getPrevIndex()].title || `Slide ${getPrevIndex() + 1}`}
+              fill
+              className="object-cover"
+              priority={false}
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder-slide.jpg';
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Hero() {
+  const { language } = useLanguage();
+  const t = getTranslations(language);
+  
+  const [leftSlides, setLeftSlides] = useState<Slide[]>([]);
+  const [rightSlides, setRightSlides] = useState<Slide[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [centerText, setCenterText] = useState({
+    title: t.defaultTitle,
+    description: t.defaultDescription
+  });
+
+  // جلب السلايدرات من API
+  useEffect(() => {
+    const loadSliders = async () => {
+      setLoading(true);
+      try {
+        //  getSliders تعيد مصفوفة من السلايدرات مباشرة
+        const slidersData = await getSliders(language);
+        
+        //  التحقق من وجود البيانات
+        if (slidersData && slidersData.length > 0) {
+          // تحويل البيانات إلى صيغة Slide
+          const formattedSlides: Slide[] = slidersData.map((slider: any) => ({
+            id: slider.id,
+            image: getFullImageUrl(slider.image),
+            title: slider.name !== "-" ? slider.name : "",
+            description: slider.description || "",
+            buttonText: t.shopNow,
+            buttonLink: slider.link || "/products"
+          }));
+
+          // تقسيم السلايدرات: أول 3 للسلايدر الأيسر، والـ 3 التالية للسلايدر الأيمن
+          const left = formattedSlides.slice(0, 3);
+          const right = formattedSlides.slice(3, 6);
+          
+          setLeftSlides(left);
+          setRightSlides(right);
+
+          // إذا كان هناك سلايدرات، استخدم بيانات أول سلايدر للنص المركزي
+          if (formattedSlides.length > 0) {
+            setCenterText({
+              title: formattedSlides[0].title ,
+              description: formattedSlides[0].description 
+            });
+          }
+        } else {
+          //  استخدام النصوص الافتراضية المترجمة إذا لم توجد سلايدرات
+          setCenterText({
+            title: t.defaultTitle,
+            description: t.defaultDescription
+          });
+        }
+      } catch (error) {
+        console.error('Error loading sliders:', error);
+        //  في حالة الخطأ، استخدام النصوص الافتراضية
+        setCenterText({
+          title: t.defaultTitle,
+          description: t.defaultDescription
+        });
+      }
+      
+      setLoading(false);
+    };
+
+    loadSliders();
+  }, [language, t.shopNow, t.defaultTitle, t.defaultDescription]);
+
+  // عرض شاشة تحميل -  استخدام الترجمة
+  if (loading) {
+    return (
+      <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gray-900">
+        <div className="flex items-center justify-center h-full min-h-[50vh]">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
+            
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  //  إذا لم توجد سلايدرات، عرض النص المركزي فقط بدون صور
+  if (leftSlides.length === 0 && rightSlides.length === 0) {
+    return (
+      <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gradient-to-r from-[#E60076]/20 to-[#E60076]/5">
+        <div className="flex items-center justify-center h-full min-h-[50vh] px-4 sm:px-6">
+          <div className="text-center max-w-[90%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%]">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold mb-2 sm:mb-3 md:mb-4 text-white drop-shadow-lg">
+              {centerText.title}
+            </h1>
+            <p className="text-white/95 mx-auto w-full sm:w-[85%] md:w-[80%] text-sm sm:text-base md:text-lg lg:text-[20px] mb-4 sm:mb-6 md:mb-8 leading-relaxed drop-shadow-md">
+              {centerText.description}
+            </p>
+            <Button
+              asChild
+              className="text-white text-[14px] sm:text-[16px] font-bold rounded-xl pointer-events-auto hover:scale-105 transition-transform duration-300 mx-auto"
+              style={{ 
+                backgroundColor: '#E60076',
+                width: '150px',
+                height: '45px'
+              }}
+            >
+              <Link href="/products" className="flex items-center justify-center gap-2">
+                {t.shopNow}
+                <FaArrowLeft className={`h-3 w-3 sm:h-4 sm:w-4 ${language === 'en' ? 'rotate-180' : ''}`} />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gray-900">
+      
+      {/* Two Sliders Side by Side */}
+      <div className="w-full h-full">
+        <div className="flex h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]">
+          {/* Left Slider - أول 3 صور */}
+          <div className="w-full sm:w-1/2 h-full relative">
+            <IndividualSlider 
+              slides={leftSlides} 
+              position="left" 
+              startDelay={0}
+            />
+            <div className="absolute inset-0 bg-black/20 sm:bg-transparent z-15 pointer-events-none" />
+          </div>
+          
+          {/* Right Slider - الـ 3 صور التالية */}
+          <div className="w-full sm:w-1/2 h-full relative">
+            <IndividualSlider 
+              slides={rightSlides} 
+              position="right" 
+              startDelay={2000}
+            />
+            <div className="absolute inset-0 bg-black/20 sm:bg-transparent z-15 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed Center Text - من API مع ترجمة */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none px-4 sm:px-6">
+        <div className="text-center max-w-[90%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%]">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold mb-2 sm:mb-3 md:mb-4 text-white drop-shadow-lg">
+            {centerText.title}
+          </h1>
+          <p className="text-white/95 mx-auto w-full sm:w-[85%] md:w-[80%] text-sm sm:text-base md:text-lg lg:text-[20px] mb-4 sm:mb-6 md:mb-8 leading-relaxed drop-shadow-md line-clamp-3">
+            {centerText.description}
+          </p>
+          <Button
+            asChild
+            className="text-white text-[14px] sm:text-[16px] font-bold rounded-xl pointer-events-auto hover:scale-105 transition-transform duration-300 mx-auto"
+            style={{ 
+              backgroundColor: '#E60076',
+              width: '150px',
+              height: '45px'
+            }}
+          >
+            <Link href="/products" className="flex items-center justify-center gap-2">
+              {t.shopNow}
+              <FaArrowLeft className={`h-3 w-3 sm:h-4 sm:w-4 ${language === 'en' ? 'rotate-180' : ''}`} />
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

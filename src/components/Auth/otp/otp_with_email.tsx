@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function OTPWithEmail() {
   const router = useRouter();
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const { verifyOTPWithEmail, resendOTPToEmail, isAuthenticated } = useAuth();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -16,13 +18,14 @@ export default function OTPWithEmail() {
   
   const email = searchParams.get("email") || "";
   const isLogin = searchParams.get("isLogin") === "true";
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (!email) {
-      toast.error("البريد الإلكتروني مطلوب للتحقق");
+      toast.error(t("auth.emailRequired"));
       setTimeout(() => router.push("/auth/login"), 2000);
     }
-  }, [email, router]);
+  }, [email, router, t]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -39,19 +42,99 @@ export default function OTPWithEmail() {
     }
   }, [timeLeft, canResend]);
 
+  //  دالة معالجة اللصق (Paste) - نفس الهيكل من OTPWithPhone
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    
+    const pastedData = e.clipboardData.getData("text");
+    const cleanedData = pastedData.replace(/\s/g, "").replace(/[^0-9]/g, "");
+    
+    if (cleanedData.length >= 6) {
+      const otpDigits = cleanedData.slice(0, 6).split("");
+      const newOtp = [...otp];
+      otpDigits.forEach((digit, index) => {
+        if (index < 6) {
+          newOtp[index] = digit;
+        }
+      });
+      setOtp(newOtp);
+      
+      const lastFilledIndex = Math.min(otpDigits.length, 5);
+      if (lastFilledIndex < 5) {
+        inputRefs.current[lastFilledIndex + 1]?.focus();
+      } else {
+        inputRefs.current[lastFilledIndex]?.focus();
+      }
+    } else {
+      const otpDigits = cleanedData.split("");
+      const newOtp = [...otp];
+      otpDigits.forEach((digit, index) => {
+        if (index < 6) {
+          newOtp[index] = digit;
+        }
+      });
+      setOtp(newOtp);
+      
+      const lastFilledIndex = Math.min(otpDigits.length, 5);
+      if (lastFilledIndex < 5) {
+        inputRefs.current[lastFilledIndex + 1]?.focus();
+      }
+      
+      if (cleanedData.length > 0 && cleanedData.length < 6) {
+        toast.error(t('otp.pasteIncomplete'), {
+          duration: 2000,
+        });
+      }
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value.slice(0, 1);
     setOtp(newOtp);
+    
+    // الانتقال إلى الحقل التالي إذا تم إدخال رقم
     if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`)?.focus();
+  //  دالة معالجة الضغط على المفاتيح - نفس الهيكل من OTPWithPhone مع إضافة دعم الأسهم
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    //  التنقل بالأسهم (يمين ويسار)
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      if (index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      }
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+    
+    //  حذف الرقم والانتقال للخلف (نفس الفانكشن من OTPWithPhone)
+    if (e.key === "Backspace") {
+      if (!otp[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      } else if (otp[index]) {
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
+    }
+    
+    //  السماح بالـ Delete (حذف للأمام)
+    if (e.key === "Delete") {
+      if (otp[index]) {
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      } else if (index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      }
     }
   };
 
@@ -60,7 +143,7 @@ export default function OTPWithEmail() {
     const otpValue = otp.join("");
 
     if (otpValue.length !== 6) {
-      toast.error("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      toast.error(t("auth.invalidOTP"));
       return;
     }
 
@@ -69,7 +152,7 @@ export default function OTPWithEmail() {
     const result = await verifyOTPWithEmail(otpValue, email);
 
     if (result.success) {
-      toast.success("تم التحقق بنجاح! جاري توجيهك... 🎉", {
+      toast.success(t("auth.otpSuccess"), {
         duration: 2000,
       });
       
@@ -78,7 +161,7 @@ export default function OTPWithEmail() {
         router.refresh();
       }, 1500);
     } else {
-      toast.error(result.message || "رمز التحقق غير صحيح");
+      toast.error(result.message || t("auth.invalidOTP"));
     }
 
     setIsLoading(false);
@@ -86,7 +169,7 @@ export default function OTPWithEmail() {
 
   const handleResendCode = async () => {
     if (!canResend) {
-      toast.error("الرجاء الانتظار قبل إعادة الإرسال");
+      toast.error(t("auth.pleaseWaitResend"));
       return;
     }
     
@@ -95,18 +178,17 @@ export default function OTPWithEmail() {
     const result = await resendOTPToEmail(email);
 
     if (result.success) {
-      toast.success(result.message || "تم إرسال رمز جديد إلى بريدك الإلكتروني", {
+      toast.success(result.message || t("auth.resendSuccess"), {
         duration: 3000,
       });
       setCanResend(false);
       setTimeLeft(59);
       setOtp(["", "", "", "", "", ""]);
-      // التركيز على أول حقل
       setTimeout(() => {
-        document.getElementById("otp-0")?.focus();
+        inputRefs.current[0]?.focus();
       }, 100);
     } else {
-      toast.error(result.message || "فشل إعادة إرسال الرمز", {
+      toast.error(result.message || t("auth.resendFailed"), {
         duration: 4000,
       });
     }
@@ -116,47 +198,38 @@ export default function OTPWithEmail() {
 
   return (
     <>
-      {/* <Toaster 
-        position="top-center"
-        toastOptions={{
-          style: {
-            fontSize: '14px',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            direction: 'rtl',
-          },
-        }}
-      /> */}
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
           <div className="text-center mb-8">
             <h1 className="text-xl font-bold text-gray-800 mb-2">
-              {isLogin ? "التحقق من تسجيل الدخول" : "التحقق من البريد الإلكتروني"}
+              {isLogin ? t("auth.verifyLogin") : t("auth.verifyEmail")}
             </h1>
             <p className="text-gray-500 text-sm">
-              {isLogin 
-                ? "أدخل الرقم المكون من 6 أرقام الذي أرسلناه إلى بريدك الإلكتروني لتأكيد تسجيل الدخول"
-                : "أدخل الرقم المكون من 6 أرقام الذي أرسلناه إلى بريدك الإلكتروني لتأكيد الحساب"
-              }
+              {isLogin ? t("auth.verifyLoginDesc") : t("auth.verifyEmailDesc")}
             </p>
-            <p className="text-gray-700 font-medium mt-2 break-all">{email || "البريد الإلكتروني"}</p>
+            <p className="text-gray-700 font-medium mt-2 break-all">{email || t("auth.email")}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="flex justify-between gap-2 mb-6 flex-row-reverse">
+            <div className="flex justify-between gap-2 mb-6 flex-row-reverse" dir="rtl">
               {otp.map((digit, index) => (
                 <input
                   key={index}
                   id={`otp-${index}`}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
                   disabled={isLoading}
-                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300  rounded-[8px]  focus:border-[#FF7700] focus:ring-2 focus:ring-[#FF7700]/20 outline-none transition-all disabled:opacity-50"
+                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-[8px] focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 outline-none transition-all disabled:opacity-50"
                   maxLength={1}
+                  dir="ltr"
                 />
               ))}
             </div>
@@ -164,9 +237,10 @@ export default function OTPWithEmail() {
             <div className="text-center mb-6">
               {!canResend ? (
                 <p className="text-gray-500 text-sm">
-                  لم تستلم الرمز؟{" "}
-                  <span className="text-[#FF7700] font-medium">
-                    إعادة الإرسال ({timeLeft.toString().padStart(2, "0")} ثانية)
+                  {t("auth.didntReceiveCode")}{" "}
+                  <span className="text-[#E60076] font-medium">
+                    {t("auth.resendIn")} 
+                    <span className="ms-1 font-bold">{timeLeft.toString().padStart(2, "0")} {t("auth.seconds")}</span>
                   </span>
                 </p>
               ) : (
@@ -174,9 +248,9 @@ export default function OTPWithEmail() {
                   type="button"
                   onClick={handleResendCode}
                   disabled={isLoading}
-                  className="text-[#FF7700] font-medium hover:underline transition disabled:opacity-50"
+                  className="text-[#E60076] font-medium hover:underline transition disabled:opacity-50"
                 >
-                  لم تستلم الرمز؟ إعادة إرسال
+                  {t("auth.resendCode")}
                 </button>
               )}
             </div>
@@ -184,15 +258,15 @@ export default function OTPWithEmail() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-black text-white rounded-[8px]  hover:bg-gray-800 transition disabled:opacity-50 font-medium"
+              className="w-full py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50 font-medium"
             >
               {isLoading ? (
                 <>
                   <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2"></span>
-                  جاري التحقق...
+                  {t("auth.verifying")}
                 </>
               ) : (
-                "تحقق"
+                t("auth.verify")
               )}
             </button>
           </form>

@@ -7,14 +7,17 @@ import AddAddress from "@/components/address/AddAddress";
 import { BsFillPlusCircleFill } from "react-icons/bs";
 import toast, { Toaster } from "react-hot-toast";
 import { Address } from "@/types/address";
+import { useTranslation } from "@/hooks/useTranslation";
+import { getHeaders } from "@/services/api";
 
 export default function AddressPage() {
+  const { t } = useTranslation();
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_URL = 'https://alsas.admin.t-carts.com/api';
+  const API_URL = 'https://beauty.admin.t-carts.com/api';
 
   // جلب جميع العناوين
   const fetchAddresses = async () => {
@@ -23,22 +26,18 @@ export default function AddressPage() {
       const token = localStorage.getItem('auth_token');
       
       const response = await fetch(`${API_URL}/addresses`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers: getHeaders(),
       });
       const result = await response.json();
-      
       
       if (result.result === true && Array.isArray(result.data)) {
         setAddresses(result.data);
       } else {
-        throw new Error("فشل في تحميل العناوين");
+        throw new Error(t('address.fetchError'));
       }
     } catch (error) {
       console.error("❌ خطأ في جلب العناوين:", error);
-      toast.error("فشل في تحميل العناوين");
+      toast.error(t('address.fetchError'));
       setAddresses([]);
     } finally {
       setIsLoading(false);
@@ -72,23 +71,20 @@ export default function AddressPage() {
       
       const response = await fetch(`${API_URL}/addresses/${id}/delete`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
+        headers: getHeaders(),
       });
       
       const result = await response.json();
       
       if (result.result === true) {
-        toast.success("تم حذف العنوان بنجاح");
+        toast.success(t('address.deleteSuccess'));
         await fetchAddresses();
       } else {
-        throw new Error(result.message || "فشل في حذف العنوان");
+        throw new Error(result.message || t('address.deleteError'));
       }
     } catch (error) {
       console.error("❌ خطأ في حذف العنوان:", error);
-      toast.error(error instanceof Error ? error.message : "فشل في حذف العنوان");
+      toast.error(error instanceof Error ? error.message : t('address.deleteError'));
     }
   };
 
@@ -102,7 +98,7 @@ export default function AddressPage() {
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">جاري تحميل العناوين...</p>
+          <p className="mt-4 text-gray-600">{t('address.loadingAddresses')}</p>
         </div>
       </div>
     );
@@ -110,12 +106,11 @@ export default function AddressPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
-    
       <div className="container mx-auto">
         <div className="mb-3">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-xl font-bold text-[#180100]">
-              العناوين المحفوظة
+              {t('address.savedAddresses')}
             </h1>
           </div>
 
@@ -131,7 +126,8 @@ export default function AddressPage() {
                 setEditingAddress(null);
                 setShowAddAddress(true);
               }}
-              className="flex items-center gap-2 text-[#FF7700] hover:text-[#fa7d10] transition-colors"
+              className="flex items-center gap-2 text-[#E60076] hover:text-[#fa7d10] transition-colors"
+              aria-label={t('address.addNew')}
             >
               <BsFillPlusCircleFill className="w-10 h-10" />
             </button>

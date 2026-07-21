@@ -29,7 +29,7 @@ export default function WorkingHours({ hours }: WorkingHoursProps) {
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">الجمعة</span>
-          <span className="font-medium text-[#FF7700]">
+          <span className="font-medium text-[#E60076]">
             {hours.friday.isClosed ? "مغلق" : "متاح"}
           </span>
         </div>

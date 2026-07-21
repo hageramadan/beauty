@@ -1,8 +1,8 @@
-// components/checkout/SuccessPopup.tsx
 "use client";
 
 import { CheckCircle, X, Package, Calendar, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SuccessPopupProps {
   isOpen: boolean;
@@ -23,6 +23,7 @@ export default function SuccessPopup({
   orderDetails 
 }: SuccessPopupProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -45,22 +46,40 @@ export default function SuccessPopup({
                 <CheckCircle className="w-12 h-12 text-green-600" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-800">تم إتمام طلبك بنجاح</h3>
+            <h3 className="text-xl font-bold text-gray-800">{t('checkout.orderSuccess')}</h3>
             <p className="text-gray-500 text-sm mt-2">
-              شكراً لتسوقك مع <span className="font-semibold text-[#FF7700]">متجرك</span>، 
-              طلبك قيد التحضير الآن.
+              {t('checkout.thankYou')} <span className="font-semibold text-[#E60076]">{t('checkout.storeName')}</span>، 
+              {t('checkout.orderPreparing')}
             </p>
           </div>
 
           {/* محتوى البوب اب */}
           <div className="p-6 space-y-4">
             {/* رقم الطلب */}
-            <div className="bg-gray-50  rounded-[8px]  p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">رقم الطلب</p>
+            <div className="bg-gray-50 rounded-[8px] p-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">{t('checkout.orderNumber')}</p>
               <p className="text-xl font-bold text-gray-800">{orderNumber}</p>
             </div>
 
-         
+            {/* تفاصيل إضافية - اختياري */}
+            {orderDetails && (
+              <div className="grid grid-cols-2 gap-3">
+                {orderDetails.itemsCount && (
+                  <div className="bg-gray-50 rounded-[8px] p-3 text-center">
+                    <Package className="w-4 h-4 text-gray-400 mx-auto mb-1" />
+                    <p className="text-xs text-gray-500">{t('checkout.items')}</p>
+                    <p className="text-sm font-semibold text-gray-800">{orderDetails.itemsCount}</p>
+                  </div>
+                )}
+                {orderDetails.total && (
+                  <div className="bg-gray-50 rounded-[8px] p-3 text-center">
+                    <div className="w-4 h-4 text-gray-400 mx-auto mb-1">$</div>
+                    <p className="text-xs text-gray-500">{t('checkout.total')}</p>
+                    <p className="text-sm font-semibold text-gray-800">${orderDetails.total.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* أزرار */}
@@ -70,18 +89,18 @@ export default function SuccessPopup({
                 onClose();
                 router.push("/");
               }}
-              className="flex-1 bg-[#FF7700] text-white py-3  rounded-[8px]  font-medium hover:bg-[#2eacf5] transition shadow-sm"
+              className="flex-1 bg-[#E60076] text-white py-3 rounded-[8px] font-medium hover:bg-[#f0278f] transition shadow-sm"
             >
-              العودة للرئيسية
+              {t('checkout.backToHome')}
             </button>
             <button
               onClick={() => {
                 onClose();
                 router.push("/account/orders");
               }}
-              className="flex-1 border border-gray-300 text-gray-700 py-3  rounded-[8px]  font-medium hover:bg-gray-50 transition"
+              className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-[8px] font-medium hover:bg-gray-50 transition"
             >
-              طلباتي
+              {t('checkout.myOrders')}
             </button>
           </div>
         </div>

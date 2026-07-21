@@ -25,6 +25,16 @@ import { FaMinus } from "react-icons/fa6";
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { FaRegStar } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+//  إضافة واجهة العملة
+interface Currency {
+  code: string;
+  symbol: string;
+  name: string;
+  rate: number;
+}
 
 interface VariantAttribute {
   id: number;
@@ -73,10 +83,15 @@ interface ProductDetailsProps {
     variants?: ProductVariant[];
     has_variants?: boolean;
     video?: string;
+    currency?: Currency; //  إضافة العملة
   };
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const { t } = useTranslation(); //  استخدام hook الترجمة
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedRam, setSelectedRam] = useState("");
@@ -90,7 +105,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     null,
   );
 
-  // ✅ حالة عرض الفيديو
+  //  حالة عرض الفيديو
   const [showVideo, setShowVideo] = useState(false);
 
   const videoRef = useRef<HTMLIFrameElement>(null);
@@ -100,24 +115,20 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // ✅ استخراج معرف الفيديو من رابط يوتيوب
+  //  استخراج معرف الفيديو من رابط يوتيوب
   const getYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
 
-    // تنظيف الرابط من الـ si parameter
     const cleanUrl = url.split("?")[0];
 
-    // محاولة استخراج الـ ID من الرابط
     let videoId = null;
 
-    // pattern للـ youtu.be
     const shortPattern = /youtu\.be\/([^\/\?]+)/;
     const shortMatch = cleanUrl.match(shortPattern);
     if (shortMatch) {
       videoId = shortMatch[1];
     }
 
-    // pattern للـ youtube.com/watch?v=
     if (!videoId) {
       const longPattern = /youtube\.com\/watch\?v=([^\/\?&]+)/;
       const longMatch = url.match(longPattern);
@@ -126,7 +137,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       }
     }
 
-    // pattern للـ youtube.com/embed/
     if (!videoId) {
       const embedPattern = /youtube\.com\/embed\/([^\/\?]+)/;
       const embedMatch = url.match(embedPattern);
@@ -138,27 +148,25 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return videoId;
   };
 
-  // ✅ الحصول على رابط تضمين الفيديو
+  //  الحصول على رابط تضمين الفيديو
   const getEmbedVideoUrl = (videoUrl: string): string | null => {
     const videoId = getYouTubeVideoId(videoUrl);
     if (!videoId) {
-      // console.log('❌ Could not extract video ID from:', videoUrl);
       return null;
     }
-    // console.log('✅ Video ID extracted:', videoId);
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1`;
   };
 
-  // ✅ عرض الفيديو
+  //  عرض الفيديو
   const showVideoPlayer = () => {
     if (!product.video) {
-      toast.error("لا يوجد فيديو لهذا المنتج");
+      toast.error(t("product.noVideo"));
       return;
     }
     setShowVideo(true);
   };
 
-  // ✅ إخفاء الفيديو والعودة للصورة
+  //  إخفاء الفيديو والعودة للصورة
   const hideVideoPlayer = () => {
     setShowVideo(false);
     if (videoRef.current) {
@@ -166,7 +174,52 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   };
 
-  // ✅ Extract colors from variants
+  //  قائمة بجميع الأسماء المحتملة لكل attribute (تدعم العربية والإنجليزية)
+  const COLOR_NAMES = ["لون", "اللون", "color", "Color", "colour", "Colour"];
+  const RAM_NAMES = ["الذاكرة", "RAM", "ram", "ذاكرة", "memory", "Memory"];
+  const HARD_DISK_NAMES = ["هارد ديسك", "Hard disk", "hard disk", "Hard Disk", "هارد", "harddrive", "HardDrive", "storage", "Storage"];
+
+  //  دالة مساعدة لتحويل hex code إلى اسم لون
+  const getColorNameFromHex = (hex: string): string => {
+    const colorMap: { [key: string]: string } = {
+      '#1A23A3': 'أزرق داكن',
+      '#B5B7BB': 'رمادي فاتح',
+      '#000000': 'أسود',
+      '#FFFFFF': 'أبيض',
+      '#FF0000': 'أحمر',
+      '#00FF00': 'أخضر',
+      '#0000FF': 'أزرق',
+      '#FFFF00': 'أصفر',
+      '#FF00FF': 'وردي',
+      '#00FFFF': 'سماوي',
+      '#FFA500': 'برتقالي',
+      '#800080': 'بنفسجي',
+      '#008000': 'أخضر غامق',
+      '#808080': 'رمادي',
+      '#A52A2A': 'بني',
+    };
+    
+    const upperHex = hex.toUpperCase();
+    return colorMap[upperHex] || `لون (${hex})`;
+  };
+
+  //  دالة مساعدة للحصول على اسم اللون من attribute
+  const getColorDisplayName = (colorAttr: VariantAttribute): string => {
+    if (colorAttr.value && colorAttr.value !== "-" && colorAttr.value !== "") {
+      return colorAttr.value;
+    }
+    
+    if (colorAttr.meta?.color) {
+      if (language === 'ar') {
+        return getColorNameFromHex(colorAttr.meta.color);
+      }
+      return colorAttr.meta.color;
+    }
+    
+    return t("product.unknownColor");
+  };
+
+  //  Extract colors from variants
   const getAvailableColorsFromVariants = (): {
     name: string;
     code: string;
@@ -185,11 +238,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       if (!variant.attributes) return;
 
       const colorAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "لون",
+        (attr) => COLOR_NAMES.includes(attr.attribute_type?.name)
       );
 
-      if (colorAttr && colorAttr.value) {
-        const colorName = colorAttr.value;
+      if (colorAttr) {
+        const colorName = getColorDisplayName(colorAttr);
         const colorCode = colorAttr.meta?.color || "#000000";
 
         if (!colorMap.has(colorName)) {
@@ -204,10 +257,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       }
     });
 
+    if (colorMap.size === 0 && product.colors && product.colors.length > 0) {
+      return product.colors.map((c) => ({ ...c, variants: [] }));
+    }
+
     return Array.from(colorMap.values());
   };
 
-  // ✅ Get RAM options for selected color
+  //  Get RAM options for selected color
   const getAvailableRamForColor = (colorName: string): string[] => {
     if (!product.variants || product.variants.length === 0) {
       return [];
@@ -219,22 +276,26 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       if (!variant.attributes) return;
 
       const colorAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "لون",
+        (attr) => COLOR_NAMES.includes(attr.attribute_type?.name)
       );
-
+      
       const ramAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "الذاكرة",
+        (attr) => RAM_NAMES.includes(attr.attribute_type?.name)
       );
 
-      if (colorAttr?.value === colorName && ramAttr?.value) {
-        ramOptions.add(ramAttr.value);
+      if (colorAttr && ramAttr) {
+        const colorDisplayName = getColorDisplayName(colorAttr);
+        
+        if (colorDisplayName === colorName && ramAttr.value && ramAttr.value !== "-") {
+          ramOptions.add(ramAttr.value);
+        }
       }
     });
 
     return Array.from(ramOptions);
   };
 
-  // ✅ Get Hard Disk options for selected color and RAM
+  //  Get Hard Disk options for selected color and RAM
   const getAvailableHardDiskForColorAndRam = (
     colorName: string,
     ramValue: string,
@@ -249,30 +310,35 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       if (!variant.attributes) return;
 
       const colorAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "لون",
+        (attr) => COLOR_NAMES.includes(attr.attribute_type?.name)
       );
-
+      
       const ramAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "الذاكرة",
+        (attr) => RAM_NAMES.includes(attr.attribute_type?.name)
       );
-
+      
       const hardDiskAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "هارد ديسك",
+        (attr) => HARD_DISK_NAMES.includes(attr.attribute_type?.name)
       );
 
-      if (
-        colorAttr?.value === colorName &&
-        ramAttr?.value === ramValue &&
-        hardDiskAttr?.value
-      ) {
-        hardDiskOptions.add(hardDiskAttr.value);
+      if (colorAttr && ramAttr && hardDiskAttr) {
+        const colorDisplayName = getColorDisplayName(colorAttr);
+        
+        if (
+          colorDisplayName === colorName &&
+          ramAttr.value === ramValue &&
+          hardDiskAttr.value &&
+          hardDiskAttr.value !== "-"
+        ) {
+          hardDiskOptions.add(hardDiskAttr.value);
+        }
       }
     });
 
     return Array.from(hardDiskOptions);
   };
 
-  // ✅ Get matching variant
+  //  Get matching variant
   const getSelectedVariant = (
     colorName: string,
     ramValue: string,
@@ -284,28 +350,34 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       if (!variant.attributes) return false;
 
       const colorAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "لون",
+        (attr) => COLOR_NAMES.includes(attr.attribute_type?.name)
       );
-
+      
       const ramAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "الذاكرة",
+        (attr) => RAM_NAMES.includes(attr.attribute_type?.name)
       );
-
+      
       const hardDiskAttr = variant.attributes.find(
-        (attr) => attr.attribute_type?.name === "هارد ديسك",
+        (attr) => HARD_DISK_NAMES.includes(attr.attribute_type?.name)
       );
 
-      return (
-        colorAttr?.value === colorName &&
-        ramAttr?.value === ramValue &&
-        hardDiskAttr?.value === hardDiskValue
-      );
+      if (colorAttr && ramAttr && hardDiskAttr) {
+        const colorDisplayName = getColorDisplayName(colorAttr);
+        
+        return (
+          colorDisplayName === colorName &&
+          ramAttr.value === ramValue &&
+          hardDiskAttr.value === hardDiskValue
+        );
+      }
+      
+      return false;
     });
 
     return variant || null;
   };
 
-  // ✅ Get all available images
+  //  Get all available images
   const getAllImages = (): string[] => {
     const images: string[] = [];
 
@@ -320,7 +392,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     return [...new Map(images.map((img) => [img, img])).values()];
   };
 
-  // ✅ Get main image
+  //  Get main image
   const getMainImage = (): string => {
     const allImagesList = getAllImages();
 
@@ -342,14 +414,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       ? getAvailableHardDiskForColorAndRam(selectedColor, selectedRam)
       : [];
 
-  // ✅ Set first available color
+  //  Set first available color
   useEffect(() => {
     if (availableColors.length > 0 && !selectedColor) {
       setSelectedColor(availableColors[0].name);
     }
   }, [availableColors.length]);
 
-  // ✅ Reset RAM and Hard Disk on color change
+  //  Reset RAM and Hard Disk on color change
   useEffect(() => {
     if (selectedColor) {
       const ramOptions = getAvailableRamForColor(selectedColor);
@@ -362,7 +434,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedColor]);
 
-  // ✅ Reset Hard Disk on RAM change
+  //  Reset Hard Disk on RAM change
   useEffect(() => {
     if (selectedColor && selectedRam) {
       const hardDiskOptions = getAvailableHardDiskForColorAndRam(
@@ -377,7 +449,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedRam]);
 
-  // ✅ Update variant
+  //  Update variant
   useEffect(() => {
     if (selectedColor && selectedRam && selectedHardDisk) {
       const variant = getSelectedVariant(
@@ -392,7 +464,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
   }, [selectedColor, selectedRam, selectedHardDisk]);
 
-  // ✅ Current price
+  //  Current price
   const currentPrice = selectedVariant
     ? selectedVariant.price_after_discount || selectedVariant.price
     : product.price;
@@ -404,12 +476,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const isProductFavorite = isFavorite(product.id.toString());
   const itemInCartQuantity = getItemQuantity(product.id);
 
-  // ✅ Add to cart
+  //  الحصول على رمز العملة
+  const getCurrencySymbol = (): string => {
+    return product.currency?.symbol || "$";
+  };
+
+  //  Add to cart
   const handleAddToCart = async () => {
     if (isAddingToCart) return;
 
     if (product.has_variants && !selectedVariant) {
-      toast.error("الرجاء اختيار اللون والرام والهارد ديسك أولاً");
+      toast.error(t("product.pleaseSelect"));
       return;
     }
 
@@ -424,7 +501,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       }
     } catch (error) {
       console.error("❌ Error adding to cart:", error);
-      toast.error("حدث خطأ أثناء إضافة المنتج إلى السلة");
+      toast.error(t("product.errorAdding"));
     } finally {
       setIsAddingToCart(false);
     }
@@ -432,7 +509,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
-      toast.error("يرجى تسجيل الدخول أولاً لإضافة المنتجات إلى المفضلة", {
+      toast.error(t("product.loginFirst"), {
         duration: 3000,
         position: "top-center",
       });
@@ -456,7 +533,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const cleanImageUrl = (url: string) => {
     if (!url) return "/images/placeholder.jpg";
     if (url.startsWith("/storage")) {
-      return `https://alsas.admin.t-carts.com${url}`;
+      return `https://beauty.admin.t-carts.com${url}`;
     }
     return url;
   };
@@ -469,7 +546,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const allImages = getAllImages();
   const mainImage = getMainImage();
 
-  // ✅ استخراج رابط الفيديو للتضمين
+  //  استخراج رابط الفيديو للتضمين
   const embedVideoUrl = product.video ? getEmbedVideoUrl(product.video) : null;
 
   if (authLoading) {
@@ -486,14 +563,14 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   return (
     <div className="container-custom">
-      {/* Breadcrumb */}
+      {/* Breadcrumb - مترجم */}
       <div className="flex gap-1 mb-2 text-base">
         <Link href="/" className="text-[#726C6C]">
-          الرئيسية
+          {t("products.home")}
         </Link>
         <span className="text-[#333333] font-bold">/</span>
         <Link href="/products" className="text-[#726C6C] font-bold">
-          {product.brand || "المنتجات"}
+          {product.brand || t("products.title")}
         </Link>
         <span className="text-[#180100] font-bold">/</span>
         <p className="text-[#180100] font-bold truncate max-w-[150px]">
@@ -503,111 +580,108 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-10">
         {/* ===== Images Section ===== */}
-      
-<div className="space-y-1.5 col-span-2">
-  <div className="relative h-[200px] md:h-[400px] lg:h-[500px] bg-[#00000033] rounded-[8px] overflow-hidden">
-    {/* ✅ إذا كان الفيديو ظاهر، اعرض الفيديو */}
-    {showVideo && embedVideoUrl ? (
-      <>
-        <iframe
-          ref={videoRef}
-          src={embedVideoUrl}
-          className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={`فيديو ${product.name}`}
-        />
-        <button
-          onClick={hideVideoPlayer}
-          className="absolute top-3 right-3 z-20 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all duration-200 border border-white/20 hover:border-white/40"
-          aria-label="إغلاق الفيديو"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </>
-    ) : (
-      <>
-        {/* ✅ الصورة تملأ الإطار كاملاً */}
-        <div
-          className="absolute inset-0 w-full h-full"
-          style={{
-            backgroundImage: `url(${cleanImageUrl(mainImage)})`,
-            backgroundPosition: "center",
-            backgroundSize: "cover", // ✅ تغيير من contain إلى cover لملء الإطار
-            backgroundRepeat: "no-repeat",
-          }}
-        />
-        
-        {/* ✅ الخلفية فوق الصورة (طبقة شفافة) */}
-        <div 
-          className="absolute inset-0 w-full h-full z-10"
-          style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.1) 100%)",
-          }}
-        />
+        <div className="space-y-1.5 col-span-2">
+          <div className="relative h-[200px] md:h-[400px] lg:h-[500px] bg-[#00000033] rounded-[8px] overflow-hidden">
+            {/*  إذا كان الفيديو ظاهر، اعرض الفيديو */}
+            {showVideo && embedVideoUrl ? (
+              <>
+                <iframe
+                  ref={videoRef}
+                  src={embedVideoUrl}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={t("product.videoTitle").replace('{name}', product.name)}
+                />
+                <button
+                  onClick={hideVideoPlayer}
+                  className="absolute top-3  start-3 z-20 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white transition-all duration-200 border border-white/20 hover:border-white/40"
+                  aria-label={t("product.closeVideo")}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0 w-full h-full"
+                  style={{
+                    backgroundImage: `url(${cleanImageUrl(mainImage)})`,
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+                
+                <div 
+                  className="absolute inset-0 w-full h-full z-10"
+                  style={{
+                    background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.1) 100%)",
+                  }}
+                />
 
-        {discountPercentage > 0 && (
-          <span className="absolute top-2 right-2 bg-[#FF7700] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
-            {discountPercentage}% خصم
-          </span>
-        )}
+                {discountPercentage > 0 && (
+                  <span className="absolute top-2 right-2 bg-[#E60076] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10">
+                    {discountPercentage}% {t("product.discount")}
+                  </span>
+                )}
 
-        {product.video && embedVideoUrl && (
-          <button
-            onClick={showVideoPlayer}
-            className="absolute inset-0 z-10 flex items-center justify-center group"
-            aria-label="تشغيل فيديو المنتج"
-          >
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white shadow-lg">
-              <Play className="w-8 h-8 md:w-10 md:h-10 text-[#0A0500] fill-[#0A0500] ml-1" />
+                {product.video && embedVideoUrl && (
+                  <button
+                    onClick={showVideoPlayer}
+                    className="absolute inset-0 z-10 flex items-center justify-center group"
+                    aria-label={t("product.playVideo")}
+                  >
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white/90 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white shadow-lg">
+                      <Play className="w-8 h-8 md:w-10 md:h-10 text-[#0A0500] fill-[#0A0500] ml-1" />
+                    </div>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/*  الصور المصغرة - تختفي عند عرض الفيديو */}
+          {allImages.length > 1 && !showVideo && (
+            <div className="flex gap-1.5">
+              {allImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`
+                    relative aspect-[4/3] max-h-[80px] bg-gray-100 rounded-[8px] overflow-hidden
+                    border-2 transition-all duration-200
+                    ${selectedImage === index ? "border-[#E60076]" : "border-transparent hover:border-gray-300"}
+                  `}
+                >
+                  <Image
+                    src={cleanImageUrl(image)}
+                    alt={`${product.name} - ${t("product.image")} ${index + 1}`}
+                    width={2000}
+                    height={2000}
+                    className="object-cover"
+                    sizes="(max-width: 768px) 30vw, 15vw"
+                  />
+                </button>
+              ))}
             </div>
-          </button>
-        )}
-      </>
-    )}
-  </div>
+          )}
 
-  {/* ✅ الصور المصغرة - تختفي عند عرض الفيديو */}
-  {allImages.length > 1 && !showVideo && (
-    <div className="flex gap-1.5">
-      {allImages.map((image, index) => (
-        <button
-          key={index}
-          onClick={() => setSelectedImage(index)}
-          className={`
-            relative aspect-[4/3] max-h-[80px] bg-gray-100 rounded-[8px] overflow-hidden
-            border-2 transition-all duration-200
-            ${selectedImage === index ? "border-[#FF7700]" : "border-transparent hover:border-gray-300"}
-          `}
-        >
-          <Image
-            src={cleanImageUrl(image)}
-            alt={`${product.name} - صورة ${index + 1}`}
-            width={2000}
-            height={2000}
-            className="object-cover"
-            sizes="(max-width: 768px) 30vw, 15vw"
-          />
-        </button>
-      ))}
-    </div>
-  )}
+          {/*  رسالة بدل الصور المصغرة عند عرض الفيديو */}
+          {showVideo && (
+            <div className="text-center text-sm text-gray-500 py-2">
+              <button
+                onClick={hideVideoPlayer}
+                className="text-[#E60076] hover:underline font-medium"
+              >
+                {t("product.backToImages")}
+              </button>
+            </div>
+          )}
+        </div>
 
-  {/* ✅ رسالة بدل الصور المصغرة عند عرض الفيديو */}
-  {showVideo && (
-    <div className="text-center text-sm text-gray-500 py-2">
-      <button
-        onClick={hideVideoPlayer}
-        className="text-[#FF7700] hover:underline font-medium"
-      >
-        العودة للصور
-      </button>
-    </div>
-  )}
-</div>
-
-        {/* ===== Product Info (نفس الكود) ===== */}
-        <div className="space-y-2 lg:space-y-5 lg:col-span-3 ">
+        {/* ===== Product Info ===== */}
+        <div className="space-y-2 lg:space-y-5 lg:col-span-3">
           {/* Title & Price */}
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
@@ -615,19 +689,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 {product.name}
               </h1>
               <span className="text-sm lg:text-base text-[#666666]">
-                {product.brand || "بدون ماركة"}
+                {product.brand || t("product.noBrand")}
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-lg lg:text-xl font-bold text-[#FF7700] flex items-center gap-0.5">
+              <span className="text-lg lg:text-xl font-bold text-[#E60076] flex items-center gap-0.5">
                 {currentPrice.toLocaleString()}
-                <span className="text-sm">EGP</span>
+                <span className="text-sm">{getCurrencySymbol()}</span>
               </span>
               {originalPrice && originalPrice !== currentPrice && (
                 <span className="text-xs lg:text-base text-[#00000080] line-through flex items-center gap-0.5">
                   {originalPrice.toLocaleString()}
-                  <span className="text-[10px]">EGP</span>
+                  <span className="text-[10px]">{getCurrencySymbol()}</span>
                 </span>
               )}
             </div>
@@ -638,7 +712,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div className="flex items-center bg-[#EDF0F8] text-[#3A4980] font-bold text-xs rounded-full px-2 py-0.5 gap-1">
               <IoChatboxEllipsesOutline className="w-3 h-3" />
               <span>{product.reviewsCount}</span>
-              <span>تقييم</span>
+              <span>{t("product.review")}</span>
             </div>
             {product.avg_rating > 0 && (
               <div className="flex items-center bg-[#FFF5F4] text-[#FA6054] font-bold text-xs rounded-full px-2 py-0.5 gap-1">
@@ -654,7 +728,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <div>
                 <div className="flex justify-between items-center lg:mt-4">
                   <span className="text-sm font-bold text-[#333333]">
-                    اللون
+                    {t("product.color")}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -667,7 +741,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         ${selectedColor === color.name ? "ring-2 ring-offset-1 scale-105" : "hover:scale-105"}
                       `}
                       style={{ backgroundColor: color.code }}
-                      aria-label={`لون ${color.name}`}
+                      aria-label={`${t("product.color")} ${color.name}`}
                     >
                       {selectedColor === color.name && (
                         <div className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">
@@ -688,7 +762,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <div className="flex justify-between items-center lg:mt-4">
                 <span className="text-sm font-bold text-[#333333] flex items-center gap-1.5">
                   <MemoryStick className="w-3.5 h-3.5" />
-                  الرام (RAM)
+                  {t("product.ram")}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -718,7 +792,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <div className="flex justify-between items-center mt-2 lg:mt-4">
                 <span className="text-sm font-bold text-[#333333] flex items-center gap-1.5">
                   <HardDrive className="w-3.5 h-3.5" />
-                  الهارد ديسك
+                  {t("product.hardDisk")}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -748,8 +822,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <div className="flex items-center rounded-full bg-[#F3F3F3] h-9 w-[110px] justify-center">
                 <button
                   onClick={decreaseQuantity}
-                  className="w-6 h-6 flex items-center justify-center text-[#A3A3A3] transition"
-                >
+                  disabled={quantity <= 1}
+                  className="w-6 h-6 flex items-center justify-center text-[#A3A3A3] transition disabled:cursor-not-allowed"
+
+>
                   <FaMinus className="w-2.5 h-2.5" />
                 </button>
                 <span className="w-10 text-center text-base font-bold text-[#222222]">
@@ -767,7 +843,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 selectedVariant.quantity < 5 &&
                 selectedVariant.quantity > 0 && (
                   <span className="text-[10px] text-orange-600">
-                    ⚠️ متبقي {selectedVariant.quantity} فقط
+                    {t("product.onlyLeft").replace('{count}', selectedVariant.quantity.toString())}
                   </span>
                 )}
             </div>
@@ -782,15 +858,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 cartLoading ||
                 (product.has_variants && !selectedVariant)
               }
-              className="flex-1 bg-[#FF7700] text-sm text-white px-4 py-2 rounded-[8px] font-bold hover:bg-[#fc8013] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-[#E60076] text-sm text-white px-4 py-2 rounded-[8px] font-bold hover:bg-[#E60076] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAddingToCart ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  جاري الإضافة...
+                  {t("product.adding")}
                 </>
               ) : (
-                "أضف إلى السلة"
+                t("product.addToCart")
               )}
             </button>
 
@@ -799,24 +875,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 onClick={handleToggleFavorite}
                 disabled={isMutating}
                 className={`
-                  flex-1 py-2 rounded-[8px] text-[#FF7700] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-xs
+                  flex-1 py-2 rounded-[8px] text-[#E60076] font-bold transition-all duration-300 flex items-center justify-center gap-2 text-xs
                   ${
                     isProductFavorite
                       ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                      : "border border-[#FF7700] hover:bg-[#ffc0893f]"
+                      : "border border-[#E60076] hover:bg-[#ff89e13f]"
                   }
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
                 <Heart
-                  className={`h-3.5 w-3.5 ${isProductFavorite?'text-[#ef4444]':'text-[#FF7700]'}`}
+                  className={`h-3.5 w-3.5 ${isProductFavorite?'text-[#ef4444]':'text-[#E60076]'}`}
                   fill={isProductFavorite ? "#ef4444" : "none"}
                 />
-                {isProductFavorite ? "في المفضلة" : "أضف للمفضلة"}
+                {isProductFavorite ? t("product.inFavorites") : t("product.addToFavorites")}
               </button>
-              {/* <button className="w-9 h-9 rounded-[8px] border border-[#1E75AB] flex items-center justify-center transition-all duration-300 hover:bg-gray-100">
-                <BsShare className="w-3.5 h-3.5 text-[#1E75AB]" />
-              </button> */}
             </div>
           </div>
 
@@ -830,8 +903,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 className="flex justify-between items-center w-full py-1.5 text-right"
               >
                 <span className="font-semibold text-gray-800 flex items-center gap-1.5 text-sm">
-                  <Info className="w-3.5 h-3.5 text-[#FF7700]" />
-                  معلومات المنتج
+                  <Info className="w-3.5 h-3.5 text-[#E60076]" />
+                  {t("product.productInfo")}
                 </span>
                 <span className="text-lg">
                   {activeTab === "info" ? "−" : "+"}
@@ -841,21 +914,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <div className="pt-0.5 pb-1 text-gray-600 text-[11px] leading-relaxed space-y-0.5">
                   <p>{product.description}</p>
                   <p>
-                    <strong>رمز المنتج:</strong> {product.sku}
+                    <strong>{t("product.productCode")}:</strong> {product.sku}
                   </p>
                   <p>
-                    <strong>القسم:</strong> {product.category}
+                    <strong>{t("product.category")}:</strong> {product.category}
                   </p>
                   <p>
-                    <strong>الماركة:</strong> {product.brand || "بدون ماركة"}
+                    <strong>{t("product.brand")}:</strong> {product.brand || t("product.noBrand")}
                   </p>
                   {selectedVariant && (
                     <>
                       <p>
-                        <strong>الرام:</strong> {selectedRam}
+                        <strong>{t("product.ram")}:</strong> {selectedRam}
                       </p>
                       <p>
-                        <strong>الهارد ديسك:</strong> {selectedHardDisk}
+                        <strong>{t("product.hardDisk")}:</strong> {selectedHardDisk}
                       </p>
                     </>
                   )}

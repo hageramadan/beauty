@@ -12,12 +12,12 @@ export default function PrivacyPage() {
         {/* Breadcrumbs */}
         <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Link href="/" className="hover:text-[#FF7700] transition flex items-center gap-1">
+            <Link href="/" className="hover:text-[#E60076] transition flex items-center gap-1">
               <Home className="w-4 h-4" />
               الرئيسية
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#FF7700] font-medium">سياسة الخصوصية</span>
+            <span className="text-[#E60076] font-medium">سياسة الخصوصية</span>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
                 {/* 2. كيف نستخدم بياناتك */}
                 <Section title="كيف نستخدم بياناتك" >
                   <p>نستخدم بياناتك للأغراض التالية:</p>
-                  <ul className="list-disc pr-5 space-y-1 mt-2">
+                  <ul className="list-disc  ps-5 space-y-1 mt-2">
                     <li>معالجة وتوصيل طلباتك</li>
                     <li>التواصل معك بخصوص طلباتك وحسابك</li>
                     <li>إرسال العروض والتحديثات (يمكنك إلغاء الاشتراك في أي وقت)</li>
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
                 {/* 6. حقوقك */}
                 <Section title="حقوقك">
                   <p>يحق لك في أي وقت:</p>
-                  <ul className="list-disc pr-5 space-y-1 mt-2">
+                  <ul className="list-disc  ps-5 space-y-1 mt-2">
                     <li>طلب الاطلاع على بياناتك الشخصية المخزنة لدينا</li>
                     <li>طلب تصحيح أو تحديث بياناتك</li>
                     <li>طلب حذف حسابك وبياناتك الشخصية</li>
@@ -104,10 +104,10 @@ function Section({ title, children, icon }: { title: string; children: React.Rea
     <div className="pb-6">
       <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
         <span className="w-1.5 h-6 bg-black rounded-full"></span>
-        {icon && <span className="text-[#FF7700]">{icon}</span>}
+        {icon && <span className="text-[#E60076]">{icon}</span>}
         {title}
       </h2>
-      <div className="text-gray-600 text-sm leading-relaxed space-y-2 pr-2">
+      <div className="text-gray-600 text-sm leading-relaxed space-y-2  ps-2">
         {children}
       </div>
     </div>

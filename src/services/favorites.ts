@@ -1,5 +1,7 @@
 // src/services/favorites.ts
 
+import { getHeaders } from "./api";
+
 export interface FavoriteProduct {
   id: number;
   type: string;
@@ -36,7 +38,7 @@ export interface FavoriteProduct {
   images: string[];
 }
 
-// ✅ واجهات الـ variants
+//  واجهات الـ variants
 interface VariantAttribute {
   id: number;
   attribute_type: {
@@ -63,7 +65,7 @@ interface ProductVariant {
   attributes: VariantAttribute[];
 }
 
-// ✅ دالة استخراج الألوان من جميع الـ variants
+//  دالة استخراج الألوان من جميع الـ variants
 const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: string; name: string }> => {
   const colorMap = new Map<string, string>();
   
@@ -89,16 +91,16 @@ const extractColorsFromVariants = (variants: ProductVariant[]): Array<{ color: s
   }));
 };
 
-// ✅ دالة تنظيف رابط الصورة
+//  دالة تنظيف رابط الصورة
 const cleanImageUrl = (url: string): string => {
   if (!url) return '/images/placeholder.jpg';
   if (url.startsWith('/storage')) {
-    return `https://alsas.admin.t-carts.com${url}`;
+    return `https://beauty.admin.t-carts.com${url}`;
   }
   return url;
 };
 
-// ✅ دالة تحويل المنتج من المفضلة إلى شكل ProductCard
+//  دالة تحويل المنتج من المفضلة إلى شكل ProductCard
 export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null | undefined) => {
   // التحقق من وجود favorite و id
   if (!favorite || !favorite.id) {
@@ -122,7 +124,7 @@ export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null 
 
 
 
-  // ✅ استخراج الألوان من الـ variants
+  //  استخراج الألوان من الـ variants
   let colors: Array<{ color: string; name: string }> = [];
   
   if (favorite.has_variants && favorite.variants && Array.isArray(favorite.variants) && favorite.variants.length > 0) {
@@ -171,7 +173,7 @@ export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null 
 };
 
 // باقي الكود كما هو...
-const API_URL = 'https://alsas.admin.t-carts.com/api';
+const API_URL = 'https://beauty.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
@@ -180,13 +182,7 @@ const getToken = (): string | null => {
   return null;
 };
 
-const getHeaders = (): HeadersInit => {
-  const token = getToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-  };
-};
+
 
 export const fetchFavorites = async (
   page: number = 1,
@@ -194,7 +190,7 @@ export const fetchFavorites = async (
 ): Promise<any> => {
   const token = getToken();
 
-  // ✅ لو مفيش توكن متعمليش API Call
+  //  لو مفيش توكن متعمليش API Call
   if (!token) {
     return {
       result: false,

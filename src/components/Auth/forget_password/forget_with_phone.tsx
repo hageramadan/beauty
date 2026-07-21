@@ -59,7 +59,7 @@ export default function ForgotWithPhone() {
     // محاكاة التحقق من OTP
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("تم التحقق بنجاح! ✅");
+      toast.success("تم التحقق بنجاح! ");
 
       // التوجيه إلى صفحة إعادة تعيين كلمة المرور
       setTimeout(() => {
@@ -125,7 +125,7 @@ export default function ForgotWithPhone() {
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
-                      className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-[#FF7700] focus:ring-2 focus:ring-[#FF7700]/20 outline-none transition-all"
+                      className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 outline-none transition-all"
                       maxLength={1}
                       
                     />
@@ -137,7 +137,7 @@ export default function ForgotWithPhone() {
                   {!canResend ? (
                     <p className="text-gray-500 text-sm">
                       لم تستلم الرمز؟{" "}
-                      <span className="text-[#FF7700] font-medium">
+                      <span className="text-[#E60076] font-medium">
                         إعادة الإرسال ({timeLeft.toString().padStart(2, "0")})
                       </span>
                     </p>
@@ -145,7 +145,7 @@ export default function ForgotWithPhone() {
                     <button
                       type="button"
                       onClick={handleResendCode}
-                      className="text-[#FF7700] font-medium hover:underline"
+                      className="text-[#E60076] font-medium hover:underline"
                     >
                       لم تستلم الرمز؟ إعادة إرسال
                     </button>

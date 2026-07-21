@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function LoginWithEmail() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { loginWithEmail, loading, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,13 +28,13 @@ export default function LoginWithEmail() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.email) {
-      newErrors.email = "البريد الإلكتروني مطلوب";
+      newErrors.email = t("auth.emailRequired");
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "البريد الإلكتروني غير صحيح";
+      newErrors.email = t("auth.invalidEmail");
     }
 
     if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
+      newErrors.password = t("auth.passwordRequired");
     }
 
     setErrors(newErrors);
@@ -50,7 +52,7 @@ export default function LoginWithEmail() {
     const result = await loginWithEmail(formData.email, formData.password);
 
     if (result.success) {
-      toast.success(result.message || "تم إرسال رمز التحقق إلى بريدك الإلكتروني! ✅", {
+      toast.success(result.message || t("auth.loginSuccess"), {
         duration: 3000,
       });
       
@@ -58,7 +60,7 @@ export default function LoginWithEmail() {
         router.push(`/auth/verify-otp/email?email=${encodeURIComponent(formData.email)}&isLogin=true`);
       }, 1500);
     } else {
-      toast.error(result.message || "فشل تسجيل الدخول");
+      toast.error(result.message || t("auth.loginFailed"));
     }
     setIsSubmitting(false);
   };
@@ -67,26 +69,25 @@ export default function LoginWithEmail() {
 
   return (
     <>
-      {/* <Toaster position="top-center" /> */}
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
           <div className="text-center mb-8">
-            <h1 className="text-xl font-bold text-gray-800 mb-2">تسجيل الدخول</h1>
-            <p className="text-gray-500 text-sm">مرحباً بعودتك! يرجى تسجيل الدخول</p>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">{t("auth.login")}</h1>
+            <p className="text-gray-500 text-sm">{t("auth.welcomeBack")}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-5">
-              <label className="block text-gray-700 font-medium mb-2">البريد الإلكتروني <span className="text-red-500">*</span></label>
+              <label className="block text-gray-700 font-medium mb-2">{t("auth.email")} <span className="text-red-500">*</span></label>
               <div className="relative">
-                <FaEnvelope className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaEnvelope className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="example@email.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   disabled={isLoading}
-                  className={`w-full px-4 py-2 pr-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 py-2 ps-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                 />
@@ -95,23 +96,23 @@ export default function LoginWithEmail() {
             </div>
 
             <div className="mb-5">
-              <label className="block text-gray-700 font-medium mb-2">كلمة المرور <span className="text-red-500">*</span></label>
+              <label className="block text-gray-700 font-medium mb-2">{t("auth.password")} <span className="text-red-500">*</span></label>
               <div className="relative">
-                <FaLock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaLock className="absolute  start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder")}
                   disabled={isLoading}
-                  className={`w-full px-4 text-sm  py-2 pr-10 pl-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 text-sm py-2  ps-10  pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute  end-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
@@ -119,34 +120,33 @@ export default function LoginWithEmail() {
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            {/* ✅ إضافة رابط نسيت كلمة المرور */}
             <div className="text-left mb-6">
               <button
                 type="button"
                 onClick={() => router.push("/auth/forgot-password")}
-                className="text-sm text-[#FF7700] hover:underline"
+                className="text-sm text-[#E60076] hover:underline"
               >
-                نسيت كلمة المرور؟
+                {t("auth.forgotPassword")}
               </button>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#FF7700] text-white rounded-[8px] hover:bg-[#e06a00] transition disabled:opacity-50"
+              className="w-full py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50"
             >
-              {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+              {isLoading ? t("auth.loggingIn") : t("auth.login")}
             </button>
 
             <div className="text-center mt-6 pt-4 border-t">
               <p className="text-gray-600 text-sm">
-                ليس لديك حساب؟{" "}
+                {t("auth.noAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => router.push("/auth/register/email")}
-                  className="text-[#FF7700] font-medium hover:underline"
+                  className="text-[#E60076] font-medium hover:underline"
                 >
-                  إنشاء حساب جديد
+                  {t("auth.register")}
                 </button>
               </p>
             </div>
