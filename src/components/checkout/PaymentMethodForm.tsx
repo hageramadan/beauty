@@ -7,11 +7,13 @@ import { useTranslation } from "@/hooks/useTranslation";
 interface PaymentMethodFormProps {
   paymentMethod: string;
   onPaymentMethodChange: (method: string) => void;
+  onPaymentGatewayChange?: (gateway: string | null) => void; // ✅ إضافة هذا السطر
 }
 
 export default function PaymentMethodForm({
   paymentMethod,
   onPaymentMethodChange,
+  onPaymentGatewayChange, // ✅ إضافة هذا السطر
 }: PaymentMethodFormProps) {
   const { t } = useTranslation();
   const [isWalletAvailable, setIsWalletAvailable] = useState(true);
@@ -23,29 +25,30 @@ export default function PaymentMethodForm({
     }
   }, [isWalletAvailable, paymentMethod, onPaymentMethodChange]);
 
-  // دالة مساعدة للحصول على قيمة payment_gateway
+  // ✅ دالة مساعدة للحصول على قيمة payment_gateway (مثل الكود الأول)
   const getPaymentGateway = (method: string) => {
     switch (method) {
       case "wallet":
         return "wallet";
       case "cash":
-        return "cash";
+        return null; // ✅ تعديل: الكاش مش محتاج gateway
       case "card":
-        return "card";
+        return "paymob"; // ✅ تعديل: كارد → paymob
       case "mada":
         return "mada";
       default:
-        return "";
+        return null;
     }
   };
 
-  // عند تغيير طريقة الدفع، نقوم بإرسال القيمة مع payment_gateway
+  // ✅ عند تغيير طريقة الدفع، نقوم بإرسال القيمة مع payment_gateway (مثل الكود الأول)
   const handlePaymentChange = (method: string) => {
     onPaymentMethodChange(method);
     
-    // إذا كانت الطريقة هي المحفظة، نضيف payment_gateway: "wallet"
-    if (method === "wallet") {
-     
+    // ✅ إضافة: إرسال الـ gateway للـ parent
+    const gateway = getPaymentGateway(method);
+    if (onPaymentGatewayChange) {
+      onPaymentGatewayChange(gateway);
     }
   };
 
@@ -105,11 +108,11 @@ export default function PaymentMethodForm({
           </div>
         </label>
 
-        {/* بطاقة ائتمان - مخفي */}
-        {/* <label
+        {/* بطاقة ائتمان */}
+        <label
           className={`flex items-center gap-3 p-4 border rounded-[8px] cursor-pointer transition ${
             paymentMethod === "card"
-              ? "border-[#E60076] bg-orange-50"
+              ? "border-[#E60076] bg-pink-50"
               : "border-gray-200 hover:border-gray-300"
           }`}
         >
@@ -125,13 +128,13 @@ export default function PaymentMethodForm({
           <div>
             <p className="font-medium text-gray-800">{t('checkout.card')}</p>
           </div>
-        </label> */}
+        </label>
 
-        {/* مدى (Mada) - مخفي */}
+        {/* مدى (Mada) - معلق حالياً */}
         {/* <label
           className={`flex items-center gap-3 p-4 border rounded-[8px] cursor-pointer transition ${
             paymentMethod === "mada"
-              ? "border-[#E60076] bg-orange-50"
+              ? "border-[#E60076] bg-pink-50"
               : "border-gray-200 hover:border-gray-300"
           }`}
         >

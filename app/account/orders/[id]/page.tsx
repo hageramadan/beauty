@@ -10,7 +10,8 @@ import {
   Clock,
   PackageCheck,
   XCircle,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { GrMoney } from "react-icons/gr";
 import Image from "next/image";
@@ -237,6 +238,7 @@ const mapPaymentMethod = (method: string): string => {
     "كاش": "الدفع عند الاستلام",
     "أونلاين": "أونلاين",
     "card": "بطاقة ائتمان",
+    "بطاقة": "بطاقة ائتمان",
     "mada": "مدى",
     "wallet": "محفظة",
   };
@@ -253,12 +255,10 @@ const mapDeliveryMethod = (method: string): "pickup" | "delivery" => {
   return methodMap[method] || "pickup";
 };
 
-// ========== تحويل تاريخ الطلب - يدعم اللغة ==========
-// ========== تنسيق التاريخ - فقط التاريخ بدون وقت ==========
+// ========== تنسيق التاريخ ==========
 const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
-    // استخراج السنة والشهر واليوم فقط
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -329,12 +329,12 @@ const transformOrderDetails = (apiOrder: any, locale: string = "ar-EG"): OrderDe
   return {
     id: apiOrder.id,
     orderNumber: apiOrder.order_number || `#${apiOrder.id}`,
-    date: formatDate(apiOrder.created_at), //  تمرير اللغة
+    date: formatDate(apiOrder.created_at),
     status: englishStatus,
     status_label: apiOrder.status_label,
     return_status_label: apiOrder.return_status_label || null,
     payment_method: mapPaymentMethod(apiOrder.payment_method),
-    payment_status: apiOrder.payment_status,
+    payment_status: apiOrder.payment_status, // ✅ الاحتفاظ بالقيمة الأصلية (عربي أو إنجليزي)
     delivery_method: mapDeliveryMethod(apiOrder.delivery_method),
     subtotal: apiOrder.subtotal,
     coupon_discount_amount: apiOrder.coupon_discount_amount,
@@ -362,6 +362,86 @@ const getStatusConfig = (t: any) => ({
   cancelled: { label: t('orders.statusCancelled'), color: "status-cancelled", icon: XCircle },
 });
 
+// ✅ دالة مساعدة للتحقق من حالة الدفع (تدعم العربية والإنجليزية)
+const isPaymentPaid = (paymentStatus: string): boolean => {
+  const paidStatuses = ["مدفوع", "Paid", "paid", "PAID"];
+  return paidStatuses.includes(paymentStatus);
+};
+
+const isPaymentPending = (paymentStatus: string): boolean => {
+  const pendingStatuses = ["قيد الانتظار", "Pending", "pending", "PENDING"];
+  return pendingStatuses.includes(paymentStatus);
+};
+
+const isPaymentUnpaid = (paymentStatus: string): boolean => {
+  const unpaidStatuses = ["غير مدفوع", "Unpaid", "unpaid", "UNPAID", "Not Paid", "not paid"];
+  return unpaidStatuses.includes(paymentStatus);
+};
+
+// ✅ دالة للحصول على نص الحالة المترجم
+const getPaymentStatusLabel = (paymentStatus: string, t: any): string => {
+  if (isPaymentPaid(paymentStatus)) {
+    return t('orders.paymentPaid') || "مدفوع";
+  }
+  if (isPaymentPending(paymentStatus)) {
+    return t('orders.paymentPending') || "قيد الانتظار";
+  }
+  if (isPaymentUnpaid(paymentStatus)) {
+    return t('orders.paymentUnpaid') || "غير مدفوع";
+  }
+  // إذا كانت القيمة غير معروفة، نرجعها كما هي
+  return paymentStatus;
+};
+
+// ✅ دالة للحصول على لون حالة الدفع
+const getPaymentStatusColor = (paymentStatus: string): string => {
+  if (isPaymentPaid(paymentStatus)) {
+    return "text-green-700";
+  }
+  if (isPaymentPending(paymentStatus)) {
+    return "text-yellow-700";
+  }
+  if (isPaymentUnpaid(paymentStatus)) {
+    return "text-red-700";
+  }
+  return "text-gray-700";
+};
+
+// ✅ دالة للحصول على أيقونة حالة الدفع
+const getPaymentStatusIcon = (paymentStatus: string) => {
+  if (isPaymentPaid(paymentStatus)) {
+    return CheckCircle;
+  }
+  if (isPaymentPending(paymentStatus)) {
+    return Clock;
+  }
+  if (isPaymentUnpaid(paymentStatus)) {
+    return XCircle;
+  }
+  return XCircle;
+};
+
+// ✅ دالة للحصول على لون خلفية حالة الدفع
+const getPaymentStatusBgColor = (paymentStatus: string): string => {
+  if (isPaymentPaid(paymentStatus)) {
+    return "bg-green-50";
+  }
+  if (isPaymentPending(paymentStatus)) {
+    return "bg-yellow-50";
+  }
+  if (isPaymentUnpaid(paymentStatus)) {
+    return "bg-red-50";
+  }
+  return "bg-gray-50";
+};
+
+// ✅ دالة للتحقق مما إذا كان يجب إظهار زر إعادة الدفع
+const shouldShowRetryButton = (paymentStatus: string, paymentMethod: string): boolean => {
+  const isUnpaid = isPaymentUnpaid(paymentStatus);
+  const isCardPayment = paymentMethod === "بطاقة ائتمان" || paymentMethod === "card" || paymentMethod === "Card";
+  return isUnpaid && isCardPayment;
+};
+
 export default function OrderDetailsPage() {
   const { t } = useTranslation();
   const params = useParams();
@@ -373,11 +453,12 @@ export default function OrderDetailsPage() {
   const [orderNotes, setOrderNotes] = useState("");
   const [copied, setCopied] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
   
-  //  State for Cancel Modal
+  // State for Cancel Modal
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  //  تكوين الحالات مع الترجمة
+  // تكوين الحالات مع الترجمة
   const statusConfig = getStatusConfig(t);
 
   useEffect(() => {
@@ -393,7 +474,6 @@ export default function OrderDetailsPage() {
     
     const loadOrderDetails = async () => {
       setLoading(true);
-      //  تحديد اللغة الحالية
       const locale = t('locale') || 'ar-EG';
       const data = await fetchOrderDetails(orderId, locale);
       setOrder(data);
@@ -424,7 +504,7 @@ export default function OrderDetailsPage() {
     router.push(`/account/orders/${orderId}/return`);
   };
 
-  //  فتح وإغلاق مودال الإلغاء
+  // فتح وإغلاق مودال الإلغاء
   const openCancelModal = () => {
     setShowCancelModal(true);
   };
@@ -433,7 +513,7 @@ export default function OrderDetailsPage() {
     setShowCancelModal(false);
   };
 
-  //  دالة تأكيد إلغاء الطلب
+  // دالة تأكيد إلغاء الطلب
   const confirmCancelOrder = async () => {
     if (!order) return;
     
@@ -457,12 +537,70 @@ export default function OrderDetailsPage() {
     setIsCancelling(false);
   };
 
+  // ✅ دالة إعادة محاولة الدفع - باستخدام الـ endpoint الجديد /repay
+  const handleRetryPayment = async () => {
+    if (!order) return;
+    
+    try {
+      setIsRetryingPayment(true);
+      
+      // إظهار رسالة تحميل
+      const toastId = toast.loading(t('orders.preparingPayment') || "جاري تجهيز بوابة الدفع...", {
+        position: "top-center",
+      });
+
+      // ✅ استخدام الـ endpoint الجديد: /repay
+      const response = await fetch(`${API_URL}/orders/${orderId}/repay`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+
+      // التحقق من صلاحية التوكن
+      if (response.status === 401) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user_data");
+        toast.error(t('orders.invalidSession') || "جلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى", {
+          duration: 3000,
+          position: "top-center",
+        });
+        router.push("/auth/login");
+        return;
+      }
+
+      const data = await response.json();
+
+      // إخفاء رسالة التحميل
+      toast.dismiss(toastId);
+
+      // ✅ التحقق من الـ response حسب الهيكل المحدد
+      if (data.data?.redirect_url) {
+        // ✅ توجيه المستخدم إلى بوابة الدفع
+        window.location.href = data.data.redirect_url;
+        
+        // ✅ يمكن تسجيل وقت إنشاء رابط الدفع للتحليل
+        console.log("✅ Payment URL created at:", data.data.payment_url_created_at);
+      } else {
+        toast.error(t('orders.paymentLinkError') || "تعذر الحصول على رابط الدفع، يرجى المحاولة مرة أخرى", {
+          duration: 4000,
+          position: "top-center",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error retrying payment:", error);
+      toast.error(t('orders.serverError') || "حدث خطأ في الاتصال بالخادم", {
+        duration: 4000,
+        position: "top-center",
+      });
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
-          {/* <p className="text-gray-500 mt-4">{t('orders.loadingDetails')}</p> */}
         </div>
       </div>
     );
@@ -483,7 +621,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  //  اختيار الحالة المناسبة للعرض
+  // اختيار الحالة المناسبة للعرض
   const isRefunded = order.return_status_label === "refunded";
   const isReturnPending = order.return_status_label === "pending";
   const isReturnRejected = order.return_status_label === "rejected";
@@ -502,6 +640,13 @@ export default function OrderDetailsPage() {
 
   const StatusIcon = displayStatus.icon;
   const userName = getUserName(order);
+
+  // ✅ استخدام الدوال المساعدة للحصول على معلومات حالة الدفع
+  const paymentStatusText = getPaymentStatusLabel(order.payment_status, t);
+  const paymentStatusColor = getPaymentStatusColor(order.payment_status);
+  const paymentStatusBg = getPaymentStatusBgColor(order.payment_status);
+  const PaymentStatusIcon = getPaymentStatusIcon(order.payment_status);
+  const showRetryButton = shouldShowRetryButton(order.payment_status, order.payment_method);
 
   return (
     <>
@@ -541,13 +686,11 @@ export default function OrderDetailsPage() {
                         </div>
                       </div>
                     </div>
-                    {/*  عرض الحالة */}
                     <div className={`px-2 sm:px-3 py-1 rounded-full sm:text-sm text-[10px] font-medium flex items-center gap-1 sm:gap-1.5 ${displayStatus.color}`}>
                       <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       {displayStatus.label}
                     </div>
                   </div>
-                  {/*  التاريخ - يعتمد على اللغة */}
                   <p className="text-sm sm:text-[18px] text-[#333333]">{order.date}</p>
                 </div>
               </div>
@@ -592,7 +735,6 @@ export default function OrderDetailsPage() {
                             <div>
                               <p className="font-bold text-gray-800">{item.title}</p>
                               
-                              {/* عرض جميع الخصائص */}
                               <div className="flex flex-wrap gap-2 mt-1.5">
                                 {memory && (
                                   <span className="inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-700">
@@ -640,7 +782,6 @@ export default function OrderDetailsPage() {
                   })}
                 </div>
                 
-                {/* عرض OrderTracker */}
                 {!isRefunded && !isReturnPending && !isReturnRejected && (
                   <div className="mt-6">
                     <OrderTracker 
@@ -728,6 +869,7 @@ export default function OrderDetailsPage() {
               
               <br/>
               
+              {/* طريقة الدفع */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-base font-bold mb-4">{t('orders.paymentMethod')}</h2>
                 <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-[8px]">
@@ -738,6 +880,44 @@ export default function OrderDetailsPage() {
                     <p className="text-gray-500">{order.payment_method}</p>
                   </div>
                 </div>
+              </div>
+              
+              <br/>
+
+              {/* ✅ حالة الدفع - تدعم العربية والإنجليزية */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-bold mb-4">{t('orders.paymentStatus') || 'حالة الدفع'}</h2>
+                <div className={`flex items-center gap-3 p-3 border border-gray-300 rounded-[8px] ${paymentStatusBg}`}>
+                  <div className={`w-12 h-12 rounded-[8px] flex items-center justify-center shadow-sm flex-shrink-0 ${paymentStatusBg}`}>
+                    <PaymentStatusIcon className={`w-5 h-5 ${paymentStatusColor}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium text-sm ${paymentStatusColor}`}>
+                      {paymentStatusText}
+                    </p>
+                  </div>
+                </div>
+
+                {/* ✅ زر إعادة محاولة الدفع - يظهر فقط إذا كان الطلب غير مدفوع وطريقة الدفع بطاقة */}
+                {showRetryButton && (
+                  <button
+                    onClick={handleRetryPayment}
+                    disabled={isRetryingPayment}
+                    className="mt-4 w-full flex items-center justify-center gap-2 bg-[#E60076] text-white py-2.5 rounded-[8px] font-medium hover:bg-[#f0278f] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRetryingPayment ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {t('orders.preparingPayment') || 'جاري التجهيز...'}
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        {t('orders.retryPayment') || 'محاولة الدفع مجدداً'}
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               
               <br/>
@@ -798,7 +978,7 @@ export default function OrderDetailsPage() {
         `}</style>
       </div>
 
-      {/*  Modal تأكيد إلغاء الطلب */}
+      {/* Modal تأكيد إلغاء الطلب */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fadeIn">

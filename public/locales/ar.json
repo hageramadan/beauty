@@ -662,9 +662,17 @@
     "paymentMethodTitle": "طريقة الدفع",
     "cashOnDeliveryTitle": "الدفع عند الاستلام",
     "walletTitle": "محفظة",
-    "walletUnavailableTitle": "غير متاحة حالياً - سوف تتوفر قريباً"
+    "walletUnavailableTitle": "غير متاحة حالياً - سوف تتوفر قريباً",
+    "card":"بطاقة ائتمان"
   },
   "orders": {
+    "paymentStatus": "حالة الدفع",
+    "retryPayment": "محاولة الدفع مجدداً",
+    "preparingPayment": "جاري تجهيز بوابة الدفع...",
+    "paymentLinkError": "تعذر الحصول على رابط الدفع، يرجى المحاولة مرة أخرى",
+  "paymentPaid": "مدفوع",
+    "paymentPending": "قيد الانتظار",
+    "paymentUnpaid": "غير مدفوع",
     "title": "طلباتي",
     "orderNumber": "رقم الطلب",
     "products": "المنتجات",

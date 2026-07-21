@@ -616,6 +616,7 @@
     "unexpectedError": "An unexpected error occurred"
   },
   "checkout": {
+    "card":"credit card",
      "contactInfo": "Contact Information",
     "fullName": "Full Name",
   
@@ -744,6 +745,15 @@
     "createAccountDescription": "An account will be created using your data (email, phone number, name)"
   },
   "orders": {
+       
+    "paymentPaid": "Paid",
+    "paymentPending": "Pending",
+    "paymentUnpaid": "Unpaid",
+   
+    "paymentStatus": "Payment Status",
+    "retryPayment": "Retry Payment",
+    "preparingPayment": "Preparing payment gateway...",
+    "paymentLinkError": "Unable to get payment link, please try again",
     "title": "My Orders",
     "orderNumber": "Order Number",
     "products": "Products",

@@ -27,10 +27,6 @@ import { getHeaders } from "@/services/api";
 
 const API_URL = "https://beauty.admin.t-carts.com/api";
 
-
-
-
-
 // دالة جلب السلة مع البارامترات (delivery_method و city_id)
 const fetchCartWithParams = async (
   deliveryMethod: string,
@@ -288,6 +284,9 @@ export default function CheckoutClient() {
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   
+  // ✅ إضافة state لحفظ قيمة paymentGateway (مثل الكود الأول)
+  const [paymentGateway, setPaymentGateway] = useState<string | null>(null);
+  
   const [showRedirectPopup, setShowRedirectPopup] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   
@@ -483,6 +482,11 @@ export default function CheckoutClient() {
     setFormData((prev) => ({ ...prev, ...data }));
   }, []);
 
+  // ✅ دالة لاستقبال paymentGateway من PaymentMethodForm (مثل الكود الأول)
+  const handlePaymentGatewayChange = useCallback((gateway: string | null) => {
+    setPaymentGateway(gateway);
+  }, []);
+
   // دالة لاستقبال address_id بعد حفظ العنوان
   const handleAddressSaved = useCallback(
     async (address: any) => {
@@ -676,11 +680,11 @@ export default function CheckoutClient() {
     return true;
   }, [formData, isGuest, selectedAddressId, t]);
 
-  // تحضير بيانات الطلب
+  // ✅ تحضير بيانات الطلب (معدل لاستخدام paymentGateway مثل الكود الأول)
   const prepareOrderData = useCallback(() => {
     const paymentMethodMap: Record<string, string> = {
       cash: "cash",
-      card: "online",
+      card: "card",
       mada: "online",
       wallet: "online",
     };
@@ -697,11 +701,17 @@ export default function CheckoutClient() {
       create_account: createAccount,
     };
 
+    // ✅ إضافة payment_gateway حسب طريقة الدفع (مثل الكود الأول)
     if (formData.paymentMethod === "wallet") {
       orderData.payment_gateway = "wallet";
     }
     if (formData.paymentMethod === "card") {
       orderData.payment_gateway = "paymob";
+    }
+
+    // ✅ إذا تم اختيار بوابة دفع معينة من الـ state (مثل الكود الأول)
+    if (paymentGateway) {
+      orderData.payment_gateway = paymentGateway;
     }
 
     if (createAccount && isGuest) {
@@ -743,7 +753,7 @@ export default function CheckoutClient() {
 
    
     return orderData;
-  }, [formData, selectedAddressId, createAccount, isGuest, accountData]);
+  }, [formData, selectedAddressId, createAccount, isGuest, accountData, paymentGateway]); // ✅ إضافة paymentGateway للـ dependencies
 
   // دالة إغلاق Popup التوجيه
   const closeRedirectPopup = useCallback(() => {
@@ -978,11 +988,13 @@ export default function CheckoutClient() {
               />
             )}
 
+            {/* ✅ تمرير onPaymentGatewayChange إلى PaymentMethodForm (مثل الكود الأول) */}
             <PaymentMethodForm
               paymentMethod={formData.paymentMethod}
               onPaymentMethodChange={(method) =>
                 handleFormChange({ paymentMethod: method as any })
               }
+              onPaymentGatewayChange={handlePaymentGatewayChange}
             />
 
             <NotesForm
