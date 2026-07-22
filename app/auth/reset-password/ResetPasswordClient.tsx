@@ -27,10 +27,38 @@ export default function ResetPasswordClient() {
     new_password_confirmation?: string;
   }>({});
 
+  // ✅ التحقق من وجود reset_token و reset_email في localStorage
   useEffect(() => {
     if (!email) {
       toast.error(t("auth.emailRequired"));
       setTimeout(() => router.push("/auth/forgot-password"), 2000);
+      return;
+    }
+    
+    // ✅ التحقق من وجود reset_token في localStorage
+    if (typeof window !== 'undefined') {
+      const resetToken = localStorage.getItem('reset_token');
+      const savedEmail = localStorage.getItem('reset_email');
+      
+      console.log('🔍 Checking reset token:', resetToken);
+      console.log('📧 Saved email:', savedEmail);
+      console.log('📧 Current email:', email);
+      
+      // ✅ التحقق من وجود reset_token
+      if (!resetToken) {
+        toast.error(t("auth.resetTokenNotFound") || "رمز التحقق غير موجود. يرجى المحاولة مرة أخرى");
+        setTimeout(() => router.push("/auth/forgot-password"), 2000);
+        return;
+      }
+      
+      // ✅ التحقق من تطابق البريد الإلكتروني
+      if (savedEmail && savedEmail !== email) {
+        toast.error(t("auth.emailMismatch") || "البريد الإلكتروني غير متطابق. يرجى المحاولة مرة أخرى");
+        setTimeout(() => router.push("/auth/forgot-password"), 2000);
+        return;
+      }
+      
+      console.log('✅ Reset token verification passed');
     }
   }, [email, router, t]);
 
@@ -66,27 +94,37 @@ export default function ResetPasswordClient() {
 
     setIsLoading(true);
 
-    const result = await resetPassword({
-      email: email,
-      new_password: formData.new_password,
-      new_password_confirmation: formData.new_password_confirmation,
-    });
-
-    if (result.result) {
-      toast.success(t("auth.resetSuccess"), {
-        duration: 3000,
-      });
+    // ✅ إضافة try-catch للتعامل مع الأخطاء
+    try {
+      console.log('📤 Sending reset password request for email:', email);
       
-      setTimeout(() => {
-        router.push("/auth/login?reset=true");
-      }, 1500);
-    } else {
-      toast.error(result.message || t("auth.resetFailed"), {
-        duration: 4000,
+      const result = await resetPassword({
+        email: email,
+        new_password: formData.new_password,
+        new_password_confirmation: formData.new_password_confirmation,
       });
-    }
 
-    setIsLoading(false);
+      console.log('📥 Reset password response:', result);
+
+      if (result.result) {
+        toast.success(t("auth.resetSuccess"), {
+          duration: 3000,
+        });
+        
+        setTimeout(() => {
+          router.push("/auth/login?reset=true");
+        }, 1500);
+      } else {
+        toast.error(result.message || t("auth.resetFailed"), {
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error in handleSubmit:', error);
+      toast.error(t("auth.unexpectedError") || "حدث خطأ غير متوقع");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -18,6 +18,9 @@
     "shopNow": "Shop Now"
   },
   "auth": {
+     "resetTokenNotFound": "Verification code not found. Please try again",
+    "emailMismatch": "Email mismatch. Please try again",
+    "unexpectedError": "An unexpected error occurred",
     "back": "Back",
     "forgotPassword": "Forgot Password",
     "forgotPasswordDesc": "Enter your email and we'll send you a verification code to reset your password",
