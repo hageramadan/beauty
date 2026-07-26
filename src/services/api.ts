@@ -1588,7 +1588,11 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
       
       response = await fetch(`${API_URL}/user/profile`, {
         method: 'POST',
-        headers: getHeaders(true),
+        headers:{   'Accept': 'application/json',
+    'Accept-Language': getAcceptLanguageHeader(),
+    'Authorization': `Bearer ${token}`,
+   
+  },
         body: formData,
       });
     } else {
