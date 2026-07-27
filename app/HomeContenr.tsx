@@ -1,40 +1,16 @@
-// // app/page.tsx
-
-// import { AdsHome } from "@/components/home/AdsHome";
-// import { BestProducts } from "@/components/home/BestProducts";
-// import { CategoriesSection } from "@/components/home/CategoriesSection";
-// import { Hero } from "@/components/home/HeroCover";
-// import { LatestProducts } from "@/components/home/LatestProducts";
-// import { BestDiscounts } from "@/components/home/BestDiscounts";
-
-// export default async function Home() {
-//   return (
-//     <div>
-//       <Hero />
-//       <CategoriesSection />
-//       <LatestProducts />
-//       <AdsHome />
-
-//       <BestProducts />
-
-//       <BestDiscounts />
-//     </div>
-//   );
-// }
-// app/page.tsx
+// app/HomeContent.tsx
 
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { LoadingScreen } from "@/components/LoadingScreen";
-import { Hero } from "@/components/home/HeroCover";
-import { CategoriesSection } from "@/components/home/CategoriesSection";
-import { BestProducts } from "@/components/home/BestProducts";
-import { LatestProducts } from "@/components/home/LatestProducts";
 import { AdsHome } from "@/components/home/AdsHome";
+import { BestProducts } from "@/components/home/BestProducts";
+import { CategoriesSection } from "@/components/home/CategoriesSection";
+import { Hero } from "@/components/home/HeroCover";
+import { LatestProducts } from "@/components/home/LatestProducts";
 import { BestDiscounts } from "@/components/home/BestDiscounts";
 
-export default function Home() {
+export default function HomeContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState({
     hero: false,
@@ -83,17 +59,13 @@ export default function Home() {
   }, []);
 
   return (
-    <>
-      {isLoading && <LoadingScreen />}
-      
-      <div className={isLoading ? "opacity-0" : "opacity-100 transition-opacity duration-500"}>
-        <Hero onLoad={handleHeroLoad} />
-        <CategoriesSection onLoad={handleCategoriesLoad} />
-        <LatestProducts onLoad={handleLatestProductsLoad} />
-        <AdsHome onLoad={handleAdsLoad} />
-        <BestProducts onLoad={handleBestProductsLoad} />
-        <BestDiscounts onLoad={handleBestDiscountsLoad} />
-      </div>
-    </>
+    <div className={isLoading ? "opacity-0" : "opacity-100 transition-opacity duration-500"}>
+      <Hero onLoad={handleHeroLoad} />
+      <CategoriesSection onLoad={handleCategoriesLoad} />
+      <LatestProducts onLoad={handleLatestProductsLoad} />
+      <AdsHome onLoad={handleAdsLoad} />
+      <BestProducts onLoad={handleBestProductsLoad} />
+      <BestDiscounts onLoad={handleBestDiscountsLoad} />
+    </div>
   );
 }

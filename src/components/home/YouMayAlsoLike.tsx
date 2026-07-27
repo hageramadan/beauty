@@ -312,19 +312,7 @@ export function YouMayAlsoLike() {
   // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-6 md:py-12 bg-gray-50">
-        <div className="container-custom">
-          <div className="text-center py-12">
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={() => fetchProducts(1, false)}
-              className="px-4 py-2 bg-[#E60076] text-white rounded-lg hover:bg-[#3bacee] transition"
-            >
-              {t("common.retry")}
-            </button>
-          </div>
-        </div>
-      </section>
+    <></>
     );
   }
 
@@ -410,9 +398,7 @@ export function YouMayAlsoLike() {
 
         {/* No Products Message - مترجم */}
         {products.length === 0 && !isInitialLoading && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t("products.noProducts")}</p>
-          </div>
+          <></>
         )}
       </div>
 

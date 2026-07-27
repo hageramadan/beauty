@@ -7,6 +7,7 @@ import Link from "next/link";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { getCategories } from "@/services/api";
+import { LoadingProps } from "./HeroCover";
 export interface Category {
   id: number;
   name: string;
@@ -14,14 +15,21 @@ export interface Category {
   subcategories: any[];
 }
 
-export function CategoriesSection() {
+export function CategoriesSection({ onLoad }: LoadingProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollStart, setScrollStart] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
+   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+    if (!loading && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      onLoad();
+    }
+  }, [loading, isDataLoaded, onLoad]);
   // جلب البيانات من API
   useEffect(() => {
     const loadCategories = async () => {

@@ -6,8 +6,9 @@ import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getMostSellingProducts, ProductData } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LoadingProps } from "./HeroCover";
 
-//  تعريف واجهات الفاريانتات
+// تعريف واجهات الفاريانتات
 interface VariantAttribute {
   id: number;
   attribute_type: {
@@ -56,9 +57,10 @@ interface Product {
     name: string;
     rate: number;
   };
+  quantity?: number | null; // ✅ إضافة quantity
 }
 
-//  دالة للحصول على الترجمات حسب اللغة
+// دالة للحصول على الترجمات حسب اللغة
 const getTranslations = (lang: string) => {
   if (lang === 'en') {
     return {
@@ -85,7 +87,7 @@ const getTranslations = (lang: string) => {
   };
 };
 
-//  دالة استخراج الألوان من جميع الـ variants
+// دالة استخراج الألوان من جميع الـ variants
 const extractColorsFromVariants = (
   variants: ProductVariant[],
 ): Array<{ color: string; name: string }> => {
@@ -146,12 +148,16 @@ const transformProduct = (product: ProductData): Product => {
   let hasVariants = false;
   let variants: ProductVariant[] = [];
   let variantId: number | null = null;
+  let quantity: number | null = null;
   
   if (product.has_variants && product.variants && product.variants.length > 0) {
     hasVariants = true;
     variants = product.variants as ProductVariant[];
     variantId = product.variants[0].id;
     colors = extractColorsFromVariants(product.variants as ProductVariant[]);
+    quantity = (product.variants[0] as ProductVariant)?.quantity ?? null;
+  } else {
+    quantity = product.quantity ?? null;
   }
 
   return {
@@ -176,14 +182,15 @@ const transformProduct = (product: ProductData): Product => {
       name: "Egyptian Pound",
       rate: 1,
     },
+    quantity: quantity,
   };
 };
 
-export function BestProducts() {
+export function BestProducts({ onLoad }: LoadingProps) {
   const { language } = useLanguage();
   const t = getTranslations(language);
   
-  //  إضافة state لمنع Hydration Error
+  // إضافة state لمنع Hydration Error
   const [isClient, setIsClient] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -193,11 +200,42 @@ export function BestProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
-  //  تعيين isClient بعد تحميل العميل
+  // ✅ استدعاء onLoad بعد تحميل البيانات (نفس الكود الأول)
+  useEffect(() => {
+    if (!isInitialLoading && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [isInitialLoading, isDataLoaded, onLoad]);
+
+  // ✅ استدعاء onLoad في حالة الخطأ
+  useEffect(() => {
+    if (error && products.length === 0 && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [error, products.length, isDataLoaded, onLoad]);
+
+  // ✅ استدعاء onLoad في حالة عدم وجود منتجات
+  useEffect(() => {
+    if (!isInitialLoading && products.length === 0 && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [isInitialLoading, products.length, isDataLoaded, onLoad]);
+
+  // تعيين isClient بعد تحميل العميل
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -241,7 +279,7 @@ export function BestProducts() {
       setProducts([]);
     } finally {
       if (!isMounted.current) return;
-      setIsInitialLoading(false);
+      setIsInitialLoading(false); // ✅ مضمون التنفيذ
       setIsLoadingMore(false);
       fetchingRef.current = false;
     }
@@ -271,7 +309,7 @@ export function BestProducts() {
   const visibleProducts = products.slice(0, displayCount);
   const showLoadMoreButton = hasMore && products.length >= displayCount && products.length < totalProducts;
 
-  //  عرض نسخة ثابتة أثناء Hydration
+  // عرض نسخة ثابتة أثناء Hydration
   if (!isClient) {
     return (
       <section className="py-6 md:py-12 bg-white">
@@ -289,7 +327,7 @@ export function BestProducts() {
     );
   }
 
-  // عرض السبينر الرئيسي أثناء التحميل الأولي -  استخدام الترجمة
+  // عرض السبينر الرئيسي أثناء التحميل الأولي
   if (isInitialLoading) {
     return (
       <section className="py-6 md:py-12 bg-white">
@@ -310,36 +348,22 @@ export function BestProducts() {
     );
   }
 
-  // عرض رسالة خطأ -  استخدام الترجمة
+  // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-      <section className="py-6 md:py-12 bg-white">
-        <div className="container-custom">
-          <div className="flex flex-col justify-center items-center min-h-[400px] gap-4">
-            <p className="text-red-500 text-center">{t.error}</p>
-            <button 
-              onClick={() => fetchProducts(1, false)}
-              className="px-6 py-2 bg-[#E60076] text-white rounded-lg hover:bg-[#c70063] transition-colors"
-            >
-              {t.retry}
-            </button>
-          </div>
-        </div>
-      </section>
+   <></>
     );
   }
 
-  //  عرض رسالة عدم وجود منتجات
+  // عرض رسالة عدم وجود منتجات
   if (products.length === 0 && !isInitialLoading) {
-    return (
-     null
-    );
+    return null;
   }
 
   return (
     <section className="py-6 md:py-12 bg-white">
       <div className="container-custom">
-        {/* Header -  استخدام الترجمة */}
+        {/* Header */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
           <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
             {t.bestSelling}
@@ -352,7 +376,7 @@ export function BestProducts() {
           </Link>
         </div>
 
-        {/*  مؤشر تحميل عند تحميل المزيد -  استخدام الترجمة */}
+        {/* مؤشر تحميل عند تحميل المزيد */}
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
@@ -389,13 +413,13 @@ export function BestProducts() {
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
                 variantId={product.variantId || null}
-                // currency={product.currency}
+                quantity={product.quantity}
               />
             </div>
           ))}
         </div>
 
-        {/* Load More Button -  استخدام الترجمة */}
+        {/* Load More Button */}
         {showLoadMoreButton && (
           <div className="flex justify-center mt-6">
             <Button

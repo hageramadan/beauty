@@ -44,6 +44,8 @@ interface ProductCardProps {
   hasVariants?: boolean;
   variants?: Array<{ id: number }>;
   currency?: Currency;
+  quantity?: number | null;
+
 }
 
 //  دالة للحصول على الترجمات حسب اللغة

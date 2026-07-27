@@ -1,12 +1,26 @@
 // app/HomeLoading.tsx
-"use client";
 
 export default function HomeLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#E60076] border-r-transparent"></div>
-        <p className="mt-4 text-gray-600">جاري تحميل المحتوى...</p>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+      <div className="flex flex-col items-center space-y-8">
+        {/* اللوجو */}
+        <div className="relative w-32 h-32">
+          {/* <img
+            src="/logo.png"
+            alt="اللوجو"
+            className="object-contain w-full h-full"
+          /> */}
+          logo
+        </div>
+
+        {/* مؤشر التحميل */}
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-[#C092BD] rounded-full animate-spin"></div>
+          <p className="text-gray-600 text-sm font-medium">
+            جاري تحميل الصفحة...
+          </p>
+        </div>
       </div>
     </div>
   );

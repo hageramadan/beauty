@@ -19,7 +19,7 @@ interface Slide {
   buttonLink: string;
 }
 
-//  دالة للحصول على الترجمات حسب اللغة (نفس الهيرو الأول)
+// دالة للحصول على الترجمات حسب اللغة
 const getTranslations = (lang: string) => {
   if (lang === 'en') {
     return {
@@ -307,10 +307,14 @@ function IndividualSlider({
   );
 }
 
-export function Hero() {
+export interface LoadingProps {
+  onLoad?: () => void;
+}
+
+export function Hero({ onLoad }: LoadingProps) {
   const { language } = useLanguage();
   const t = getTranslations(language);
-  
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [leftSlides, setLeftSlides] = useState<Slide[]>([]);
   const [rightSlides, setRightSlides] = useState<Slide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,15 +323,44 @@ export function Hero() {
     description: t.defaultDescription
   });
 
+  // ✅ حل المشكلة: استدعاء onLoad بعد انتهاء التحميل
+  useEffect(() => {
+    // استدعاء onLoad عندما:
+    // 1. انتهى التحميل (loading = false)
+    // 2. لم يتم استدعاؤه من قبل (!isDataLoaded)
+    // 3. الـ onLoad موجود
+    if (!loading && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      // ✅ استخدام setTimeout للتأكد من اكتمال الـ Render
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [loading, isDataLoaded, onLoad]);
+
+  // ✅ استدعاء onLoad أيضاً في حالة عدم وجود سلايدرات
+  useEffect(() => {
+    // إذا انتهى التحميل ولا توجد سلايدرات
+    if (!loading && leftSlides.length === 0 && rightSlides.length === 0) {
+      // التأكد من استدعاء onLoad
+      if (!isDataLoaded && onLoad) {
+        setIsDataLoaded(true);
+        setTimeout(() => {
+          onLoad();
+        }, 0);
+      }
+    }
+  }, [loading, leftSlides, rightSlides, isDataLoaded, onLoad]);
+
   // جلب السلايدرات من API
   useEffect(() => {
     const loadSliders = async () => {
       setLoading(true);
       try {
-        //  getSliders تعيد مصفوفة من السلايدرات مباشرة
+        // getSliders تعيد مصفوفة من السلايدرات مباشرة
         const slidersData = await getSliders(language);
         
-        //  التحقق من وجود البيانات
+        // التحقق من وجود البيانات
         if (slidersData && slidersData.length > 0) {
           // تحويل البيانات إلى صيغة Slide
           const formattedSlides: Slide[] = slidersData.map((slider: any) => ({
@@ -349,12 +382,12 @@ export function Hero() {
           // إذا كان هناك سلايدرات، استخدم بيانات أول سلايدر للنص المركزي
           if (formattedSlides.length > 0) {
             setCenterText({
-              title: formattedSlides[0].title ,
+              title: formattedSlides[0].title,
               description: formattedSlides[0].description 
             });
           }
         } else {
-          //  استخدام النصوص الافتراضية المترجمة إذا لم توجد سلايدرات
+          // استخدام النصوص الافتراضية المترجمة إذا لم توجد سلايدرات
           setCenterText({
             title: t.defaultTitle,
             description: t.defaultDescription
@@ -362,7 +395,7 @@ export function Hero() {
         }
       } catch (error) {
         console.error('Error loading sliders:', error);
-        //  في حالة الخطأ، استخدام النصوص الافتراضية
+        // في حالة الخطأ، استخدام النصوص الافتراضية
         setCenterText({
           title: t.defaultTitle,
           description: t.defaultDescription
@@ -375,7 +408,7 @@ export function Hero() {
     loadSliders();
   }, [language, t.shopNow, t.defaultTitle, t.defaultDescription]);
 
-  // عرض شاشة تحميل -  استخدام الترجمة
+  // عرض شاشة تحميل - استخدام الترجمة
   if (loading) {
     return (
       <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gray-900">
@@ -383,14 +416,13 @@ export function Hero() {
           <div className="relative">
             <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
             <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
-            
           </div>
         </div>
       </section>
     );
   }
 
-  //  إذا لم توجد سلايدرات، عرض النص المركزي فقط بدون صور
+  // إذا لم توجد سلايدرات، عرض النص المركزي فقط بدون صور
   if (leftSlides.length === 0 && rightSlides.length === 0) {
     return (
       <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gradient-to-r from-[#E60076]/20 to-[#E60076]/5">

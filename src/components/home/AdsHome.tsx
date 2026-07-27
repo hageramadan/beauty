@@ -7,6 +7,7 @@ import { FaArrowLeft } from 'react-icons/fa'
 import Image from 'next/image'
 import { getAds, getFullImageUrl } from '@/services/api'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LoadingProps } from './HeroCover'
 
 export interface AdPopup {
   id: number;
@@ -24,7 +25,7 @@ export interface AdPopup {
   type_label?: string;
 }
 
-//  دالة للحصول على الترجمات حسب اللغة
+// دالة للحصول على الترجمات حسب اللغة
 const getTranslations = (lang: string) => {
   if (lang === 'en') {
     return {
@@ -51,7 +52,7 @@ const getTranslations = (lang: string) => {
   };
 };
 
-export function AdsHome() {
+export function AdsHome({ onLoad }: LoadingProps) {
   const { language } = useLanguage();
   const t = getTranslations(language);
   
@@ -65,6 +66,40 @@ export function AdsHome() {
     minutes: 0,
     seconds: 0
   });
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // ✅ استدعاء onLoad بعد تحميل البيانات
+  useEffect(() => {
+    if (!loading && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [loading, isDataLoaded, onLoad]);
+
+  // ✅ استدعاء onLoad في حالة عدم وجود إعلانات أو انتهاء العرض
+  useEffect(() => {
+    if (!loading && !isDataLoaded && onLoad) {
+      const activeAd = ads.find(ad => ad.is_active === 1) || ads[0];
+      if (!activeAd || isExpired) {
+        setIsDataLoaded(true);
+        setTimeout(() => {
+          onLoad();
+        }, 0);
+      }
+    }
+  }, [loading, ads, isExpired, isDataLoaded, onLoad]);
+
+  // ✅ استدعاء onLoad في حالة isClient = false
+  useEffect(() => {
+    if (!isClient && !isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+  }, [isClient, isDataLoaded, onLoad]);
 
   useEffect(() => {
     setIsClient(true);
@@ -73,10 +108,16 @@ export function AdsHome() {
   // جلب الإعلانات من API
   useEffect(() => {
     const loadAds = async () => {
-      setLoading(true);
-      const data = await getAds();
-      setAds(data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const data = await getAds();
+        setAds(data);
+      } catch (error) {
+        console.error('Error loading ads:', error);
+        setAds([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadAds();
@@ -85,12 +126,12 @@ export function AdsHome() {
   // استخدام أول إعلان نشط
   const activeAd = ads.find(ad => ad.is_active === 1) || ads[0];
 
-  //  حساب الوقت المتبقي من end_date من الـ API
+  // حساب الوقت المتبقي من end_date من الـ API
   useEffect(() => {
     if (!activeAd) return;
 
     const endDateStr = activeAd.end_date;
-const calculateTimeLeft = (end: Date) => {
+    const calculateTimeLeft = (end: Date) => {
       const now = new Date();
       const difference = end.getTime() - now.getTime();
       
@@ -125,8 +166,6 @@ const calculateTimeLeft = (end: Date) => {
       console.error('Invalid end_date:', endDateStr);
       return;
     }
-
-    
 
     calculateTimeLeft(endDate);
     
@@ -164,7 +203,7 @@ const calculateTimeLeft = (end: Date) => {
     );
   }
 
-  //  عرض نسخة ثابتة أثناء Hydration
+  // عرض نسخة ثابتة أثناء Hydration
   if (!isClient) {
     return (
       <section className="bg-[#FDF2F8]">
@@ -176,9 +215,16 @@ const calculateTimeLeft = (end: Date) => {
     );
   }
 
-  //  **إذا لم يوجد إعلانات أو انتهى العرض، لا تظهر anything**
+  // ✅ إذا لم يوجد إعلانات أو انتهى العرض، استدعاء onLoad ثم العودة
   if (!activeAd || isExpired) {
-    return null; // 👈 هذا يخفي السكشن بالكامل عندما ينتهي العرض
+    // ✅ استدعاء onLoad قبل العودة
+    if (!isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      setTimeout(() => {
+        onLoad();
+      }, 0);
+    }
+    return null;
   }
 
   const discountValue = extractDiscount(activeAd.sub_title);

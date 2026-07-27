@@ -60,6 +60,7 @@ export interface Product {
   variants?: ProductVariant[];
   variantId?: number | null;
   currency?: Currency;
+  quantity?:number | null;
 }
 
 //  دالة استخراج الألوان من جميع الـ variants
