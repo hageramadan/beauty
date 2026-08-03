@@ -2,6 +2,7 @@
 
 import { OrderSummaryProps } from "./types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrency } from "@/hooks/useCurrency"; // ✅ إضافة الاستيراد
 
 export default function OrderSummary({ 
   cartItems, 
@@ -9,6 +10,10 @@ export default function OrderSummary({
   deliveryMethod 
 }: OrderSummaryProps) {
   const { t } = useTranslation();
+  const { currency, isLoading: currencyLoading } = useCurrency(); // ✅ استخدام الـ Hook
+  
+  // ✅ الحصول على رمز العملة
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   
   // استخراج القيم من الكائن الملخص مع قيم افتراضية للخصائص الاختيارية
   const { 
@@ -47,8 +52,8 @@ export default function OrderSummary({
       return "--";
     }
     
-    // رسوم توصيل مدفوعة
-    return `$ ${deliveryFee.toFixed(2)}`;
+    // رسوم توصيل مدفوعة - ✅ استخدام currencySymbol
+    return `${currencySymbol} ${deliveryFee.toFixed(2)}`;
   };
 
   //  تحديد ما إذا كانت رسوم التوصيل غير محددة
@@ -67,7 +72,7 @@ export default function OrderSummary({
       <div className="space-y-3 pt-3 border-t border-gray-100">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">{t('checkout.subtotal')}</span>
-          <span className="text-gray-800">$ {subtotal?.toFixed(2) || "0.00"}</span>
+          <span className="text-gray-800">{currencySymbol} {subtotal?.toFixed(2) || "0.00"}</span>
         </div>
         
         {discount > 0 && (
@@ -76,7 +81,7 @@ export default function OrderSummary({
               <span>{t('checkout.discount')}</span>
               <span className="text-xs">(-{discountPercentage}%)</span>
             </span>
-            <span className="text-[#E60076]">-$ {discount.toFixed(2)}</span>
+            <span className="text-[#E60076]">-{currencySymbol} {discount.toFixed(2)}</span>
           </div>
         )}
         
@@ -85,11 +90,11 @@ export default function OrderSummary({
           <div className="flex justify-between text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <span>{t('checkout.couponDiscount')}</span>
-              <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-green-600 bg-pink-50 px-2 py-0.5 rounded-full">
                 {couponCode}
               </span>
             </span>
-            <span className="text-[#E60076]">-$ {couponDiscount.toFixed(2)}</span>
+            <span className="text-[#E60076]">-{currencySymbol} {couponDiscount.toFixed(2)}</span>
           </div>
         )}
         
@@ -106,7 +111,7 @@ export default function OrderSummary({
         <div className="flex justify-between pt-3 border-t border-gray-200">
           <span className="text-lg font-bold text-gray-900">{t('checkout.total')}</span>
           <span className="text-lg font-bold">
-            $ {total?.toFixed(2) || "0.00"}
+            {currencySymbol} {total?.toFixed(2) || "0.00"}
           </span>
         </div>
       </div>

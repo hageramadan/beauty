@@ -10,6 +10,7 @@ import { IoCopyOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { getHeaders } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrency } from "@/hooks/useCurrency";
 
 // ========== إعدادات API ==========
 const API_URL = 'https://beauty.admin.t-carts.com/api';
@@ -222,10 +223,11 @@ const formatDate = (dateString: string): string => {
 
 export default function ReturnRequestPage() {
   const { t } = useTranslation();
+   const { currency, isLoading: currencyLoading } = useCurrency(); 
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-
+const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
@@ -325,7 +327,7 @@ export default function ReturnRequestPage() {
           <p className="text-gray-500 mb-4">{t('orders.orderNotFoundDesc')}</p>
           <Link
             href="/account/orders"
-            className="inline-block bg-[#E60076] hover:bg-[#f0278f] text-white px-6 py-2 rounded-lg"
+            className="inline-block bg-[#E60076] hover:bg-[#E60076] text-white px-6 py-2 rounded-lg"
           >
             {t('orders.backToOrders')}
           </Link>
@@ -439,7 +441,7 @@ export default function ReturnRequestPage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-800 md:text-base text-xs flex gap-1">
-                            {(item.unit_price || item.price || 0).toFixed(2)} $
+                            {(item.unit_price || item.price || 0).toFixed(2)} {currencySymbol}
                           </p>
                         </div>
                       </div>
@@ -503,7 +505,7 @@ export default function ReturnRequestPage() {
             className={`w-full py-3 rounded-xl font-medium transition mt-4 ${
               isSubmitting || !refundMethod
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-[#E60076] text-white hover:bg-[#f0278f]"
+                : "bg-[#E60076] text-white hover:bg-[#E60076]"
             }`}
           >
             {isSubmitting ? (
@@ -535,7 +537,7 @@ export default function ReturnRequestPage() {
             </p>
             <button
               onClick={handleCloseSuccess}
-              className="w-full bg-[#E60076] text-white py-3 rounded-xl font-medium hover:bg-[#f0278f] transition"
+              className="w-full bg-[#E60076] text-white py-3 rounded-xl font-medium hover:bg-[#E60076] transition"
             >
               {t('orders.backToOrders')}
             </button>

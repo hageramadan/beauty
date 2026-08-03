@@ -80,12 +80,12 @@ interface TransformedProduct {
   variants?: Array<{ id: number }>;
   variantId?: number | null;
   currency?: {
-    //  إضافة العملة
     code: string;
     symbol: string;
     name: string;
     rate: number;
   };
+  quantity?: number | null; // ✅ إضافة الكمية
 }
 
 //  إضافة واجهة Pagination
@@ -152,12 +152,13 @@ export default function WishlistPage() {
                 ? product.variants[0].id
                 : null,
             currency: product.currency || {
-              //  إضافة العملة
               code: "EGP",
               symbol: "$",
               name: "Egyptian Pound",
               rate: 1,
             },
+            // ✅ إضافة الكمية من بيانات المنتج
+            quantity: product.quantity ?? null,
           });
         }
       } catch (error) {
@@ -224,7 +225,7 @@ export default function WishlistPage() {
       setShowClearConfirm(false);
       //  إعادة تحميل البيانات من خلال refetch
       await refetch();
-      toast.success(t("wishlist.clearSuccess"));
+      // toast.success(t("wishlist.clearSuccess"));
     } catch (error) {
       console.error("❌ Error clearing favorites:", error);
       toast.error(t("wishlist.clearError"));
@@ -319,7 +320,8 @@ export default function WishlistPage() {
                 hasVariants={item.hasVariants || false}
                 variants={item.variants || []}
                 variantId={item.variantId || null}
-                currency={item.currency} //  تمرير العملة
+                // currency={item.currency}
+                quantity={item.quantity} // ✅ تمرير الكمية إلى ProductCard
               />
             </div>
           ))}
@@ -367,9 +369,9 @@ export default function WishlistPage() {
                 <p className="text-gray-500 text-sm">
                   {t("wishlist.confirmWarning")}{" "}
                   <span className="font-bold text-[#EC221F]">
-                    {items.length}
+                    {/* {items.length} */}
                   </span>{" "}
-                  {items.length > 2
+                  {items.length > 0
                     ? t("wishlist.itemsCount", { count: items.length })
                     : t("wishlist.itemCount", { count: items.length })}{" "}
                   {t("wishlist.fromWishlist")}

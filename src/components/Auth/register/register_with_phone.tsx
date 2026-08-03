@@ -113,7 +113,7 @@ export default function RegisterWithPhone() {
   const result = await registerWithPhone(
     formData.name,
     formData.phoneNumber,
-    // formData.password,
+    formData.password,
     formData.countryCode
   );
 

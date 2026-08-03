@@ -1,4 +1,4 @@
-// components/home/LatestProducts.tsx
+// components/LatestProducts.tsx
 
 "use client";
 
@@ -9,11 +9,11 @@ import { getNewProducts, ProductData } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Product, ProductVariant, VariantAttribute } from "@/types/product";
 
-interface LoadingProps {
+interface LatestProductsProps {
   onLoad?: () => void;
 }
 
-// دالة للحصول على الترجمات حسب اللغة
+//  دالة للحصول على الترجمات حسب اللغة
 const getTranslations = (lang: string) => {
   if (lang === "en") {
     return {
@@ -36,7 +36,7 @@ const getTranslations = (lang: string) => {
   };
 };
 
-// دالة استخراج الألوان من جميع الـ variants
+//  دالة استخراج الألوان من جميع الـ variants
 const extractColorsFromVariants = (
   variants: ProductVariant[],
 ): Array<{ color: string; name: string }> => {
@@ -100,21 +100,17 @@ const transformProduct = (product: ProductData): Product => {
     originalPrice = product.pricing.price;
   }
 
-  // استخراج الألوان من جميع الـ variants ديناميكياً
+  //  استخراج الألوان من جميع الـ variants ديناميكياً
   let colors: Array<{ color: string; name: string }> = [];
   let hasVariants = false;
   let variants: ProductVariant[] = [];
   let variantId: number | null = null;
-  let quantity: number | null = null;
 
   if (product.has_variants && product.variants && product.variants.length > 0) {
     hasVariants = true;
     variants = product.variants as ProductVariant[];
     variantId = product.variants[0].id;
     colors = extractColorsFromVariants(product.variants as ProductVariant[]);
-    quantity = (product.variants[0] as ProductVariant)?.quantity ?? null;
-  } else {
-    quantity = product.quantity ?? null;
   }
 
   return {
@@ -133,15 +129,16 @@ const transformProduct = (product: ProductData): Product => {
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,
-    quantity: quantity, // ✅ إضافة الكمية
+    // ✅ إضافة الكمية من البيانات المسترجعة
+    quantity: product.quantity ?? null,
   };
 };
 
-export function LatestProducts({ onLoad }: LoadingProps) {
+export function LatestProducts({ onLoad }: LatestProductsProps) {
   const { language } = useLanguage();
   const t = getTranslations(language);
-  
-  // إضافة state لمنع Hydration Error
+
+  //  إضافة state لمنع Hydration Error
   const [isClient, setIsClient] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -152,6 +149,7 @@ export function LatestProducts({ onLoad }: LoadingProps) {
   const [totalProducts, setTotalProducts] = useState(0);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  //  تغيير الاسم من isMounted إلى isMountedRef لتجنب التعارض
   const isMountedRef = useRef(true);
   const fetchingRef = useRef(false);
 
@@ -159,33 +157,11 @@ export function LatestProducts({ onLoad }: LoadingProps) {
   useEffect(() => {
     if (!isInitialLoading && !isDataLoaded && onLoad) {
       setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
+      onLoad();
     }
   }, [isInitialLoading, isDataLoaded, onLoad]);
 
-  // ✅ استدعاء onLoad في حالة الخطأ
-  useEffect(() => {
-    if (error && products.length === 0 && !isDataLoaded && onLoad) {
-      setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
-    }
-  }, [error, products.length, isDataLoaded, onLoad]);
-
-  // ✅ استدعاء onLoad في حالة عدم وجود منتجات
-  useEffect(() => {
-    if (!isInitialLoading && products.length === 0 && !isDataLoaded && onLoad) {
-      setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
-    }
-  }, [isInitialLoading, products.length, isDataLoaded, onLoad]);
-
-  // تعيين isClient بعد تحميل العميل
+  //  تعيين isClient بعد تحميل العميل
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -252,7 +228,7 @@ export function LatestProducts({ onLoad }: LoadingProps) {
 
   const visibleProducts = products.slice(0, displayCount);
 
-  // عرض نسخة ثابتة أثناء Hydration
+  //  عرض نسخة ثابتة أثناء Hydration (بدون نصوص مترجمة)
   if (!isClient) {
     return (
       <section className="py-2 md:py-12 bg-white">
@@ -263,57 +239,53 @@ export function LatestProducts({ onLoad }: LoadingProps) {
         </div>
       </section>
     );
-    // ❌ لا تستدعي onLoad هنا - فقط اعرض Spinner
   }
 
-  // عرض السبينر الرئيسي أثناء التحميل الأولي
+  // عرض السبينر الرئيسي أثناء التحميل الأولي -  استخدام الترجمة
   if (isInitialLoading) {
     return (
       <section className="py-2 md:py-12 bg-white">
         <div className="container-custom">
-          <div className="mb-5 md:mb-10 flex justify-between">
-            <h2
-              className="text-2xl md:text-3xl font-bold mb-3"
-              style={{ color: "#112B40" }}
-            >
-              {t.latestProducts}
-            </h2>
-          </div>
           <div className="flex flex-col justify-center items-center py-20 gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#E60076]"></div>
-            <p className="text-gray-500 text-sm animate-pulse">
-              {t.loading}
-            </p>
           </div>
         </div>
       </section>
     );
   }
 
-  // عرض رسالة خطأ مترجمة
+  //  عرض رسالة خطأ مترجمة
   if (error && products.length === 0) {
-    return null;
+    if (!isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      onLoad();
+    }
+    return <></>;
   }
 
-  // عرض رسالة عدم وجود منتجات
+  //  عرض رسالة عدم وجود منتجات
   if (products.length === 0 && !isInitialLoading) {
+    if (!isDataLoaded && onLoad) {
+      setIsDataLoaded(true);
+      onLoad();
+    }
     return null;
   }
 
   return (
     <section className="py-2 md:py-12 bg-white">
       <div className="container-custom">
-        {/* Header */}
+        {/* Header -  استخدام الترجمة */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
           <h2
-            className="text-xl md:text-2xl font-bold"
+            className="text-base md:text-2xl font-bold"
             style={{ color: "#112B40" }}
           >
             {t.latestProducts}
           </h2>
           <Link
             href="/products"
-            className="text-[#E60076] text-sm font-semibold hover:underline"
+            className="text-[#E60076] text-xs lg:text-sm font-semibold hover:underline"
           >
             {t.viewMore}
           </Link>
@@ -346,13 +318,13 @@ export function LatestProducts({ onLoad }: LoadingProps) {
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
                 variantId={product.variantId || null}
-                quantity={product.quantity} // ✅ تمرير الكمية
+                quantity={product.quantity} // ✅ تمرير الكمية إلى ProductCard
               />
             </div>
           ))}
         </div>
 
-        {/* Loading State for Load More */}
+        {/* Loading State for Load More -  استخدام الترجمة */}
         {isLoadingMore && (
           <div className="flex flex-col justify-center items-center py-8 gap-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E60076]"></div>

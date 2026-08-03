@@ -1,3 +1,5 @@
+// components/BestDiscounts.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -7,9 +9,8 @@ import { ProductCard } from "../products/ProductCard";
 import { Button } from "../ui/button";
 import { getOffersSection, ProductData } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { LoadingProps } from "./HeroCover";
 
-// تعريف واجهات الفاريانتات
+//  تعريف واجهات الفاريانتات
 interface VariantAttribute {
   id: number;
   attribute_type: {
@@ -36,6 +37,7 @@ interface ProductVariant {
   attributes: VariantAttribute[];
 }
 
+//  تحديث واجهة Product لإضافة خصائص الفاريانتات والكمية
 interface Product {
   id: string;
   name: string;
@@ -58,10 +60,14 @@ interface Product {
     name: string;
     rate: number;
   };
-  quantity?: number | null; // ✅ إضافة quantity
+  quantity?: number | null; // ✅ إضافة الكمية
 }
 
-// دالة للحصول على الترجمات حسب اللغة
+interface BestDiscountsProps {
+  onLoad?: () => void;
+}
+
+//  دالة للحصول على الترجمات حسب اللغة
 const getTranslations = (lang: string) => {
   if (lang === 'en') {
     return {
@@ -88,7 +94,7 @@ const getTranslations = (lang: string) => {
   };
 };
 
-// دالة استخراج الألوان من جميع الـ variants
+//  دالة استخراج الألوان من جميع الـ variants
 const extractColorsFromVariants = (
   variants: ProductVariant[]
 ): Array<{ color: string; name: string }> => {
@@ -127,7 +133,7 @@ const cleanImageUrl = (url: string) => {
   return `https://beauty.admin.t-carts.com${url}`;
 };
 
-// تحويل البيانات من API إلى شكل المنتج المطلوب مع دعم الفاريانتات والكمية
+//  تحويل البيانات من API إلى شكل المنتج المطلوب مع دعم الفاريانتات والكمية
 const transformProduct = (product: ProductData): Product => {
   const mainImage =
     product.images && product.images.length > 0
@@ -155,15 +161,21 @@ const transformProduct = (product: ProductData): Product => {
   let hasVariants = false;
   let variants: ProductVariant[] = [];
   let variantId: number | null = null;
-  let quantity: number | null = null;
 
   if (product.has_variants && product.variants && product.variants.length > 0) {
     hasVariants = true;
     variants = product.variants as ProductVariant[];
     variantId = product.variants[0].id;
     colors = extractColorsFromVariants(product.variants as ProductVariant[]);
+  }
+
+  // ✅ استخراج الكمية من المنتج
+  let quantity: number | null = null;
+  if (product.has_variants && product.variants && product.variants.length > 0) {
+    // إذا كان المنتج له متغيرات، نأخذ الكمية من أول متغير
     quantity = (product.variants[0] as ProductVariant)?.quantity ?? null;
   } else {
+    // إذا لم يكن له متغيرات، نأخذ الكمية من المنتج نفسه
     quantity = product.quantity ?? null;
   }
 
@@ -189,15 +201,15 @@ const transformProduct = (product: ProductData): Product => {
       name: "Egyptian Pound",
       rate: 1,
     },
-    quantity: quantity,
+    quantity: quantity, // ✅ إضافة الكمية
   };
 };
 
-export function BestDiscounts({ onLoad }: LoadingProps) {
+export function BestDiscounts({ onLoad }: BestDiscountsProps) {
   const { language } = useLanguage();
   const t = getTranslations(language);
   
-  // إضافة state لمنع Hydration Error
+  //  إضافة state لمنع Hydration Error
   const [isClient, setIsClient] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [sectionName, setSectionName] = useState<string>(t.defaultSectionName);
@@ -213,37 +225,15 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
-  // ✅ استدعاء onLoad بعد تحميل البيانات (نفس الكود الأول)
+  // ✅ استدعاء onLoad في useEffect وليس في render
   useEffect(() => {
     if (!isInitialLoading && !isDataLoaded && onLoad) {
       setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
+      onLoad();
     }
   }, [isInitialLoading, isDataLoaded, onLoad]);
 
-  // ✅ استدعاء onLoad في حالة الخطأ
-  useEffect(() => {
-    if (error && products.length === 0 && !isDataLoaded && onLoad) {
-      setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
-    }
-  }, [error, products.length, isDataLoaded, onLoad]);
-
-  // ✅ استدعاء onLoad في حالة عدم وجود منتجات
-  useEffect(() => {
-    if (!isInitialLoading && products.length === 0 && !isDataLoaded && onLoad) {
-      setIsDataLoaded(true);
-      setTimeout(() => {
-        onLoad();
-      }, 0);
-    }
-  }, [isInitialLoading, products.length, isDataLoaded, onLoad]);
-
-  // تعيين isClient بعد تحميل العميل
+  //  تعيين isClient بعد تحميل العميل
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -272,7 +262,7 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
           return;
         }
 
-        // تحديث اسم السكشن
+        //  تحديث اسم السكشن
         setSectionName(section.name || t.defaultSectionName);
 
         const productsData = section.products || [];
@@ -303,7 +293,7 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
         setProducts([]);
       } finally {
         if (!isMounted.current) return;
-        setIsInitialLoading(false); // ✅ مضمون التنفيذ
+        setIsInitialLoading(false);
         setIsLoadingMore(false);
         fetchingRef.current = false;
       }
@@ -338,7 +328,7 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
     products.length >= displayCount &&
     products.length < totalProducts;
 
-  // عرض نسخة ثابتة أثناء Hydration
+  //  عرض نسخة ثابتة أثناء Hydration
   if (!isClient) {
     return (
       <section className="py-6 md:py-12 bg-white">
@@ -356,7 +346,6 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
     );
   }
 
-  // عرض السبينر الرئيسي أثناء التحميل الأولي
   if (isInitialLoading) {
     return (
       <section className="py-6 md:py-12 bg-white">
@@ -367,9 +356,6 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
                 <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500 text-sm animate-pulse">
-                {t.loading}
-              </p>
             </div>
           </div>
         </div>
@@ -377,28 +363,32 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
     );
   }
 
-  // عرض رسالة خطأ
+  // ✅ من غير استدعاء onLoad هنا
   if (error && products.length === 0) {
-    return (
-   <></>
-    );
+    return <></>;
   }
 
-  // عرض رسالة عدم وجود منتجات
+  // ✅ من غير استدعاء onLoad هنا
   if (products.length === 0 && !isInitialLoading) {
     return (
-      <></>
+      <section className="py-6 md:py-12 bg-white">
+        <div className="container-custom">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <p className="text-gray-500 text-center">{t.noDiscounts}</p>
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
     <section className="py-6 md:py-12 bg-white" id="discount">
       <div className="container-custom">
-        {/* Header */}
+        {/* Header -  استخدام الترجمة */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
           <div>
             <h2
-              className="text-lg md:text-xl font-bold"
+              className="text-base md:text-xl font-bold"
               style={{ color: "#112B40" }}
             >
               {sectionName || t.defaultSectionName}
@@ -406,13 +396,13 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
           </div>
           <Link
             href="/products"
-            className="text-[#E60076] text-[14px] font-bold hover:underline transition-all duration-300"
+            className="text-[#E60076] text-xs lg:text-sm font-bold hover:underline transition-all duration-300"
           >
             {t.viewMore}
           </Link>
         </div>
 
-        {/* مؤشر تحميل عند تحميل المزيد */}
+        {/*  مؤشر تحميل عند تحميل المزيد -  استخدام الترجمة */}
         {isLoadingMore && (
           <div className="flex justify-center py-4 mb-4">
             <div className="flex items-center gap-2">
@@ -423,7 +413,7 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-6 mb-2 md:mb-5">
           {visibleProducts.map((product, index) => (
             <div
               key={product.id}
@@ -449,14 +439,14 @@ export function BestDiscounts({ onLoad }: LoadingProps) {
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
                 variantId={product.variantId || null}
-                currency={product.currency}
-                quantity={product.quantity}
+                // currency={product.currency}
+                quantity={product.quantity} // ✅ تمرير الكمية إلى ProductCard
               />
             </div>
           ))}
         </div>
 
-        {/* Load More Button */}
+        {/* Load More Button -  استخدام الترجمة */}
         {showLoadMoreButton && !isLoadingMore && (
           <div className="text-center mt-4">
             <Button

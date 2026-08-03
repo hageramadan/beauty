@@ -48,6 +48,17 @@ const transformProductData = (apiProduct: ProductData, t: any) => {
   // إذا لم يكن هناك مقاسات، أضف مقاسات افتراضية
   const finalSizes = sizes.length > 0 ? sizes : ["S", "M", "L", "XL"];
   
+  // ✅ تحسين التحقق من التوفر
+  let isAvailable = apiProduct.is_active;
+  if (apiProduct.has_variants && apiProduct.variants) {
+    // إذا كان هناك متغيرات، نتحقق من وجود أي متغير متاح
+     // @ts-ignore
+    isAvailable = isAvailable && apiProduct.variants.some(v => (v.quantity ?? 0) > 0);
+  } else {
+    // إذا لم يكن هناك متغيرات، نتحقق من الكمية الرئيسية
+    isAvailable = isAvailable && (apiProduct.quantity ?? 0) > 0;
+  }
+  
   return {
     id: apiProduct.id,
     name: apiProduct.name,
@@ -63,11 +74,11 @@ const transformProductData = (apiProduct: ProductData, t: any) => {
     rating: apiProduct.avg_rating || 4.5,
     reviewsCount: apiProduct.total_reviews || 0,
     sku: `SKU-${apiProduct.id}`,
-    availability: apiProduct.is_active && (apiProduct.quantity > 0 || apiProduct.has_variants),
-    //  إضافة variants و has_variants (الأهم)
+    availability: isAvailable, // ✅ استخدام التحسين الجديد
     variants: apiProduct.variants || [],
     has_variants: apiProduct.has_variants || false,
     video: apiProduct.video || null,
+    quantity: apiProduct.quantity || 0, // ✅ إضافة الكمية الرئيسية
   };
 };
 
@@ -129,7 +140,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         {/* <p className="text-red-500 text-xl mb-4">{error || t("product.notFound")}</p> */}
         <button 
           onClick={() => window.location.href = '/'}
-          className="bg-[#E60076] hover:bg-[#f0278f] text-white px-6 py-2 rounded-[8px]"
+          className="bg-[#E60076] hover:bg-[#E60076] text-white px-6 py-2 rounded-[8px]"
         >
           {t("product.backToHome")}
         </button>

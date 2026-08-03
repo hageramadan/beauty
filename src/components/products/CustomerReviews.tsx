@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { getProductReviews, ReviewData } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation"; // إضافة useTranslation
 
 interface CustomerReviewsProps {
   productId: number;
@@ -51,43 +52,42 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 // مكون البطاقة الواحدة
-const ReviewCard = ({ review, language }: { review: ReviewData; language: string }) => {
+const ReviewCard = ({ review, language, t }: { review: ReviewData; language: string; t: any }) => {
   // تنسيق التاريخ حسب اللغة
-const formatDate = (dateString: string): string => {
-  try {
-    const date = new Date(dateString);
-    // استخراج السنة والشهر واليوم فقط
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch {
-    return dateString;
-  }
-};
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return dateString;
+    }
+  };
 
   return (
-    <div className="bg-white rounded-[8px] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white rounded-[8px] p-3 lg:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
       {/* معلومات المستخدم والتقييم */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="gap-3">
           <div>
             <StarRating rating={review.rating} />
           </div>
           <div className="flex items-center gap-1 mt-2">
-            <h4 className="text-[#000000ce] text-[20px]">{review.user.name}</h4>
+            <h4 className="text-[#000000ce] text-[16px]">{review.user.name}</h4>
             {review.user.verified && (
-              <FaCircleCheck className="text-[#01AB31] w-4.5 h-4.5" />
+              <FaCircleCheck className="text-[#01AB31] w-4 h-4" />
             )}
           </div>
         </div>
         <div className="flex items-center gap-1 text-xs text-gray-500">
-          <BsThreeDots className="w-6 h-6" />
+          <BsThreeDots className="w-5 h-5" />
         </div>
       </div>
 
       {/* التعليق */}
-      <p className="text-[#00000099] text-base leading-relaxed mb-4">
+      <p className="text-[#00000099] text-[14px] leading-relaxed">
         {review.comment}
       </p>
       
@@ -97,13 +97,13 @@ const formatDate = (dateString: string): string => {
         </div>
 
         {/* عدد الإعجابات */}
-        <div className="flex items-center gap-4">
-          <div className="border rounded-[8px] border-[#E4E9EE] p-2">
-            <AiOutlineDislike className="h-5 w-5" />
+        <div className="flex items-center gap-2">
+          <div className="border rounded-[8px] border-[#E4E9EE] p-1">
+            <AiOutlineDislike className="h-4 w-4" />
           </div>
-          <div className="flex items-center gap-1 border rounded-[8px] border-[#E4E9EE] p-2">
+          <div className="flex items-center gap-1 border rounded-[8px] border-[#E4E9EE] p-1">
             <span>0</span>
-            <AiFillLike className="h-5 w-5" />
+            <AiFillLike className="h-4 w-4" />
           </div>
         </div>
       </div>
@@ -113,6 +113,7 @@ const formatDate = (dateString: string): string => {
 
 export function CustomerReviews({ productId }: CustomerReviewsProps) {
   const { language } = useLanguage();
+  const { t } = useTranslation(); // استخدام useTranslation بدلاً من الترجمة المخصصة
   const isRTL = language === 'ar';
   
   const [reviews, setReviews] = useState<ReviewData[]>([]);
@@ -121,66 +122,16 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalReviews, setTotalReviews] = useState(0);
   const [averageRating, setAverageRating] = useState(0);
-  const [sortBy, setSortBy] = useState<"الأحدث" | "الأقدم" | "أعلى تقييم" | "أقل تقييم">("الأحدث");
+  const [sortBy, setSortBy] = useState<"الأحدث" | "الأقدم" | "أعلى تقييم" | "أقل تقييم">();
   const reviewsPerPage = 5;
 
-  // الحصول على الترجمات حسب اللغة
-  const getTranslations = (lang: string) => {
-    if (lang === 'en') {
-      return {
-        productReviews: "Product Reviews",
-        reviews: "reviews",
-        addReview: "Add Review",
-        noReviews: "No reviews for this product yet",
-        beFirst: "Be the first to rate this product",
-        loadingReviews: "Loading reviews...",
-        sortBy: "Sort by",
-        newest: "Newest",
-        oldest: "Oldest",
-        highest: "Highest Rated",
-        lowest: "Lowest Rated",
-        review: "Review",
-        verified: "Verified",
-      };
-    }
-    return {
-      productReviews: "تقييمات المنتج",
-      reviews: "تقييم",
-      addReview: "أضف تقييمًا",
-      noReviews: "لا توجد تقييمات لهذا المنتج بعد",
-      beFirst: "كن أول من يقيم المنتج",
-      loadingReviews: "جاري تحميل التقييمات...",
-      sortBy: "ترتيب حسب",
-      newest: "الأحدث",
-      oldest: "الأقدم",
-      highest: "أعلى تقييم",
-      lowest: "أقل تقييم",
-      review: "تقييم",
-      verified: "موثق",
-    };
-  };
-
-  const t = getTranslations(language);
-
-  // خيارات الترتيب حسب اللغة
-  const getSortOptions = (lang: string) => {
-    if (lang === 'en') {
-      return [
-        { value: "الأحدث", label: t.newest },
-        { value: "الأقدم", label: t.oldest },
-        { value: "أعلى تقييم", label: t.highest },
-        { value: "أقل تقييم", label: t.lowest },
-      ];
-    }
-    return [
-      { value: "الأحدث", label: t.newest },
-      { value: "الأقدم", label: t.oldest },
-      { value: "أعلى تقييم", label: t.highest },
-      { value: "أقل تقييم", label: t.lowest },
-    ];
-  };
-
-  const sortOptions = getSortOptions(language);
+  // خيارات الترتيب باستخدام useTranslation
+  const sortOptions = [
+    { value: t('reviews.newest'), label: t('reviews.newest') },
+    { value:t('reviews.oldest') , label: t('reviews.oldest') },
+    { value: t('reviews.highest'), label: t('reviews.highest') },
+    { value: t('reviews.lowest'), label: t('reviews.lowest') },
+  ];
 
   // جلب التقييمات من الـ API
   const fetchReviews = async () => {
@@ -222,8 +173,6 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
     return (count / totalReviews) * 100;
   };
 
- 
-
   if (isLoading && reviews.length === 0) {
     return (
       <section className="py-6 md:py-12 bg-white">
@@ -231,7 +180,7 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
               <div className="w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500">{t.loadingReviews}</p>
+              {/* <p className="text-gray-500">{t('reviews.loadingReviews')}</p> */}
             </div>
           </div>
         </div>
@@ -243,22 +192,25 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
     <section className="py-6 md:py-12 bg-white">
       <div className="container-custom">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
           <div className="flex gap-1 items-center">
-            <h1 className="text-xl font-bold text-[#181818]">
-              {t.productReviews}
+            <h1 className="text-base lg:text-xl font-bold text-[#181818]">
+              {t('reviews.productReviews')}
             </h1>
-            <div className="text-sm font-bold text-[#3A4980]">
-              ({totalReviews} {t.reviews})
+            {totalReviews > 0 &&(
+<div className="text-sm font-bold text-[#3A4980]">
+              ({totalReviews} {t('reviews.reviews')})
             </div>
+            )}
+            
           </div>
           
-          <div className="flex gap-3 items-center">
-            {/* خيارات الترتيب */}
+          {/* <div className="grid grid-cols-2 gap-3 items-center">
+         
             {totalReviews > 0 && (
               <Select value={sortBy} onValueChange={handleSortChange}>
                 <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#E60076] focus:ring-offset-0">
-                  <SelectValue placeholder={t.sortBy} />
+                  <SelectValue placeholder={t('reviews.sortBy')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white rounded-[8px] shadow-lg border-gray-100">
                   {sortOptions.map((option) => (
@@ -276,10 +228,10 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
               </Select>
             )}
 
-            <button className="bg-[#E60076] text-white rounded-full px-6 py-2.5 text-sm font-bold hover:bg-[#E60076] transition-all duration-300">
-              {t.addReview}
+            <button className="bg-[#E60076] text-white rounded-full px-1 lg:px-3 py-2.5 text-sm font-bold hover:bg-[#E60076] transition-all duration-300">
+              {t('reviews.addReview')}
             </button>
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -287,16 +239,21 @@ export function CustomerReviews({ productId }: CustomerReviewsProps) {
           <div className="lg:col-span-2">
             {reviews.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-[8px]">
-                <p className="text-gray-500">{t.noReviews}</p>
-                <button className="mt-4 bg-[#E60076] text-white px-6 py-2 rounded-full text-sm">
-                  {t.beFirst}
-                </button>
+                <p className="text-gray-500 text-sm">{t('reviews.noReviews')}</p>
+                {/* <button className="mt-4 bg-[#E60076] text-white px-6 py-2 rounded-full text-sm">
+                  {t('reviews.beFirst')}
+                </button> */}
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} language={language} />
+                    <ReviewCard 
+                      key={review.id} 
+                      review={review} 
+                      language={language}
+                      t={t}
+                    />
                   ))}
                 </div>
 

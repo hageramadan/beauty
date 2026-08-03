@@ -48,6 +48,7 @@ interface AuthContextType {
   loginWithPhone: (
     phone: string,
     country_code: string,
+    password:string
   ) => Promise<{ success: boolean; message: string }>;
   registerWithEmail: (
     name: string,
@@ -58,6 +59,7 @@ interface AuthContextType {
     name: string,
     phone: string,
     country_code: string,
+    password:string
   ) => Promise<{ success: boolean; message: string }>;
   logoutUser: () => Promise<void>;
   verifyOTPWithEmail: (
@@ -170,6 +172,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const result = await loginWithEmail({ email, password });
 
         if (result.result) {
+           const userData = result.data?.user;
+        
+        // ✅ تحديث حالة المستخدم
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
           //  حذف guest_token ومسح وضع الضيف
           clearGuestModeAndToken();
 
@@ -196,40 +205,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   // تسجيل الدخول برقم الهاتف
-  const handleLoginWithPhone = useCallback(
-    async (
-      phone: string,
+const handleLoginWithPhone = useCallback(
+  async (
+    phone: string,
+    password: string,
+    country_code: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      const result = await loginWithPhone({ phone, password, country_code });
 
-      country_code: string,
-    ): Promise<{ success: boolean; message: string }> => {
-      try {
-        const result = await loginWithPhone({ phone, country_code });
-
-        if (result.result) {
-          //  حذف guest_token ومسح وضع الضيف
-          clearGuestModeAndToken();
-
-          //  إعادة تحميل السلة
-          await refetchCart();
-
-          return {
-            success: true,
-            message: result.message || "تم تسجيل الدخول بنجاح",
-          };
-        } else {
-          return {
-            success: false,
-            message:
-              result.message || "فشل تسجيل الدخول. يرجى التحقق من بياناتك",
-          };
+      if (result.result && result.errNum === 200) {
+        const userData = result.data?.user;
+        
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
         }
-      } catch (error) {
-        console.error("Login error:", error);
-        return { success: false, message: "حدث خطأ أثناء تسجيل الدخول" };
+
+        clearGuestModeAndToken();
+        await refetchCart();
+
+        return {
+          success: true,
+          message: result.message || "تم تسجيل الدخول بنجاح",
+        };
+      } else {
+        return {
+          success: false,
+          message: result.message || "فشل تسجيل الدخول. يرجى التحقق من بياناتك",
+        };
       }
-    },
-    [clearGuestModeAndToken, refetchCart],
-  );
+    } catch (error) {
+      console.error("Login error:", error);
+      return { success: false, message: "حدث خطأ أثناء تسجيل الدخول" };
+    }
+  },
+  [clearGuestModeAndToken, refetchCart],
+);
 
   // إنشاء حساب بالبريد الإلكتروني
   const handleRegisterWithEmail = useCallback(
@@ -259,11 +271,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (
       name: string,
       phone: string,
-      // password: string,
+      password: string,
       country_code: string,
     ): Promise<{ success: boolean; message: string }> => {
       try {
-        const result = await registerWithPhone({ name, phone, country_code });
+        const result = await registerWithPhone({ name, phone, country_code , password });
 
         if (result.result) {
           return { success: true, message: result.message };

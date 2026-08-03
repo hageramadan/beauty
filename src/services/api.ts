@@ -1033,7 +1033,7 @@ interface RegisterWithEmailRequest {
 interface RegisterWithPhoneRequest {
   name: string;
   phone: string;
-  // password: string;
+  password: string;
   country_code: string;
 }
 
@@ -1044,7 +1044,7 @@ interface LoginWithEmailRequest {
 
 interface LoginWithPhoneRequest {
   phone: string;
-  // password: string;
+  password: string;
   country_code: string;
 }
 
@@ -1151,6 +1151,22 @@ export async function loginWithEmail(data: LoginWithEmailRequest): Promise<AuthR
         data: results.data || null,
       };
     }
+ if (results.result && results.errNum === 200 && results.data) {
+      const token = results.data.token;
+      const user = results.data.user;
+      
+      if (token) {
+        // استخدام saveToken بدلاً من التخزين المباشر
+        saveToken(token);
+        console.log('✅ Token stored successfully:', token);
+      }
+      
+      if (user) {
+        // استخدام saveUserData للتخزين بشكل صحيح
+        saveUserData({ user: user });
+        console.log('✅ User data stored successfully:', user);
+      }
+    }
 
     // const result: AuthResponse = await response.json();
     return results;
@@ -1172,7 +1188,19 @@ export async function loginWithPhone(data: LoginWithPhoneRequest): Promise<AuthR
       headers: getHeaders(false),
       body: JSON.stringify(data),
     });
-    const results: AuthResponse = await response.json();
+    
+    // محاولة قراءة الرد
+    let results: AuthResponse;
+    try {
+      results = await response.json();
+    } catch (parseError) {
+      return {
+        result: false,
+        errNum: response.status,
+        message: `خطأ في استجابة الخادم (${response.status})`,
+        data: null,
+      };
+    }
 
     if (!response.ok) {
       return {
@@ -1181,6 +1209,22 @@ export async function loginWithPhone(data: LoginWithPhoneRequest): Promise<AuthR
         message: results.message || `فشل في تسجيل الدخول (${response.status})`,
         data: results.data || null,
       };
+    }
+
+    // ✅ التعديل: تخزين التوكن وبيانات المستخدم عند نجاح تسجيل الدخول
+    if (results.result && results.errNum === 200 && results.data) {
+      const token = results.data.token;
+      const user = results.data.user;
+      
+      if (token) {
+        saveToken(token);
+        console.log('✅ Token stored successfully:', token);
+      }
+      
+      if (user) {
+        saveUserData({ user: user });
+        console.log('✅ User data stored successfully:', user);
+      }
     }
 
     return results;
@@ -1194,7 +1238,6 @@ export async function loginWithPhone(data: LoginWithPhoneRequest): Promise<AuthR
     };
   }
 }
-
 // ========== دالة تسجيل الخروج ==========
 export async function logout(token?: string): Promise<LogoutResponse> {
   try {
@@ -1580,6 +1623,7 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
       formData.append('_method', 'PUT');
       
       const headers: HeadersInit = {
+        'Accept': 'application/json',
         'Accept-Language': getAcceptLanguageHeader(),
       };
       if (token) {
@@ -1588,16 +1632,10 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
       
       response = await fetch(`${API_URL}/user/profile`, {
         method: 'POST',
-        headers:{   'Accept': 'application/json',
-    'Accept-Language': getAcceptLanguageHeader(),
-    'Authorization': `Bearer ${token}`,
-   
-  },
+        headers: headers,
         body: formData,
       });
     } else {
-      const headers = getHeaders(true);
-      
       const bodyData = {
         ...data,
         _method: 'PUT'
@@ -1609,17 +1647,36 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
       
       response = await fetch(`${API_URL}/user/profile`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers: getHeaders(true),
         body: JSON.stringify(bodyData),
       });
     }
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // محاولة قراءة الرد حتى في حالة الخطأ
+    let result: UpdateProfileResponse;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      // إذا لم يكن الرد JSON صحيح
+      return {
+        result: false,
+        errNum: response.status,
+        message: `خطأ في الخادم: ${response.status}`,
+        data: null,
+      };
     }
 
-    const result: UpdateProfileResponse = await response.json();
-    
+    // التحقق من حالة الاستجابة وعرض الرسالة من الباك إند
+    if (!response.ok) {
+      return {
+        result: result.result || false,
+        errNum: result.errNum || response.status,
+        message: result.message || `فشل في تحديث الملف الشخصي (${response.status})`,
+        data: result.data || null,
+      };
+    }
+
+    // في حالة النجاح
     if (result.result && result.errNum === 200 && result.data?.user) {
       const currentUserData = getUserData();
       if (currentUserData) {
@@ -1645,7 +1702,6 @@ export async function updateUserProfile(data: UpdateProfileRequest): Promise<Upd
     };
   }
 }
-
 //  دالة تحديث اللغة فقط
 export async function updateUserLocale(locale: string): Promise<UpdateProfileResponse> {
   return updateUserProfile({ locale });

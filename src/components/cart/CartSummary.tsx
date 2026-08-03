@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PromoCodeInput } from "./PromoCodeInput";
 import { FaArrowAltCircleLeft, FaArrowLeft } from "react-icons/fa";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrency } from "@/hooks/useCurrency"; // ✅ إضافة استيراد useCurrency
 
 interface CartSummaryProps {
   subtotal: number;
@@ -30,6 +31,11 @@ export function CartSummary({
   isApplying = false,
 }: CartSummaryProps) {
   const { t } = useTranslation();
+  const { currency, isLoading: currencyLoading } = useCurrency(); // ✅ استخدام الـ Hook
+  
+  // ✅ الحصول على رمز العملة
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
+  
   const isDeliveryFree = deliveryFee === 0;
   
   return (
@@ -39,19 +45,37 @@ export function CartSummary({
       </h1>
 
       <div className="space-y-4 py-4">
-        <SummaryRow label={t('cartSummary.subtotal')} value={subtotal} t={t} />
+        <SummaryRow 
+          label={t('cartSummary.subtotal')} 
+          value={subtotal} 
+          currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
+          t={t} 
+        />
         
         {totalDiscount > 0 && (
-          <SummaryRow label={t('cartSummary.discount')} value={-totalDiscount} isDiscount t={t} />
+          <SummaryRow 
+            label={t('cartSummary.discount')} 
+            value={-totalDiscount} 
+            isDiscount 
+            currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
+            t={t} 
+          />
         )}
         
         {promoDiscount > 0 && (
-          <SummaryRow label={t('cartSummary.promoDiscount')} value={-promoDiscount} isDiscount t={t} />
+          <SummaryRow 
+            label={t('cartSummary.promoDiscount')} 
+            value={-promoDiscount} 
+            isDiscount 
+            currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
+            t={t} 
+          />
         )}
         
         <SummaryRow 
           label={t('cartSummary.deliveryFee')} 
           value={isDeliveryFree ? t('cartSummary.free') : deliveryFee} 
+          currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
           t={t}
         />
 
@@ -61,6 +85,7 @@ export function CartSummary({
           label={t('cartSummary.total')} 
           value={total} 
           isTotal 
+          currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
           t={t}
         />
       </div>
@@ -81,18 +106,20 @@ const SummaryRow = ({
   value, 
   isDiscount = false, 
   isTotal = false,
+  currencySymbol, // ✅ استقبال رمز العملة
   t,
 }: { 
   label: string; 
   value: number | string; 
   isDiscount?: boolean; 
   isTotal?: boolean;
+  currencySymbol: string; // ✅ إضافة النوع
   t: any;
 }) => {
   const formatValue = (val: number | string) => {
     if (typeof val === "string") return val;
-    if (isDiscount) return `-${t('cartSummary.currency')} ${Math.abs(val).toLocaleString()}`;
-    return `${t('cartSummary.currency')} ${val.toLocaleString()}`;
+    if (isDiscount) return `-${currencySymbol} ${Math.abs(val).toLocaleString()}`; // ✅ استخدام رمز العملة
+    return `${currencySymbol} ${val.toLocaleString()}`; // ✅ استخدام رمز العملة
   };
 
   const getValueClassName = () => {
@@ -115,7 +142,7 @@ const SummaryRow = ({
 };
 
 const CheckoutButton = ({ t }: { t: any }) => (
-  <Link href="/checkout" className="flex items-center justify-center gap-2 mt-4 w-full bg-[#E60076] text-white py-2 rounded-[8px] font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-[#f0278f]">
+  <Link href="/checkout" className="flex items-center justify-center gap-2 mt-4 w-full bg-[#E60076] text-white py-2 rounded-[8px] font-bold text-lg transition-all duration-300 shadow-md hover:shadow-lg hover:bg-[#E60076]">
     <button className="">
       {t('cartSummary.checkout')}
     </button>

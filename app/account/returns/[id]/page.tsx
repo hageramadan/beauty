@@ -24,7 +24,7 @@ import toast from "react-hot-toast";
 import { getHeaders } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter as useNextRouter } from "next/navigation";
-
+import { useCurrency } from "@/hooks/useCurrency";
 // ========== تعريف الأنواع ==========
 interface ReturnProductItem {
   id: number;
@@ -230,7 +230,7 @@ const getUserName = (order: ReturnOrder): string => {
   if (order.additional_data?.name) {
     return order.additional_data.name;
   }
-  return "غير متوفر";
+  return " نفذ من المخزون";
 };
 
 // ========== دوال استخراج الخصائص ==========
@@ -280,10 +280,11 @@ const getReturnStatusConfig = (t: any) => ({
 
 export default function ReturnDetailsPage() {
   const { t } = useTranslation();
+   const { currency, isLoading: currencyLoading } = useCurrency();
   const params = useParams();
   const router = useRouter();
   const returnId = params.id as string;
-  
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   const [returnData, setReturnData] = useState<ReturnDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [returnNotes, setReturnNotes] = useState("");
@@ -360,7 +361,7 @@ export default function ReturnDetailsPage() {
           <RefreshCw className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">{t('orders.orderNotFound')}</h2>
           <p className="text-gray-500 mb-4">{t('orders.orderNotFoundDesc')}</p>
-          <Link href="/account/returns" className="inline-block bg-[#E60076] text-white px-6 py-2 rounded-[8px] hover:bg-[#f0278f] transition">
+          <Link href="/account/returns" className="inline-block bg-[#E60076] text-white px-6 py-2 rounded-[8px] hover:bg-[#E60076] transition">
             {t('orders.backToOrders')}
           </Link>
         </div>
@@ -504,11 +505,11 @@ export default function ReturnDetailsPage() {
                             
                             <div className="flex gap-1 md:gap-3 mt-2 text-xs text-black font-bold">
                               <span>{t('returns.quantity')}: <span className="text-gray-500">x{item.quantity}</span></span>
-                              <span>{t('returns.price')}: <span className="text-gray-500">$ {item.unit_price.toFixed(2)}</span></span>
+                              <span>{t('returns.price')}: <span className="text-gray-500">{currencySymbol} {item.unit_price.toFixed(2)}</span></span>
                             </div>
                           </div>
                           <div className="text-left">
-                            <p className="font-bold text-[#E60076]">$ {item.total_price.toFixed(2)}</p>
+                            <p className="font-bold text-[#E60076]">{currencySymbol} {item.total_price.toFixed(2)}</p>
                             {item.discount_amount > 0 && (
                               <p className="text-xs text-gray-400">{t('orders.discount')}: {item.discount_amount.toFixed(2)}</p>
                             )}
@@ -529,33 +530,33 @@ export default function ReturnDetailsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t('orders.subtotal')}</span>
-                  <span className="font-bold text-gray-800">$ {returnData.order.subtotal.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">{currencySymbol} {returnData.order.subtotal.toFixed(2)}</span>
                 </div>
                 {returnData.order.coupon_discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('orders.couponDiscount')}</span>
-                    <span className="font-bold text-[#E60076]">-$ {returnData.order.coupon_discount_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#E60076]">-{currencySymbol} {returnData.order.coupon_discount_amount.toFixed(2)}</span>
                   </div>
                 )}
                 {returnData.order.total_discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('orders.totalDiscount')}</span>
-                    <span className="font-bold text-[#E60076]">-$ {returnData.order.total_discount_amount.toFixed(2)}</span>
+                    <span className="font-bold text-[#E60076]">-{currencySymbol} {returnData.order.total_discount_amount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">{t('orders.deliveryFee')}</span>
-                  <span className="font-bold text-gray-800">$ {returnData.order.shipping_amount.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">{currencySymbol} {returnData.order.shipping_amount.toFixed(2)}</span>
                 </div>
                 {returnData.order.tax_amount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('orders.tax')}</span>
-                    <span className="font-bold text-gray-800">$ {returnData.order.tax_amount.toFixed(2)}</span>
+                    <span className="font-bold text-gray-800">{currencySymbol} {returnData.order.tax_amount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
                   <span className="text-lg font-bold text-gray-800">{t('returns.totalRefund')}</span>
-                  <span className="text-xl font-bold text-[#E60076]">$ {totalRefund.toFixed(2)}</span>
+                  <span className="text-xl font-bold text-[#E60076]">{currencySymbol} {totalRefund.toFixed(2)}</span>
                 </div>
               </div>
             </div>

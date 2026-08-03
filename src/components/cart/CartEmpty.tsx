@@ -25,7 +25,7 @@ export function CartEmpty() {
         </p>
         <Link
           href="/products"
-          className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-[8px] font-semibold hover:bg-[#f0278f] transition-all duration-300 shadow-md hover:shadow-lg"
+          className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-[8px] font-semibold hover:bg-[#E60076] transition-all duration-300 shadow-md hover:shadow-lg"
         >
           {t('cartEmpty.shopNow')}
         </Link>

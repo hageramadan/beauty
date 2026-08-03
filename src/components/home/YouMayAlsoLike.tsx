@@ -55,6 +55,8 @@ interface Product {
   hasVariants?: boolean;
   variants?: ProductVariant[];
   variantId?: number | null;
+   quantity?: number | null;
+
 }
 
 //  دالة استخراج الألوان من جميع الـ variants
@@ -133,7 +135,14 @@ const transformProduct = (product: ProductData): Product => {
     variantId = product.variants[0].id;
     colors = extractColorsFromVariants(product.variants as ProductVariant[]);
   }
-
+  let quantity: number | null = null;
+if (product.has_variants && product.variants && product.variants.length > 0) {
+  // إذا كان المنتج له متغيرات، نأخذ الكمية من أول متغير
+  quantity = (product.variants[0] as ProductVariant)?.quantity ?? null;
+} else {
+  // إذا لم يكن له متغيرات، نأخذ الكمية من المنتج نفسه
+  quantity = product.quantity ?? null;
+}
   return {
     id: product.id.toString(),
     name: product.name,
@@ -151,6 +160,7 @@ const transformProduct = (product: ProductData): Product => {
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,
+     quantity: quantity,
   };
 };
 
@@ -299,9 +309,7 @@ export function YouMayAlsoLike() {
                 <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
                 <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-500 text-sm animate-pulse">
-                {t("products.loading")}
-              </p>
+            
             </div>
           </div>
         </div>
@@ -312,7 +320,7 @@ export function YouMayAlsoLike() {
   // عرض رسالة خطأ
   if (error && products.length === 0) {
     return (
-    <></>
+     <></>
     );
   }
 
@@ -321,12 +329,12 @@ export function YouMayAlsoLike() {
       <div className="container-custom">
         {/* Header - مترجم */}
         <div className="mb-2 md:mb-5 flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-bold" style={{ color: '#112B40' }}>
+          <h2 className="text-base md:text-xl font-bold" style={{ color: '#112B40' }}>
             {t("youMayAlsoLike.youMayAlsoLike")}
           </h2>
           <Link
             href="/products"
-            className="text-[#E60076] text-[14px] font-bold hover:underline transition-all duration-300 flex items-center gap-1"
+            className="text-[#E60076] text-xs lg:text-sm font-bold hover:underline transition-all duration-300 flex items-center gap-1"
           >
             {t("youMayAlsoLike.viewMore")}
             {/* <ChevronLeft className="w-4 h-4" /> */}
@@ -346,7 +354,7 @@ export function YouMayAlsoLike() {
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-2 md:mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-6 mb-2 md:mb-5">
           {visibleProducts.map((product, index) => (
             <div
               key={product.id}
@@ -373,6 +381,7 @@ export function YouMayAlsoLike() {
                 hasVariants={product.hasVariants || false}
                 variants={product.variants || []}
                 variantId={product.variantId || null}
+                 quantity={product.quantity}
               />
             </div>
           ))}
@@ -398,7 +407,9 @@ export function YouMayAlsoLike() {
 
         {/* No Products Message - مترجم */}
         {products.length === 0 && !isInitialLoading && (
-          <></>
+          <div className="text-center py-12">
+            <p className="text-gray-500">{t("products.noProducts")}</p>
+          </div>
         )}
       </div>
 

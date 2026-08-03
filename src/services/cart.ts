@@ -68,6 +68,7 @@ export interface CartData {
   subtotal_after_coupon_discounts: number;
   total_amount: number;
   applied_coupon_code: string | null;
+  // coupon_code? : string | null;
 }
 
 export interface CartResponse {

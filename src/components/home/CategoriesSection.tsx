@@ -187,7 +187,7 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
                     {/* اسم الفئة في الأسفل */}
                     <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-white text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-2 whitespace-normal"
+                        className="text-white text-sm lg:text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-1 lg:line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

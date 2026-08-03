@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import Pagination from '@/components/products/Pagination';
 import { getHeaders } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
-
+import { useCurrency } from "@/hooks/useCurrency";
 // ========== إعدادات API ==========
 const API_URL = 'https://beauty.admin.t-carts.com/api';
 
@@ -295,6 +295,7 @@ const getColor = (item: ReturnProductItem): { name: string; hex: string | null }
 
 export default function ReturnsPage() {
   const { t } = useTranslation();
+  const { currency, isLoading: currencyLoading } = useCurrency();
   const router = useRouter();
   const [returns, setReturns] = useState<Return[]>([]);
   const [loading, setLoading] = useState(true);
@@ -310,7 +311,7 @@ export default function ReturnsPage() {
     next_page: null,
     previous_page: null
   });
-  
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   //  استخدام ref لمنع التكرار
   const hasLoadedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -561,7 +562,7 @@ export default function ReturnsPage() {
                         {statusKey === "refunded" && totalRefund > 0 && (
                           <div className="flex gap-1 items-center text-sm font-semibold text-green-600">
                             <DollarSign className="w-4 h-4" />
-                            <span>{t('returns.refundedAmount')} $ {totalRefund.toFixed(2)}</span>
+                            <span>{t('returns.refundedAmount')} {currencySymbol} {totalRefund.toFixed(2)}</span>
                           </div>
                         )}
                       </div>
@@ -651,12 +652,12 @@ export default function ReturnsPage() {
                                     
                                     <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
                                       <span>{t('returns.quantity')}: x{item.quantity}</span>
-                                      <span>{t('returns.price')}: $ {(item.unit_price || 0).toFixed(2)}</span>
+                                      <span>{t('returns.price')}: {currencySymbol} {(item.unit_price || 0).toFixed(2)}</span>
                                     </div>
                                   </div>
                                   <div className="text-left sm:text-right">
                                     <p className="font-semibold text-[#000000] text-sm sm:text-base">
-                                      $ {(item.total_price || item.unit_price * item.quantity || 0).toFixed(2)}
+                                      {currencySymbol} {(item.total_price || item.unit_price * item.quantity || 0).toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -670,7 +671,7 @@ export default function ReturnsPage() {
                           <div className="flex justify-between items-center flex-wrap gap-2">
                             <div className="text-right">
                               <p className="text-xs sm:text-sm text-gray-500">{t('returns.totalRefund')}</p>
-                              <p className="text-base sm:text-xl font-bold text-[#E60076]">$ {totalRefund.toFixed(2)}</p>
+                              <p className="text-base sm:text-xl font-bold text-[#E60076]">EGP {totalRefund.toFixed(2)}</p>
                             </div>
                           </div>
                           
@@ -694,7 +695,7 @@ export default function ReturnsPage() {
                           <div className="mt-4 flex justify-end">
                             <button
                               onClick={() => goToReturnDetails(returnItem.id)}
-                              className="px-4 py-2 bg-[#E60076] text-white rounded-[8px] text-sm font-medium hover:bg-[#f0278f] transition"
+                              className="px-4 py-2 bg-[#E60076] text-white rounded-[8px] text-sm font-medium hover:bg-[#E60076] transition"
                             >
                               {t('returns.viewDetails')}
                             </button>

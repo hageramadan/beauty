@@ -44,31 +44,44 @@ export default function LoginWithEmail() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error(Object.values(errors)[0]);
       return;
     }
 
     setIsSubmitting(true);
-    const result = await loginWithEmail(formData.email, formData.password);
+    
+    try {
+      // استدعاء دالة تسجيل الدخول
+      const result = await loginWithEmail(formData.email, formData.password);
 
-    if (result.success) {
-      toast.success(result.message || t("auth.loginSuccess"), {
-        duration: 3000,
-      });
+      if (result.success) {
+        // عرض رسالة نجاح من الباك إند
+        toast.success(result.message || t("auth.loginSuccess"), {
+          duration: 3000,
+        });
+        
+        // التوجيه إلى صفحة الهوم
+        setTimeout(() => {
+          router.push("/");
+        }, 1000);
+        
+      } else {
+        // عرض رسالة الخطأ من الباك إند
+        toast.error(result.message || t("auth.loginFailed"));
+        setIsSubmitting(false);
+      }
       
-      setTimeout(() => {
-        router.push(`/auth/verify-otp/email?email=${encodeURIComponent(formData.email)}&isLogin=true`);
-      }, 1500);
-    } else {
-      toast.error(result.message || t("auth.loginFailed"));
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(t("auth.loginFailed"));
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const isLoading = loading || isSubmitting;
 
   return (
     <>
+    
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
           <div className="text-center mb-8">
@@ -98,21 +111,21 @@ export default function LoginWithEmail() {
             <div className="mb-5">
               <label className="block text-gray-700 font-medium mb-2">{t("auth.password")} <span className="text-red-500">*</span></label>
               <div className="relative">
-                <FaLock className="absolute  start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FaLock className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder={t("auth.passwordPlaceholder")}
                   disabled={isLoading}
-                  className={`w-full px-4 text-sm py-2  ps-10  pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
+                  className={`w-full px-4 text-sm py-2 ps-10 pe-10 border rounded-[8px] focus:ring-2 focus:ring-black focus:border-black outline-none ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute  end-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>

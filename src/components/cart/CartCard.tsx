@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { CartItemDisplay } from "./CartPage";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useCurrency } from "@/hooks/useCurrency"; // ✅ إضافة استيراد useCurrency
 
 interface CartItemCardProps {
   item: CartItemDisplay;
@@ -56,6 +57,10 @@ export function CartItemCard({
   onRemove,
 }: CartItemCardProps) {
   const { t } = useTranslation();
+  const { currency, isLoading: currencyLoading } = useCurrency(); // ✅ استخدام الـ Hook
+  
+  // ✅ الحصول على رمز العملة
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   
   const {
     id,
@@ -90,39 +95,39 @@ export function CartItemCard({
     }
   };
 
-const handleRemove = () => {
-  toast(
-    (toastInstance) => (  //  استخدام اسم مختلف بدلاً من t
-      <div className="flex flex-col gap-3 p-3" dir="rtl">
-        <p className="text-gray-800 text-sm font-medium">
-          {t('cart.confirmDelete')}{" "}
-          <span className="font-bold text-blue-500">{name}</span> {t('cart.fromCart')}
-        </p>
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={() => {
-              toast.dismiss(toastInstance.id);
-              onRemove(id);
-            }}
-            className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
-          >
-            {t('cart.yesDelete')}
-          </button>
-          <button
-            onClick={() => toast.dismiss(toastInstance.id)}
-            className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-[8px] hover:bg-gray-300 transition font-medium"
-          >
-            {t('cart.cancel')}
-          </button>
+  const handleRemove = () => {
+    toast(
+      (toastInstance) => (
+        <div className="flex flex-col gap-3 p-3" dir="rtl">
+          <p className="text-gray-800 text-sm font-medium">
+            {t('cart.confirmDelete')}{" "}
+            <span className="font-bold text-blue-500">{name}</span> {t('cart.fromCart')}
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => {
+                toast.dismiss(toastInstance.id);
+                onRemove(id);
+              }}
+              className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-[8px] hover:bg-red-600 transition font-medium"
+            >
+              {t('cart.yesDelete')}
+            </button>
+            <button
+              onClick={() => toast.dismiss(toastInstance.id)}
+              className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded-[8px] hover:bg-gray-300 transition font-medium"
+            >
+              {t('cart.cancel')}
+            </button>
+          </div>
         </div>
-      </div>
-    ),
-    {
-      duration: 5000,
-      style: { maxWidth: "380px", padding: "0", borderRadius: "16px" },
-    },
-  );
-};
+      ),
+      {
+        duration: 5000,
+        style: { maxWidth: "380px", padding: "0", borderRadius: "16px" },
+      },
+    );
+  };
 
   return (
     <>
@@ -161,6 +166,7 @@ const handleRemove = () => {
                 originalPrice={originalPrice}
                 totalPrice={totalPrice}
                 quantity={quantity}
+                currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
                 t={t}
               />
               <QuantityControlLarge
@@ -208,6 +214,7 @@ const handleRemove = () => {
                 originalPrice={originalPrice}
                 totalPrice={totalPrice}
                 quantity={quantity}
+                currencySymbol={currencySymbol} // ✅ تمرير رمز العملة
                 t={t}
               />
               <QuantityControlMobile
@@ -338,28 +345,30 @@ const ProductPriceLarge = ({
   originalPrice,
   totalPrice,
   quantity,
+  currencySymbol, // ✅ استقبال رمز العملة
   t,
 }: {
   price: number;
   originalPrice?: number;
   totalPrice: number;
   quantity: number;
+  currencySymbol: string; // ✅ إضافة النوع
   t: any;
 }) => (
   <div className="flex flex-col gap-1">
     <div className="flex items-center gap-2">
       {originalPrice && originalPrice > price && (
         <span className="text-sm text-gray-400 line-through">
-          {originalPrice.toLocaleString()} {t('cart.currency')}
+          {originalPrice.toLocaleString()} {currencySymbol} {/* ✅ استخدام رمز العملة */}
         </span>
       )}
       <div className="text-xs text-gray-500">
-        {price.toLocaleString()} {t('cart.currency')} / {t('cart.perItem')}
+        {price.toLocaleString()} {currencySymbol} / {t('cart.perItem')} {/* ✅ استخدام رمز العملة */}
       </div>
     </div>
     <div className="flex items-center gap-0.5">
       <span className="text-lg font-bold text-[#E60076]">
-        {totalPrice.toLocaleString()} {t('cart.currency')}
+        {totalPrice.toLocaleString()} {currencySymbol} {/* ✅ استخدام رمز العملة */}
       </span>
       <span className="text-xs text-gray-400">({t('cart.total')})</span>
     </div>
@@ -550,27 +559,29 @@ const ProductPriceMobile = ({
   originalPrice,
   totalPrice,
   quantity,
+  currencySymbol, // ✅ استقبال رمز العملة
   t,
 }: {
   price: number;
   originalPrice?: number;
   totalPrice: number;
   quantity: number;
+  currencySymbol: string; // ✅ إضافة النوع
   t: any;
 }) => (
   <div className="flex flex-col">
     <div className="flex items-center gap-1.5">
       {originalPrice && originalPrice > price && (
         <span className="text-[10px] text-gray-400 line-through">
-          {originalPrice.toLocaleString()}
+          {originalPrice.toLocaleString()} {currencySymbol} {/* ✅ استخدام رمز العملة */}
         </span>
       )}
       <div className="text-[9px] text-gray-400">
-        {price.toLocaleString()} / {t('cart.perItem')}
+        {price.toLocaleString()} {currencySymbol} / {t('cart.perItem')} {/* ✅ استخدام رمز العملة */}
       </div>
     </div>
     <span className="text-sm font-bold text-[#E60076]">
-      {totalPrice.toLocaleString()} {t('cart.currency')}
+      {totalPrice.toLocaleString()} {currencySymbol} {/* ✅ استخدام رمز العملة */}
     </span>
   </div>
 );

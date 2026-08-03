@@ -109,10 +109,10 @@ export default function EditProfilePage() {
   // التحقق من حالة تسجيل الدخول
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      toast.error(t('account.pleaseLogin'), {
-        duration: 2000,
-        position: "top-center",
-      });
+      // toast.error(t('account.pleaseLogin'), {
+      //   duration: 2000,
+      //   position: "top-center",
+      // });
       setTimeout(() => {
         router.push("/auth/login");
       }, 1500);

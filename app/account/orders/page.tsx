@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import Pagination from '@/components/products/Pagination';
 import { getHeaders } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
-
+import { useCurrency } from "@/hooks/useCurrency";
 // ========== تعريف الأنواع ==========
 type OrderStatus = 
   | "ordered"
@@ -120,12 +120,7 @@ interface PaginationData {
 
 // ========== إعدادات API ==========
 const API_URL = "https://beauty.admin.t-carts.com/api";
-
 const PLACEHOLDER_IMAGE = "/images/placeholder-product.png";
-
-//  متغيرات لمنع التكرار على مستوى الدالة
-let isFetching = false;
-let lastFetchTime = 0;
 
 // ========== دوال التحويل ==========
 const mapStatusToEnglish = (statusLabel: string): OrderStatus => {
@@ -141,11 +136,9 @@ const mapStatusToEnglish = (statusLabel: string): OrderStatus => {
   return statusMap[statusLabel] || "ordered";
 };
 
-//  دالة تنسيق التاريخ - تدعم اللغة
 const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
-    // استخراج السنة والشهر واليوم فقط
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -163,9 +156,7 @@ const cleanImageUrl = (url: string): string => {
   return url;
 };
 
-// ========== دوال جديدة لجلب خصائص المنتج ==========
-
-// جلب الذاكرة
+// ========== دوال جلب خصائص المنتج ==========
 const getMemory = (item: OrderItem): string | null => {
   if (!item.variant?.attributes) return null;
   const memoryAttr = item.variant.attributes.find(
@@ -174,7 +165,6 @@ const getMemory = (item: OrderItem): string | null => {
   return memoryAttr?.value || null;
 };
 
-// جلب الهارد ديسك
 const getStorage = (item: OrderItem): string | null => {
   if (!item.variant?.attributes) return null;
   const storageAttr = item.variant.attributes.find(
@@ -183,7 +173,6 @@ const getStorage = (item: OrderItem): string | null => {
   return storageAttr?.value || null;
 };
 
-// جلب اللون (مع دعم عرض اللون)
 const getColor = (item: OrderItem): { name: string; hex: string | null } | null => {
   if (!item.variant?.attributes) return null;
   const colorAttr = item.variant.attributes.find(
@@ -199,7 +188,6 @@ const getColor = (item: OrderItem): { name: string; hex: string | null } | null 
 
 // ========== تحويل بيانات الطلب بشكل آمن ==========
 const transformOrder = (apiOrder: any, locale: string = "ar-EG"): Order => {
-  //  التحقق من وجود البيانات الأساسية
   if (!apiOrder || !apiOrder.id) {
     console.warn("⚠️ Invalid order data:", apiOrder);
     return {
@@ -230,7 +218,7 @@ const transformOrder = (apiOrder: any, locale: string = "ar-EG"): Order => {
   return {
     id: apiOrder.id,
     orderNumber: apiOrder.order_number || `ORD-${apiOrder.id}`,
-    date: formatDate(apiOrder.created_at), //  تمرير اللغة
+    date: formatDate(apiOrder.created_at),
     status: englishStatus,
     status_label: apiOrder.status_label || "ordered",
     payment_method: apiOrder.payment_method || "N/A",
@@ -250,44 +238,33 @@ const transformOrder = (apiOrder: any, locale: string = "ar-EG"): Order => {
   };
 };
 
-// ========== دالة جلب الطلبات ==========
-const fetchOrders = async (page: number = 1, perPage: number = 10, locale: string = "ar-EG"): Promise<{ orders: Order[], pagination: PaginationData }> => {
-  const now = Date.now();
-  if (isFetching || (now - lastFetchTime < 300)) {
-    
-    return {
-      orders: [],
-      pagination: {
-        current_page: 1,
-        last_page: 1,
-        per_page: 10,
-        total: 0,
-        from: 0,
-        to: 0,
-        next_page: null,
-        previous_page: null
-      }
-    };
-  }
-  
-  isFetching = true;
-  lastFetchTime = now;
-  
+// ========== دالة جلب الطلبات (تم إصلاحها) ==========
+const fetchOrders = async (
+  page: number = 1, 
+  perPage: number = 10, 
+  locale: string = "ar-EG",
+  signal?: AbortSignal
+): Promise<{ orders: Order[], pagination: PaginationData }> => {
   try {
-    
-    const response = await fetch(`${API_URL}/orders?page=${page}&per_page=${perPage}`, {
-      method: "GET",
-      headers: getHeaders(),
-    });
+    const response = await fetch(
+      `${API_URL}/orders?page=${page}&per_page=${perPage}`,
+      {
+        method: "GET",
+        headers: getHeaders(),
+        signal, // إضافة signal لدعم إلغاء الطلب
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const data = await response.json();
-   
 
     if (data.result === true && data.data) {
-      //  تحويل البيانات بشكل آمن مع تمرير اللغة
       const orders = data.data.orders.map((order: any) => {
         try {
-          return transformOrder(order, locale); //  تمرير اللغة
+          return transformOrder(order, locale);
         } catch (error) {
           console.error(`❌ Error transforming order ${order.id}:`, error);
           return null;
@@ -295,7 +272,6 @@ const fetchOrders = async (page: number = 1, perPage: number = 10, locale: strin
       }).filter(Boolean) as Order[];
       
       const pagination = data.data.pagination;
-      
       
       return {
         orders: orders,
@@ -318,23 +294,26 @@ const fetchOrders = async (page: number = 1, perPage: number = 10, locale: strin
       }
     };
   } catch (error) {
+    // التحقق إذا كان الخطأ بسبب إلغاء الطلب
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Fetch aborted');
+      return {
+        orders: [],
+        pagination: {
+          current_page: 1,
+          last_page: 1,
+          per_page: 10,
+          total: 0,
+          from: 0,
+          to: 0,
+          next_page: null,
+          previous_page: null
+        }
+      };
+    }
+    
     console.error("❌ Error fetching orders:", error);
-    toast.error("حدث خطأ في جلب الطلبات");
-    return {
-      orders: [],
-      pagination: {
-        current_page: 1,
-        last_page: 1,
-        per_page: 10,
-        total: 0,
-        from: 0,
-        to: 0,
-        next_page: null,
-        previous_page: null
-      }
-    };
-  } finally {
-    isFetching = false;
+    throw error; // رمي الخطأ للتعامل معه في الأعلى
   }
 };
 
@@ -381,10 +360,12 @@ type FilterStatus = "all" | OrderStatus;
 
 export default function OrdersPage() {
   const { t } = useTranslation();
+  const { currency, isLoading: currencyLoading } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+   const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
   const [pagination, setPagination] = useState<PaginationData>({
     current_page: 1,
     last_page: 1,
@@ -397,64 +378,70 @@ export default function OrdersPage() {
   });
   const router = useRouter();
   
-  const hasLoadedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const itemsPerPage = 10;
 
   // ========== تكوين الحالات مع الترجمة ==========
   const statusConfig = getStatusConfig(t);
 
-  // ========== جلب الطلبات ==========
+  // ========== جلب الطلبات (تم إصلاحها) ==========
   const loadOrders = useCallback(async (page: number = 1) => {
-    //  إلغاء الطلب السابق
+    // إلغاء الطلب السابق إذا كان موجوداً
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     
-    abortControllerRef.current = new AbortController();
+    // إنشاء AbortController جديد
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     
     setLoading(true);
+    
     try {
-      //  تحديد اللغة بناءً على الترجمة الحالية
       const locale = t('locale') || 'ar-EG';
-      const result = await fetchOrders(page, itemsPerPage, locale);
+      const result = await fetchOrders(page, itemsPerPage, locale, controller.signal);
       
-      if (!abortControllerRef.current?.signal.aborted) {
-      
-        
+      // التحقق من عدم إلغاء الطلب قبل تحديث الـ state
+      if (!controller.signal.aborted) {
         setOrders(result.orders);
         setPagination(result.pagination);
-        hasLoadedRef.current = true;
       }
     } catch (error) {
-      if (!abortControllerRef.current?.signal.aborted) {
+      // تجاهل أخطاء الإلغاء
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error("❌ Error loading orders:", error);
         toast.error(t('orders.loadError'));
       }
     } finally {
-      if (!abortControllerRef.current?.signal.aborted) {
+      // التأكد من عدم تحديث الـ loading إذا تم إلغاء الطلب
+      if (!controller.signal.aborted) {
         setLoading(false);
       }
     }
   }, [itemsPerPage, t]);
 
-  // ========== تحميل الصفحة الأولى ==========
+  // ========== تحميل الصفحة الأولى عند التحميل ==========
   useEffect(() => {
-    if (!hasLoadedRef.current) {
+    loadOrders(1);
     
-      loadOrders(1);
-    }
-    
+    // تنظيف عند فك التركيب
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [loadOrders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // تشغيل مرة واحدة فقط عند تحميل الصفحة
+
+  // ========== إعادة التحميل عند تغيير اللغة ==========
+  useEffect(() => {
+    // إعادة تحميل الطلبات عند تغيير اللغة
+    loadOrders(pagination.current_page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]); // تشغيل عند تغيير دالة الترجمة
 
   // ========== تغيير الصفحة ==========
   const handlePageChange = useCallback((newPage: number) => {
-
     if (newPage >= 1 && newPage <= pagination.last_page) {
       loadOrders(newPage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -466,8 +453,7 @@ export default function OrdersPage() {
     if (filterStatus === "all") {
       return orders;
     }
-    const filtered = orders.filter((order) => order.status === filterStatus);
-    return filtered;
+    return orders.filter((order) => order.status === filterStatus);
   }, [orders, filterStatus]);
 
   const toggleExpand = useCallback((orderId: number) => {
@@ -494,6 +480,7 @@ export default function OrdersPage() {
     { value: "cancelled", label: t('orders.statusCancelled') },
   ];
 
+  // ========== واجهة المستخدم ==========
   if (loading) {
     return (
       <div className="bg-gradient-to-l min-h-screen from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
@@ -501,7 +488,6 @@ export default function OrdersPage() {
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
-              {/* <p className="text-gray-500 mt-4">{t('orders.loading')}</p> */}
             </div>
           </div>
         </div>
@@ -526,7 +512,6 @@ export default function OrdersPage() {
             <button
               key={filter.value}
               onClick={() => {
-               
                 setFilterStatus(filter.value);
               }}
               className={`whitespace-nowrap px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition ${
@@ -542,14 +527,7 @@ export default function OrdersPage() {
 
         {/* قائمة الطلبات */}
         <div className="space-y-3 sm:space-y-4">
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
-                <p className="text-gray-500 mt-4">{t('orders.loading')}</p>
-              </div>
-            </div>
-          ) : filteredOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="text-center rounded-2xl mt-5">
               <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Package className="w-12 h-12 text-gray-400" />
@@ -559,7 +537,7 @@ export default function OrdersPage() {
               </p>
               <Link
                 href="/products"
-                className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#f0278f] transition-all duration-300 shadow-md hover:shadow-lg"
+                className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#E60076] transition-all duration-300 shadow-md hover:shadow-lg"
               >
                 {t('orders.shopNow')}
               </Link>
@@ -624,7 +602,6 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
-                      {/*  التاريخ - سيتم عرضه حسب اللغة المحددة */}
                       <p className="text-sm sm:text-[18px] text-[#333333]">
                         {order.date}
                       </p>
@@ -651,7 +628,6 @@ export default function OrdersPage() {
 
                           const displayImage = variantImage || productImage;
                           
-                          // ========== استخدام الدوال الجديدة ==========
                           const memory = getMemory(item);
                           const storage = getStorage(item);
                           const color = getColor(item);
@@ -692,9 +668,7 @@ export default function OrdersPage() {
                                       </p>
                                     </Link>
                                     
-                                    {/* ========== عرض جميع الخصائص ========== */}
                                     <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1">
-                                      {/* عرض الذاكرة */}
                                       {memory && (
                                         <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
                                           <span className="font-medium">{t('orders.memory')}:</span>
@@ -702,7 +676,6 @@ export default function OrdersPage() {
                                         </span>
                                       )}
                                       
-                                      {/* عرض الهارد ديسك */}
                                       {storage && (
                                         <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
                                           <span className="font-medium">{t('orders.storage')}:</span>
@@ -710,7 +683,6 @@ export default function OrdersPage() {
                                         </span>
                                       )}
                                       
-                                      {/* عرض اللون */}
                                       {color && (
                                         <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs bg-white px-1.5 sm:px-2 py-0.5 rounded-full text-gray-700 border border-gray-200">
                                           <span className="font-medium">{t('orders.color')}:</span>
@@ -728,13 +700,13 @@ export default function OrdersPage() {
                                     <div className="flex flex-wrap gap-2 sm:gap-3 mt-1 text-[10px] sm:text-xs text-gray-500">
                                       <span>{t('orders.quantity')}: x{item.quantity}</span>
                                       <span>
-                                        {t('orders.price')}: $ {item.unit_price.toFixed(2)}
+                                        {t('orders.price')}: {currencySymbol} {item.unit_price.toFixed(2)}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="text-left sm:text-right">
                                     <p className="font-semibold text-[#000000] text-sm sm:text-base">
-                                      $ {item.total_price.toFixed(2)}
+                                      {currencySymbol} {item.total_price.toFixed(2)}
                                     </p>
                                   </div>
                                 </div>
@@ -756,7 +728,7 @@ export default function OrdersPage() {
                           </p>
                           <p className="text-base sm:text-xl font-bold text-[#E60076]">
                             <span className="text-xs md:text-base font-bold text-[#E60076]">
-                              $
+                              {currencySymbol}
                             </span>
                             {order.total_amount.toFixed(2)}
                           </p>
@@ -770,7 +742,7 @@ export default function OrdersPage() {
           )}
         </div>
 
-        {/*  مكون Pagination */}
+        {/* Pagination */}
         {pagination.last_page > 1 && (
           <Pagination
             currentPage={pagination.current_page}

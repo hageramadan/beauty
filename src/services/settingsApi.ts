@@ -20,6 +20,7 @@ interface SettingsData {
     main_color?: string;
     secondary_color?: string;
     template_id?: number;
+    currency?: string; // ✅ أضف هذه الخاصية
     meta: {
       meta_title: string | null;
       meta_description: string | null;

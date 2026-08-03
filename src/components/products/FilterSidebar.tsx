@@ -17,6 +17,7 @@ import { Slider } from '@/components/ui/slider';
 import { FaArrowLeft } from 'react-icons/fa6';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCurrency } from '@/hooks/useCurrency'; // ✅ استيراد useCurrency
 
 // ============================================================================
 // Types
@@ -88,7 +89,7 @@ interface FiltersSelectionState {
 
 const MIN_PRICE = 0;
 const MAX_PRICE = 100_000;
-const DEFAULT_PRICE_RANGE: PriceRange = [30, 10000];
+const DEFAULT_PRICE_RANGE: PriceRange = [100, 100000];
 
 // Colors that need a different selection ring because they blend into a
 // white background (kept as Sets for O(1) lookups and easy extension).
@@ -499,6 +500,7 @@ const ColorSwatchList = memo(function ColorSwatchList({
 export default function ProductFilters({ onFilterChange, isMobile = false, onClose }: ProductFiltersProps) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { currency, isLoading: currencyLoading } = useCurrency(); // ✅ استخدام العملة
   const [isClient, setIsClient] = useState(false);
   const onFilterChangeRef = useRef(onFilterChange);
   const isFirstRender = useRef(true);
@@ -521,7 +523,8 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
   const moreCategoriesText = t('filter.moreCategories');
   const moreBrandsText = t('filter.moreBrands');
 
-  const currencySymbol = t('filter.currency') || "$";
+  // ✅ استخدام العملة من الـ Hook بدلاً من الترجمة
+  const currencySymbol = currencyLoading ? '...' : (currency || 'EGP');
 
   //  للديسكتوب: تطبيق الفلاتر فوراً عند التغيير (ما عدا السعر)
   useEffect(() => {
@@ -723,7 +726,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                 <div className="mt-4">
                   <button
                     onClick={handleApplyPriceFilter}
-                    className="w-[32.89px] bg-[#E60076] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2 hover:bg-[#f0278f]"
+                    className="w-[32.89px] bg-[#E60076] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2 hover:bg-[#E60076]"
                   >
                     <FaArrowLeft 
                       className={`h-4 w-4 ${isClient && language === 'en' ? 'rotate-180' : ''}`}
@@ -814,7 +817,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
           <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
             <button
               onClick={applyFilters}
-              className="w-full bg-[#E60076] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#f0278f] flex items-center justify-center gap-2"
+              className="w-full bg-[#E60076] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#E60076] flex items-center justify-center gap-2"
             >
               {t('filter.apply')}
               {getSelectedFiltersCount() > 0 && (

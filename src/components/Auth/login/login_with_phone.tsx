@@ -85,7 +85,7 @@ export default function LoginWithPhone() {
     // استخدام API حقيقي عبر الـ Context
     const result = await loginWithPhone(
       formData.phoneNumber,
-      // formData.password,
+      formData.password,
       formData.countryCode,
     );
 
