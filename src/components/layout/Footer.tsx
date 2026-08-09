@@ -26,7 +26,7 @@ const getTranslations = (lang: string) => {
       loading: "Loading...",
       noCategories: "No categories",
       home: "Home",
-      allRightsReserved: "All Rights Reserved",
+      allRightsReserved: "All Rights Reserved  © T Carts 2026",
       storeName: "Your perfect store, everything you need",
     };
   }
@@ -45,7 +45,7 @@ const getTranslations = (lang: string) => {
     loading: "جاري التحميل...",
     noCategories: "لا توجد فئات",
     home: "الرئيسية",
-    allRightsReserved: "جميع الحقوق محفوظة",
+    allRightsReserved: "جميع الحقوق محفوظة   © T Carts 2026",
     storeName: "متجرك المثالي هنا كل ما تريد",
   };
 };
@@ -231,13 +231,14 @@ export function Footer() {
           {/* اللوجو */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-[#FFFFFF] text-xl md:text-2xl font-bold">
+              {/* <h1 className="text-[#FFFFFF] text-base md:text-2xl font-bold">
                 {settingsLoading ? t.loading : settings?.name || "LoGo"}
               </h1>
               <PiLineVerticalThin className="w-6 h-8 text-[#E8ECEF]" />
               <p className="text-white/70 text-sm leading-relaxed">
                 {settingsLoading ? t.loading : settings?.address || t.storeName}
-              </p>
+              </p> */}
+              <Image src={'/logo.png'} className="object-contain" alt="Logo"  width={120} height={100}/>
             </div>
           </div>
 
@@ -316,19 +317,19 @@ export function Footer() {
         <div className="border-t border-white/20 pt-6 md:pt-8 pb-16 lg:pb-0">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-white/60 font-bold text-sm">
-              © {t.allRightsReserved} | {new Date().getFullYear()}
+              {t.allRightsReserved} 
             </p>
 
             <div className="flex gap-6">
               <Link 
                 href={settings?.terms_and_conditions ? "/terms" : "#"} 
-                className="hover:text-[#E60076] text-white"
+                className="hover:text-[#E60076] text-white text-sm"
               >
                 {settingsLoading ? t.loading : settings?.terms_and_conditions || t.terms}
               </Link>
               <Link 
                 href={settings?.privacy_policy ? "/privacy" : "#"} 
-                className="hover:text-[#E60076] text-white"
+                className="hover:text-[#E60076] text-white text-sm"
               >
                 {settingsLoading ? t.loading : settings?.privacy_policy || t.privacy}
               </Link>

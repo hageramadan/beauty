@@ -164,20 +164,20 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="flex gap-6 md:gap-[26px] justify-start items-stretch h-full">
+          <div className="flex gap-5 md:gap-[26px] justify-start items-stretch h-full">
             {categories.map((category) => (
               <div
                 key={category.id}
                 className="flex-shrink-0 flex items-stretch transition-all duration-300 hover:-translate-y-2" 
               >
                 <Link  href={`/products?categories=[${category.id}]`} className="block w-full">
-                  <div className="relative w-[85px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+                  <div className="relative w-[100px] md:w-[220px] h-[100px] md:h-[236px] rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
                     <Image
                       src={getFullImageUrl(category.image)}
                       alt={category.name}
                       fill
                       className="object-cover transition-transform duration-500" 
-                      sizes="(max-width: 768px) 85px, 220px"
+                      sizes="(max-width: 768px) 100px, 220px"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/images/placeholder.jpg';
@@ -187,7 +187,7 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
                     {/* اسم الفئة في الأسفل */}
                     <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-white text-sm lg:text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-1 lg:line-clamp-2 whitespace-normal"
+                        className="text-white text-xs lg:text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-1 lg:line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

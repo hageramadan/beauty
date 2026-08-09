@@ -236,7 +236,7 @@ export function AdsHome({ onLoad }: LoadingProps) {
       <div className="flex flex-row items-stretch justify-between gap-3 sm:gap-6 md:gap-10">
         
         {/* Left Content */}
-        <div className="flex px-3 sm:px-4 py-4 sm:py-5 md:py-6 sm:ps-[2%] md:ps-[4%] lg:ps-[10%] xl:ps-[13%] flex-col gap-1 sm:gap-2 md:gap-[22px] w-1/2">
+        <div className="flex px-3 sm:px-4 py-2 sm:ps-[2%] md:ps-[4%] lg:ps-[10%] xl:ps-[13%] flex-col gap-1 sm:gap-2  w-1/2">
           
           {/* Limited offer badge */}
           <p className="text-[10px] sm:text-[12px] md:text-[16px] font-semibold py-0.5 sm:py-1 px-2 sm:px-3 text-[#BE4646]">
@@ -251,7 +251,7 @@ export function AdsHome({ onLoad }: LoadingProps) {
           </div>
           
           {/* Description */}
-          <p className="text-xs sm:text-sm md:text-[22px] text-[#191C1F] w-full sm:w-[90%] md:w-[80%] leading-[1.3] sm:leading-[1.5] whitespace-pre-line">
+          <p className="text-xs sm:text-sm md:text-lg mb-1 text-[#191C1F] w-full sm:w-[90%] md:w-[80%] leading-[1.3] sm:leading-[1.5] whitespace-pre-line">
             {activeAd.description}
           </p>
           
@@ -271,7 +271,7 @@ export function AdsHome({ onLoad }: LoadingProps) {
           {hasTimer && !isExpired && (
             <div className="mt-2 sm:mt-4">
               <p className="text-[10px] sm:text-sm md:text-base text-gray-600 mb-1 sm:mb-3">{t.expiresIn}</p>
-              <div className="flex gap-2 sm:gap-3 md:gap-5">
+              <div className="flex gap-2 sm:gap-3 ">
                 <div className="text-center">
                   <div className="bg-white text-[#191C1F] rounded-lg px-1 py-0.5 sm:px-2 sm:py-1 md:px-4 md:py-2 min-w-[35px] sm:min-w-[50px] md:min-w-[70px]">
                     <span className="text-sm sm:text-xl md:text-3xl font-bold">{formatNumber(timeLeft.days)}</span>
@@ -304,7 +304,7 @@ export function AdsHome({ onLoad }: LoadingProps) {
           <Button
             asChild
             aria-label='buy now'
-            className="hidden sm:flex w-full sm:w-[150px] md:w-[180px] md:h-[60px] animate-in text-[11px] sm:text-[12px] md:text-[16px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200 rounded-xl mt-2 sm:mt-4"
+            className="flex w-full sm:w-[150px] md:w-[180px] md:h-[60px] animate-in text-[11px] sm:text-[12px] md:text-[16px] font-bold fade-in slide-in-from-bottom-5 duration-700 delay-200 rounded-xl mt-2 sm:mt-4"
             style={{ backgroundColor: '#E60076' }}
           >
             <Link href={activeAd.link || '/products'} className="flex items-center justify-center gap-2 text-white">
@@ -315,7 +315,7 @@ export function AdsHome({ onLoad }: LoadingProps) {
         </div>
         
         {/* Right Image */}
-        <div className="w-1/2 flex">
+        <div className="w-1/2 flex lg:h-[430px]">
           <Image 
             src={adImageUrl}
             alt={activeAd.name}

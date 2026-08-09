@@ -386,18 +386,18 @@ export function Navbar() {
         style={{ backgroundColor: styles.backgroundColor }}
       >
         <div className="container-custom">
-          <div className="flex h-16 lg:h-20 items-center justify-between gap-4">
+          <div className="flex h-20 items-center justify-between gap-4">
             {/* Logo */}
             <Link
               href="/"
-              className="text-[32px] font-bold transition-colors shrink-0 text-[#E60076]" 
+              className="text-[32px] font-bold transition-colors shrink-0 text-[#E60076] " 
             >
               <Image
                 src="/logo.png"
                 alt="Logo"
                 width={1000}
                 height={700}
-                className="object-contain w-20 h-20 lg:w-32 lg:h-32"
+                className="object-contain w-20 h-20 py-1"
               />
               {/* Logo */}
             </Link>
@@ -740,14 +740,14 @@ export function Navbar() {
 
       {/* الشريط العلوي للموبايل */}
       <div className="md:hidden sticky top-0 z-30 w-full bg-white shadow-md">
-        <div className="px-2  flex items-center justify-between">
+        <div className="px-2  flex items-center justify-between py-3">
           <Link href="/" className="shrink-0 text-[#E60076] font-semibold text-lg">
             <Image
               src="/logo.png"
               alt="Logo"
               width={2000}
               height={500}
-              className="object-contain w-20 h-20"
+              className="object-contain w-14 h-14"
             />
             {/* Logo */}
           </Link>
