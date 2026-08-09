@@ -673,6 +673,15 @@ export function Navbar() {
                               </span>
                             </div>
                           )}
+                           {user.email && (
+                            <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                              <span dir="ltr">
+                                {" "}
+                              
+                                {user.email}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <Link
                           href="/account/wishlist"

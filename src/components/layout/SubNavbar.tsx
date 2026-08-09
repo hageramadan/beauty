@@ -186,12 +186,12 @@ export function SubNavbar() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-0 md:gap-3">
+            {/* <div className="flex items-center gap-0 md:gap-3">
               <PiGiftBold className="text-[#E60076] w-4 h-4 md:w-5 md:h-5" />
               <p className="text-[#E60076] text-xs md:text-sm font-semibold text-center">
                 ---
               </p>
-            </div>
+            </div> */}
             <div className="hidden md:flex items-center gap-0 md:gap-6">
               <div className="flex items-center gap-3 md:gap-4">
                 <span className="text-[#E60076] text-xs md:text-sm font-medium">
@@ -210,7 +210,7 @@ export function SubNavbar() {
       <div className="container mx-auto px-4 md:px-8">
         <div className="flex items-center justify-between ">
           {/* Right Section - Email & Phone */}
-          <div className="hidden lg:flex gap-5 items-center ">
+          <div className="flex gap-5 items-center ">
             {/* Phone */}
             <div className="hidden md:flex items-center gap-1">
               <LiaPhoneSolid className="text-[#E60076]" />
@@ -224,24 +224,24 @@ export function SubNavbar() {
             </div>
             
             {/* Email */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <TfiEmail className="text-[#E60076]" />
               <Link
                 href={settings?.email ? `mailto:${settings.email}` : "#"}
                 className="text-[#E60076] text-sm md:text-sm font-bold hover:opacity-80 transition-opacity"
               >
-                {settingsLoading ? t.loading : settings?.email || "lorum@lorum.com"}
+                {settingsLoading ? t.loading : settings?.email }
               </Link>
             </div>
           </div>
 
           {/* Center Section - Free Shipping Message */}
-          <div className="flex items-start md:items-center gap-1 md:gap-3">
+          {/* <div className="flex items-start md:items-center gap-1 md:gap-3">
             <PiGiftBold className="text-[#E60076] w-4 h-4 md:w-5 md:h-5" />
             <p className="text-[#E60076] text-xs md:text-sm font-semibold ">
               {t.freeShipping}
             </p>
-          </div>
+          </div> */}
           
           {/* Left Section - Language & Social Media */}
           <div className="flex items-center gap-4 md:gap-6">
