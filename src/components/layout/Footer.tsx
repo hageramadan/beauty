@@ -11,7 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 //  دالة للحصول على الترجمات حسب اللغة (نفس الفوتر الأول)
 const getTranslations = (lang: string) => {
-  if (lang === 'en') {
+  if (lang === "en") {
     return {
       categories: "Categories",
       new: "New",
@@ -26,7 +26,7 @@ const getTranslations = (lang: string) => {
       loading: "Loading...",
       noCategories: "No categories",
       home: "Home",
-      allRightsReserved: "All Rights Reserved  © T Carts 2026",
+      allRightsReserved: "Powered by ",
       storeName: "Your perfect store, everything you need",
     };
   }
@@ -45,7 +45,7 @@ const getTranslations = (lang: string) => {
     loading: "جاري التحميل...",
     noCategories: "لا توجد فئات",
     home: "الرئيسية",
-    allRightsReserved: "جميع الحقوق محفوظة   © T Carts 2026",
+    allRightsReserved: "Powered by",
     storeName: "متجرك المثالي هنا كل ما تريد",
   };
 };
@@ -53,7 +53,7 @@ const getTranslations = (lang: string) => {
 export function Footer() {
   const { language } = useLanguage();
   const t = getTranslations(language);
-  
+
   //  إضافة state لمنع Hydration Error
   const [isMounted, setIsMounted] = useState(false);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
@@ -79,7 +79,7 @@ export function Footer() {
           categories.map((category) => ({
             id: category.id,
             name: category.name,
-          }))
+          })),
         );
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -120,63 +120,63 @@ export function Footer() {
   // بناء روابط التواصل الاجتماعي للفوتر - مع الصور
   const getSocialLinks = () => {
     if (!settings) return [];
-    
+
     const links = [];
-    
+
     // انستجرام
     if (settings.instagram) {
-      links.push({ 
-        href: settings.instagram, 
+      links.push({
+        href: settings.instagram,
         label: "Instagram",
-        imagePath: "/images/social/insta.png"
+        imagePath: "/images/social/insta.png",
       });
     }
-    
+
     // فيسبوك
     if (settings.facebook) {
-      links.push({ 
-        href: settings.facebook, 
+      links.push({
+        href: settings.facebook,
         label: "Facebook",
-        imagePath: "/images/social/face.png"
+        imagePath: "/images/social/face.png",
       });
     }
-    
+
     // واتساب
     if (settings.whatsapp) {
-      const whatsappUrl = settings.whatsapp.startsWith('https://') 
-        ? settings.whatsapp 
-        : `https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`;
-      links.push({ 
-        href: whatsappUrl, 
+      const whatsappUrl = settings.whatsapp.startsWith("https://")
+        ? settings.whatsapp
+        : `https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, "")}`;
+      links.push({
+        href: whatsappUrl,
         label: "WhatsApp",
-        imagePath: "/images/social/wats.png"
+        imagePath: "/images/social/wats.png",
       });
     }
 
     // تويتر (X)
     if (settings.twitter) {
-      links.push({ 
-        href: settings.twitter, 
+      links.push({
+        href: settings.twitter,
         label: "Twitter",
-        imagePath: "/images/social/x.png"
+        imagePath: "/images/social/x.png",
       });
     }
 
     // سناب شات
     if (settings.snapchat) {
-      links.push({ 
-        href: settings.snapchat, 
+      links.push({
+        href: settings.snapchat,
         label: "Snapchat",
-        imagePath: "/images/social/snap.png"
+        imagePath: "/images/social/snap.png",
       });
     }
 
     // لينكد إن
     if (settings.linkedin) {
-      links.push({ 
-        href: settings.linkedin, 
+      links.push({
+        href: settings.linkedin,
         label: "LinkedIn",
-        imagePath: "/images/social/linkedin.png"
+        imagePath: "/images/social/linkedin.png",
       });
     }
 
@@ -238,7 +238,13 @@ export function Footer() {
               <p className="text-white/70 text-sm leading-relaxed">
                 {settingsLoading ? t.loading : settings?.address || t.storeName}
               </p> */}
-              <Image src={'/logo.png'} className="object-contain" alt="Logo"  width={120} height={100}/>
+              <Image
+                src={"/logo.png"}
+                className="object-contain"
+                alt="Logo"
+                width={120}
+                height={100}
+              />
             </div>
           </div>
 
@@ -316,24 +322,42 @@ export function Footer() {
         {/* footer bottom -  استخدام الترجمات */}
         <div className="border-t border-white/20 pt-6 md:pt-8 pb-16 lg:pb-0">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-white/60 font-bold text-sm">
-              {t.allRightsReserved} 
-            </p>
-
             <div className="flex gap-6">
-              <Link 
-                href={settings?.terms_and_conditions ? "/terms" : "#"} 
+              <Link
+                href={settings?.terms_and_conditions ? "/terms" : "#"}
                 className="hover:text-[#E60076] text-white text-sm"
               >
-                {settingsLoading ? t.loading : settings?.terms_and_conditions || t.terms}
+                {settingsLoading
+                  ? t.loading
+                  : settings?.terms_and_conditions || t.terms}
               </Link>
-              <Link 
-                href={settings?.privacy_policy ? "/privacy" : "#"} 
+              <Link
+                href={settings?.privacy_policy ? "/privacy" : "#"}
                 className="hover:text-[#E60076] text-white text-sm"
               >
-                {settingsLoading ? t.loading : settings?.privacy_policy || t.privacy}
+                {settingsLoading
+                  ? t.loading
+                  : settings?.privacy_policy || t.privacy}
               </Link>
             </div>
+
+            <Link
+              href="https://t-carts.com/"
+              aria-label="t-carts website"
+              className="flex items-center gap-1"
+              target="_blank"
+            >
+              <Image
+                src="/t-carts.png"
+                alt="t-carts logo"
+                width={30}
+                height={20}
+                className="w-[85px] h-4"
+              />
+              <p className="text-white/60 font-bold text-sm">
+                {t.allRightsReserved}
+              </p>
+            </Link>
 
             {/* social - استخدام الصور بدلاً من الأيقونات */}
             <div className="flex gap-4">

@@ -434,20 +434,7 @@ export function Hero({ onLoad }: LoadingProps) {
             <p className="text-white/95 mx-auto w-full sm:w-[85%] md:w-[80%] text-sm sm:text-base md:text-lg lg:text-[20px] mb-4 sm:mb-6 md:mb-8 leading-relaxed drop-shadow-md">
               {centerText.description}
             </p>
-            <Button
-              asChild
-              className="text-white text-[14px] sm:text-[16px] font-bold rounded-xl pointer-events-auto hover:scale-105 transition-transform duration-300 mx-auto"
-              style={{ 
-                backgroundColor: '#E60076',
-                width: '150px',
-                height: '45px'
-              }}
-            >
-              <Link href="/products" className="flex items-center justify-center gap-2">
-                {t.shopNow}
-                <FaArrowLeft className={`h-3 w-3 sm:h-4 sm:w-4 ${language === 'en' ? 'rotate-180' : ''}`} />
-              </Link>
-            </Button>
+          
           </div>
         </div>
       </section>
@@ -491,20 +478,7 @@ export function Hero({ onLoad }: LoadingProps) {
           <p className="text-white/95 mx-auto w-full sm:w-[85%] md:w-[80%] text-sm sm:text-base md:text-lg lg:text-[20px] mb-4 sm:mb-6 md:mb-8 leading-relaxed drop-shadow-md line-clamp-3">
             {centerText.description}
           </p>
-          <Button
-            asChild
-            className="text-white text-[14px] sm:text-[16px] font-bold rounded-xl pointer-events-auto hover:scale-105 transition-transform duration-300 mx-auto"
-            style={{ 
-              backgroundColor: '#E60076',
-              width: '150px',
-              height: '45px'
-            }}
-          >
-            <Link href="/products" className="flex items-center justify-center gap-2">
-              {t.shopNow}
-              <FaArrowLeft className={`h-3 w-3 sm:h-4 sm:w-4 ${language === 'en' ? 'rotate-180' : ''}`} />
-            </Link>
-          </Button>
+        
         </div>
       </div>
     </section>
