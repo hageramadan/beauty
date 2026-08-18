@@ -271,7 +271,7 @@
     "emptyMessage": "لم تقم بإضافة أي منتجات إلى قائمة المفضلة بعد",
     "exploreProducts": "استكشاف المنتجات",
     "loading": "جاري تحميل المفضلة...",
-    "itemsCount": "{count} منتاجات",
+    "itemsCount": "{count} منتجات",
     "itemCount": "{count} منتج",
     "clearAll": "حذف الكل",
     "clearSuccess": "تم حذف جميع المنتجات من المفضلة",
