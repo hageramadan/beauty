@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [totalAmount, setTotalAmount] = useState(0);
   const [guestToken, setGuestTokenState] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       if (token) {
         return null;
       }
@@ -61,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const isGuest = useMemo(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       if (token) {
         return false;
       }
@@ -72,7 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const setGuestToken = useCallback((token: string) => {
     if (typeof window !== 'undefined') {
-      const authToken = localStorage.getItem('auth_token');
+      const authToken = localStorage.getItem('auth_token1');
       if (authToken) {
         return;
       }
@@ -96,7 +96,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const cartData = response.data.cart;
         
         if (cartData.guest_token) {
-          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token1') : null;
           if (!authToken) {
             setGuestToken(cartData.guest_token);
           }
@@ -133,7 +133,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setTotalAmount(newCart.total_amount || 0);
       
       if (newCart.guest_token) {
-        const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token1') : null;
         if (!authToken) {
           setGuestToken(newCart.guest_token);
         }
@@ -167,7 +167,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (response.result === true && response.data) {
         if (response.data.cart?.guest_token) {
-          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+          const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token1') : null;
           if (!authToken) {
             setGuestToken(response.data.cart.guest_token);
           }

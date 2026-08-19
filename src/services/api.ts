@@ -6,7 +6,7 @@ const API_BASE_URL_Img="https://beauty.admin.t-carts.com";
 // ========== دوال مساعدة للمصادقة (يجب تعريفها أولاً) ==========
 export function getToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('auth_token1');
   }
   return null;
 }
@@ -29,13 +29,13 @@ export function removeGuestToken(): void {
 }
 export function saveToken(token: string): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('auth_token1', token);
   }
 }
 
 export function removeToken(): void {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_token1');
     localStorage.removeItem('user_data');
   }
 }
@@ -1284,7 +1284,7 @@ export async function logoutAndCleanup(redirectTo?: string): Promise<boolean> {
     const result = await logout();
     
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token1');
       localStorage.removeItem('user_data');
       
       if (redirectTo) {
@@ -1297,7 +1297,7 @@ export async function logoutAndCleanup(redirectTo?: string): Promise<boolean> {
     console.error('Error in logoutAndCleanup:', error);
     
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_token1');
       localStorage.removeItem('user_data');
       
       if (redirectTo) {

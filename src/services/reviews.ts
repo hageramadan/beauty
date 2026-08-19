@@ -33,7 +33,7 @@ export const submitReview = async (reviewData: ReviewData): Promise<ReviewRespon
 
     if (response.status === 401) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_token1");
         localStorage.removeItem("user_data");
       }
       throw new Error("UNAUTHORIZED");

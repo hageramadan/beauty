@@ -307,7 +307,7 @@ function ShowMoreList<T, K extends string | number>({
       {hasMore && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-[#E60076] text-sm font-medium hover:underline mt-1 transition-all flex items-center gap-1"
+          className="text-primary text-sm font-medium hover:underline mt-1 transition-all flex items-center gap-1"
         >
           {showAll ? (
             <>
@@ -471,7 +471,7 @@ const ColorSwatchList = memo(function ColorSwatchList({
       {hasMoreColors && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-[#E60076] text-sm font-medium hover:underline mt-1 transition-all flex items-center gap-1"
+          className="text-primary text-sm font-medium hover:underline mt-1 transition-all flex items-center gap-1"
         >
           {showAll ? (
             <>
@@ -708,7 +708,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                   type="number"
                   value={tempMaxPrice || ''}
                   onChange={handleMaxPriceInputChange}
-                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#E60076]"
+                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--main-color)]"
                   placeholder="الحد الأقصى"
                 />
               </div>
@@ -718,7 +718,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                   type="number"
                   value={tempMinPrice || ''}
                   onChange={handleMinPriceInputChange}
-                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#E60076]"
+                  className="w-full px-3 py-2 border border-gray-3000 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--main-color)]"
                   placeholder="الحد الأدنى"
                 />
               </div>
@@ -726,7 +726,7 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
                 <div className="mt-4">
                   <button
                     onClick={handleApplyPriceFilter}
-                    className="w-[32.89px] bg-[#E60076] text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2 hover:bg-[#E60076]"
+                    className="w-[32.89px] bg-main text-white py-2 rounded-[8px] transition-colors font-semibold flex items-center justify-center gap-2 hover:bg-main"
                   >
                     <FaArrowLeft 
                       className={`h-4 w-4 ${isClient && language === 'en' ? 'rotate-180' : ''}`}
@@ -817,11 +817,11 @@ export default function ProductFilters({ onFilterChange, isMobile = false, onClo
           <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200 -mx-4 px-4 mt-4">
             <button
               onClick={applyFilters}
-              className="w-full bg-[#E60076] text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-[#E60076] flex items-center justify-center gap-2"
+              className="w-full bg-main text-white py-3 rounded-[8px] font-semibold text-base transition-colors hover:bg-main flex items-center justify-center gap-2"
             >
               {t('filter.apply')}
               {getSelectedFiltersCount() > 0 && (
-                <span className="bg-white text-[#E60076] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="bg-white text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {getSelectedFiltersCount()}
                 </span>
               )}

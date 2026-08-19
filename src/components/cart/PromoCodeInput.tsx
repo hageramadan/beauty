@@ -18,7 +18,7 @@ const API_URL = 'https://beauty.admin.t-carts.com/api';
 //  دالة جلب التوكن
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('auth_token1');
   }
   return null;
 };
@@ -162,7 +162,7 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
   if (appliedCode) {
     return (
       <div className="mt-4">
-        <div className="flex items-center justify-between bg-pink-50 rounded-[8px] p-3">
+        <div className="flex items-center justify-between bg-primary/10 rounded-[8px] p-3">
           <div className="flex items-center gap-2">
             <span className="text-green-600 text-sm">{t('promoCode.applied')}</span>
             <span className="text-green-800 font-semibold text-sm">{appliedCode}</span>
@@ -199,14 +199,14 @@ export function PromoCodeInput({ onApply, onRemove, appliedCode }: PromoCodeInpu
           }}
           placeholder={t('promoCode.placeholder')}
           disabled={isLoading}
-          className={`px-2 md:px-4 py-2.5 w-[90%] lg:w-full border rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#E60076] focus:border-[#E60076] text-sm disabled:bg-gray-100 ${
+          className={`px-2 md:px-4 py-2.5 w-[90%] lg:w-full border rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] focus:border-primary text-sm disabled:bg-gray-100 ${
             error ? 'border-red-500' : 'border-gray-200'
           }`}
         />
         <button
           onClick={handleApply}
           disabled={!code.trim() || isLoading}
-          className="px-3 md:px-5 w-fit md:py-2.5 bg-[#E60076] text-white rounded-[8px] text-sm font-semibold hover:bg-[#E60076] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-3 md:px-5 w-fit md:py-2.5 bg-main text-white rounded-[8px] text-sm font-semibold hover:bg-main transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {isLoading ? t('promoCode.applying') : t('promoCode.apply')}

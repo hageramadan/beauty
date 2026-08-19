@@ -134,7 +134,7 @@ export default function SocialLinks() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <social.icon className="w-5 h-5 text-white hover:text-[#E60076] transition-colors" />
+              <social.icon className="w-5 h-5 text-white hover:text-primary transition-colors" />
             </Link>
           ))
         )}

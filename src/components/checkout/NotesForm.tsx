@@ -16,7 +16,7 @@ export default function NotesForm({ notes, onNotesChange }: NotesFormProps) {
         onChange={(e) => onNotesChange(e.target.value)}
         rows={3}
         placeholder={t('checkout.notesPlaceholder')}
-        className="w-full px-4 py-3 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[#E60076] focus:border-transparent transition resize-none"
+        className="w-full px-4 py-3 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] focus:border-transparent transition resize-none"
       />
     </div>
   );

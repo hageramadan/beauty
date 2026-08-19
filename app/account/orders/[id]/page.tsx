@@ -122,7 +122,7 @@ const API_URL = "https://beauty.admin.t-carts.com/api";
 
 const getToken = (): string | null => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("auth_token1");
   }
   return null;
 };
@@ -143,7 +143,7 @@ const fetchOrderDetails = async (
 
     if (response.status === 401) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_token1");
         localStorage.removeItem("user_data");
       }
       throw new Error("UNAUTHORIZED");
@@ -188,7 +188,7 @@ const cancelOrder = async (orderId: number): Promise<boolean> => {
 
     if (response.status === 401) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_token1");
         localStorage.removeItem("user_data");
       }
       toast.error("جلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى", {
@@ -476,7 +476,7 @@ const getPaymentStatusIcon = (paymentStatus: string) => {
 // ✅ دالة للحصول على لون خلفية حالة الدفع
 const getPaymentStatusBgColor = (paymentStatus: string): string => {
   if (isPaymentPaid(paymentStatus)) {
-    return "bg-pink-50";
+    return "bg-primary/10";
   }
   if (isPaymentPending(paymentStatus)) {
     return "bg-yellow-50";
@@ -645,7 +645,7 @@ export default function OrderDetailsPage() {
       });
 
       if (response.status === 401) {
-        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_token1");
         localStorage.removeItem("user_data");
         toast.error(
           t("orders.invalidSession") ||
@@ -731,7 +731,7 @@ export default function OrderDetailsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] page-with-padding">
         <div className="container mx-auto px-4 py-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E60076] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
         </div>
       </div>
     );
@@ -748,7 +748,7 @@ export default function OrderDetailsPage() {
           <p className="text-gray-500 mb-4">{t("orders.orderNotFoundDesc")}</p>
           <Link
             href="/account/orders"
-            className="inline-block bg-[#E60076] text-white px-6 py-2 rounded-[8px] hover:bg-[#E60076] transition"
+            className="inline-block bg-main text-white px-6 py-2 rounded-[8px] hover:bg-main transition"
           >
             {t("orders.backToOrders")}
           </Link>
@@ -809,18 +809,18 @@ export default function OrderDetailsPage() {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 md:mb-5">
-            <Link href="/account" className="hover:text-[#E60076] transition">
+            <Link href="/account" className="hover:text-primary transition">
               {t("account.myAccount")}
             </Link>
             <ChevronRight className="w-4 h-4" />
             <Link
               href="/account/orders"
-              className="hover:text-[#E60076] transition"
+              className="hover:text-primary transition"
             >
               {t("orders.title")}
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-[#E60076] font-medium">
+            <span className="text-primary font-medium">
               {t("orders.orderDetails")}
             </span>
           </div>
@@ -846,7 +846,7 @@ export default function OrderDetailsPage() {
                             </span>
                           </p>
                           <IoCopyOutline
-                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? "text-green-500" : "hover:text-[#E60076]"}`}
+                            className={`w-4 h-4 sm:w-5 sm:h-5 cursor-pointer transition ${copied ? "text-green-500" : "hover:text-primary"}`}
                             onClick={copyOrderNumber}
                           />
                         </div>
@@ -975,7 +975,7 @@ export default function OrderDetailsPage() {
                               </div>
                             </div>
                             <div className="text-left">
-                              <p className="font-bold text-[#E60076]">
+                              <p className="font-bold text-primary">
                                 {currencySymbol} {item.total_price.toFixed(2)}
                               </p>
                               {item.discount_amount > 0 && (
@@ -1007,7 +1007,7 @@ export default function OrderDetailsPage() {
                                     onClick={() =>
                                       openReviewModal(productId, item.title)
                                     }
-                                    className="flex items-center gap-1 text-sm text-[#E60076] hover:text-[#a880a6] transition font-medium"
+                                    className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark transition font-medium"
                                   >
                                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                                     {t("orders.rateProduct") || "تقييم المنتج"}
@@ -1052,7 +1052,7 @@ export default function OrderDetailsPage() {
                       <span className="text-gray-500">
                         {t("orders.couponDiscount")}
                       </span>
-                      <span className="font-bold text-[#E60076]">
+                      <span className="font-bold text-primary">
                         -{currencySymbol}{" "}
                         {order?.coupon_discount_amount?.toFixed(2)}
                       </span>
@@ -1063,7 +1063,7 @@ export default function OrderDetailsPage() {
                       <span className="text-gray-500">
                         {t("orders.totalDiscount")}
                       </span>
-                      <span className="font-bold text-[#E60076]">
+                      <span className="font-bold text-primary">
                         -{currencySymbol}{" "}
                         {order?.total_discount_amount?.toFixed(2)}
                       </span>
@@ -1089,7 +1089,7 @@ export default function OrderDetailsPage() {
                     <span className="text-lg font-bold text-gray-800">
                       {t("orders.total")}
                     </span>
-                    <span className="text-xl font-bold text-[#E60076]">
+                    <span className="text-xl font-bold text-primary">
                       {currencySymbol} {order?.total_amount?.toFixed(2)}
                     </span>
                   </div>
@@ -1190,7 +1190,7 @@ export default function OrderDetailsPage() {
                   <button
                     onClick={handleRetryPayment}
                     disabled={isRetryingPayment}
-                    className="mt-4 w-full flex items-center justify-center gap-2 bg-[#E60076] text-white py-2.5 rounded-[8px] font-medium hover:bg-[#E60076] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-4 w-full flex items-center justify-center gap-2 bg-main text-white py-2.5 rounded-[8px] font-medium hover:bg-main transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isRetryingPayment ? (
                       <>
@@ -1217,7 +1217,7 @@ export default function OrderDetailsPage() {
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   placeholder={t("orders.noNotes")}
-                  className="w-full p-3 border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#E60076] resize-none bg-gray-50"
+                  className="w-full p-3 border border-gray-200 rounded-[8px] focus:outline-none focus:border-primary resize-none bg-gray-50"
                   rows={3}
                   readOnly
                 />
@@ -1333,7 +1333,7 @@ export default function OrderDetailsPage() {
               <button
                 onClick={confirmCancelOrder}
                 disabled={isCancelling}
-                className="flex-1 py-2.5 rounded-[8px] bg-[#E60076] text-white font-medium hover:bg-[#E60076] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-[8px] bg-main text-white font-medium hover:bg-main transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isCancelling ? (
                   <>

@@ -177,7 +177,7 @@ const API_URL = 'https://beauty.admin.t-carts.com/api';
 
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    return localStorage.getItem('auth_token1');
   }
   return null;
 };

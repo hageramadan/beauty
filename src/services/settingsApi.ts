@@ -26,6 +26,8 @@ interface SettingsData {
       meta_description: string | null;
     };
   };
+    mainColor?: string;
+  secondaryColor?: string;
 }
 
 interface SettingsResponse {
@@ -53,7 +55,11 @@ export async function getSettings(lang?: string): Promise<SettingsData> {
       throw new Error(data.message || 'Failed to fetch settings');
     }
 
-    return data.data;
+     return {
+      ...data.data,
+      mainColor: data.data.setting.main_color || '#E60076',
+      secondaryColor: data.data.setting.secondary_color || '#D56A2D',
+    };
   } catch (error) {
     console.error('Error fetching settings:', error);
     throw error;

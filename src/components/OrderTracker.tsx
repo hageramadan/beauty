@@ -132,7 +132,7 @@ export default function OrderTracker({
 
         {/* الخط الأمامي (المتحرك) */}
         <motion.div
-          className="absolute top-5 h-[2px] bg-[#E60076] rounded-full"
+          className="absolute top-5 h-[2px] bg-main rounded-full"
           initial={{ right: "36px", width: "0%" }}
           animate={{
             right: "36px",
@@ -191,9 +191,9 @@ export default function OrderTracker({
                       border-2 transition-all duration-300
                       ${
                         isCompleted
-                          ? "border-[#E60076] bg-[#E60076]/10"
+                          ? "border-primary bg-main/10"
                           : isCurrent
-                          ? "border-[#E60076]"
+                          ? "border-primary"
                           : "border-gray-300"
                       }
                     `}
@@ -208,12 +208,12 @@ export default function OrderTracker({
                           damping: 20,
                         }}
                       >
-                        <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-[#E60076]" />
+                        <FaCircleCheck className="w-6 h-6 md:w-7 md:h-7 text-primary" />
                       </motion.div>
                     ) : (
                       <step.icon
                         className={`w-5 h-5 md:w-6 md:h-6 ${
-                          isCurrent ? "text-[#E60076]" : "text-gray-400"
+                          isCurrent ? "text-primary" : "text-gray-400"
                         }`}
                       />
                     )}

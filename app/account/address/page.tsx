@@ -23,7 +23,7 @@ export default function AddressPage() {
   const fetchAddresses = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       
       const response = await fetch(`${API_URL}/addresses`, {
         headers: getHeaders(),
@@ -67,7 +67,7 @@ export default function AddressPage() {
 
   const handleDeleteAddress = async (id: number) => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       
       const response = await fetch(`${API_URL}/addresses/${id}/delete`, {
         method: 'DELETE',
@@ -126,7 +126,7 @@ export default function AddressPage() {
                 setEditingAddress(null);
                 setShowAddAddress(true);
               }}
-              className="flex items-center gap-2 text-[#E60076] hover:text-[#fa7d10] transition-colors"
+              className="flex items-center gap-2 text-primary hover:text-primary transition-colors"
               aria-label={t('address.addNew')}
             >
               <BsFillPlusCircleFill className="w-10 h-10" />

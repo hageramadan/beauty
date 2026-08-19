@@ -9,7 +9,59 @@
     @apply container mx-auto px-4 md:px-6 lg:px-8;
   }
 }
+/* styles/globals.css */
+:root {
+  --main-color: #E60076; /* قيمة افتراضية */
+  --secondary-color: #D56A2D;
+  --main-color-light: #E6007633;
+  --main-color-dark: #E60076CC;
+}
 
+/* استخدام الألوان */
+.primary-btn {
+  background-color: var(--main-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+}
+
+.secondary-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+}
+
+.primary-text {
+  color: var(--main-color);
+}
+
+.secondary-text {
+  color: var(--secondary-color);
+}
+
+.primary-border {
+  border: 2px solid var(--main-color);
+}
+
+/* استخدام مع Tailwind CSS */
+.bg-primary {
+  background-color: var(--main-color) !important;
+}
+
+.text-primary {
+  color: var(--main-color) !important;
+}
+
+.border-primary {
+  border-color: var(--main-color) !important;
+}
+
+.hover\:bg-primary:hover {
+  background-color: var(--main-color) !important;
+}
 .bg-wallet {
   background-color: #0A05000A; /* لون خلفية المحفظة */
 }
@@ -269,7 +321,7 @@ label{
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E60076;
+  background: var(--main-color);
   border-radius: 10px;
 }
 

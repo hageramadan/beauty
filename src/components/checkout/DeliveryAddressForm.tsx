@@ -115,7 +115,7 @@ export default function DeliveryAddressForm({
     
     setIsLoadingAddresses(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       //  إذا لم يوجد توكن، لا تجلب
       if (!token) {
        
@@ -155,7 +155,7 @@ export default function DeliveryAddressForm({
     
     setIsLoadingGovernorates(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       const response = await fetch(`${API_URL}/governates`, {
         headers: getHeaders(),
       });
@@ -190,7 +190,7 @@ export default function DeliveryAddressForm({
 
     setIsLoadingCities(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       const response = await fetch(`${API_URL}/governates/${governorateId}/cities`, {
         headers: getHeaders()
       });
@@ -307,7 +307,7 @@ export default function DeliveryAddressForm({
         onCitySelected(cityId);
       }
       
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token1');
       const addressToSave = {
         city_id: cityId,
         street: getFieldValue(addressData.street),
@@ -453,7 +453,7 @@ export default function DeliveryAddressForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('checkout.governorate')} <span className="text-[#E60076]">*</span>
+                {t('checkout.governorate')} <span className="text-primary">*</span>
               </label>
               <Select
                 value={addressData.governorate}
@@ -473,7 +473,7 @@ export default function DeliveryAddressForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('checkout.city')} <span className="text-[#E60076]">*</span>
+                {t('checkout.city')} <span className="text-primary">*</span>
               </label>
               <Select
                 value={addressData.city}
@@ -559,7 +559,7 @@ export default function DeliveryAddressForm({
               <button
                 onClick={handleManualSave}
                 disabled={isSavingAddress || !addressData.governorate || !addressData.city}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white rounded-[8px] bg-[#E60076] hover:bg-[#f0278f] transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-white rounded-[8px] bg-main hover:bg-main-dark transition disabled:opacity-50"
               >
                 {isSavingAddress ? (
                   <>
@@ -630,7 +630,7 @@ export default function DeliveryAddressForm({
                 ) : (
                   <>
                     {selectedAddressDetails ? (
-                      <div className="p-4 bg-white rounded-[8px] border-2 border-[#E60076] relative">
+                      <div className="p-4 bg-white rounded-[8px] border-2 border-primary relative">
                         <button
                           onClick={clearSelectedAddress}
                           className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition"
@@ -659,7 +659,7 @@ export default function DeliveryAddressForm({
                           key={address.id}
                           className={`flex items-start gap-3 p-3 rounded-[8px] border cursor-pointer transition-all ${
                             selectedSavedAddressId === address.id
-                              ? "border-[#E60076] bg-pink-50"
+                              ? "border-primary bg-primary/10"
                               : "border-gray-200 bg-white hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectSavedAddress(address.id)}
@@ -669,7 +669,7 @@ export default function DeliveryAddressForm({
                             name="savedAddress"
                             checked={selectedSavedAddressId === address.id}
                             onChange={() => handleSelectSavedAddress(address.id)}
-                            className="mt-0.5 w-4 h-4 text-[#E60076]"
+                            className="mt-0.5 w-4 h-4 text-primary"
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-800">{address.street}</p>

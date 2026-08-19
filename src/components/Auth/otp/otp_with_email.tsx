@@ -227,7 +227,7 @@ export default function OTPWithEmail() {
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   disabled={isLoading}
-                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-[8px] focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 outline-none transition-all disabled:opacity-50"
+                  className="w-12 h-12 md:w-14 md:h-14 text-center text-xl font-bold border-2 border-gray-300 rounded-[8px] focus:border-primary focus:ring-2 focus:ring-[var(--main-color)]/20 outline-none transition-all disabled:opacity-50"
                   maxLength={1}
                   dir="ltr"
                 />
@@ -238,7 +238,7 @@ export default function OTPWithEmail() {
               {!canResend ? (
                 <p className="text-gray-500 text-sm">
                   {t("auth.didntReceiveCode")}{" "}
-                  <span className="text-[#E60076] font-medium">
+                  <span className="text-primary font-medium">
                     {t("auth.resendIn")} 
                     <span className="ms-1 font-bold">{timeLeft.toString().padStart(2, "0")} {t("auth.seconds")}</span>
                   </span>
@@ -248,7 +248,7 @@ export default function OTPWithEmail() {
                   type="button"
                   onClick={handleResendCode}
                   disabled={isLoading}
-                  className="text-[#E60076] font-medium hover:underline transition disabled:opacity-50"
+                  className="text-primary font-medium hover:underline transition disabled:opacity-50"
                 >
                   {t("auth.resendCode")}
                 </button>
@@ -258,7 +258,7 @@ export default function OTPWithEmail() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50 font-medium"
+              className="w-full py-3 bg-main text-white rounded-[8px] hover:bg-main-dark transition disabled:opacity-50 font-medium"
             >
               {isLoading ? (
                 <>

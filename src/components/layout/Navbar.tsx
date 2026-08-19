@@ -351,14 +351,14 @@ export function Navbar() {
         backgroundColor: isScrolled ? "#FFFFFF" : "transparent",
         shadow: isScrolled ? "shadow-md" : "shadow-none",
         textColor: isScrolled ? "#112B40" : "#FFFFFF",
-        logoColor: isScrolled ? "#E60076" : "#FFFFFF",
+        logoColor: isScrolled ? "var(--main-color)" : "#FFFFFF",
       };
     } else {
       return {
         backgroundColor: "#FFFFFF",
         shadow: "shadow-md",
         textColor: "#112B40",
-        logoColor: "#E60076",
+        logoColor: "var(--main-color)",
       };
     }
   };
@@ -390,7 +390,7 @@ export function Navbar() {
             {/* Logo */}
             <Link
               href="/"
-              className="text-[32px] font-bold transition-colors shrink-0 text-[#E60076] " 
+              className="text-[32px] font-bold transition-colors shrink-0 text-primary "
             >
               <Image
                 src="/logo.png"
@@ -406,9 +406,9 @@ export function Navbar() {
             <nav className="flex items-center gap-6 flex-1 justify-center">
               <Link
                 href="/"
-                className="text-[16px] transition-colors hover:text-[#E60076]"
+                className="text-[16px] transition-colors hover:text-primary"
                 style={{
-                  color: pathname === "/" ? "#E60076" : "#112B40",
+                  color: pathname === "/" ? "var(--main-color)" : "#112B40",
                   fontWeight: pathname === "/" ? "700" : "400",
                 }}
               >
@@ -418,10 +418,10 @@ export function Navbar() {
               <div className="relative" ref={categoriesRef}>
                 <button
                   aria-label="categories"
-                  className="flex items-center gap-1 text-[16px] transition-colors hover:text-[#E60076]"
+                  className="flex items-center gap-1 text-[16px] transition-colors hover:text-primary"
                   style={{
                     color: pathname.startsWith("/categories")
-                      ? "#E60076"
+                      ? "var(--main-color)"
                       : "#112B40",
                     fontWeight: pathname.startsWith("/categories")
                       ? "700"
@@ -448,7 +448,7 @@ export function Navbar() {
                     <div className="py-2">
                       {loadingCategories ? (
                         <div className="px-4 py-3 text-center">
-                          <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-[#E60076] border-r-transparent"></div>
+                          <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-primary border-r-transparent"></div>
                           <p className="text-xs text-gray-500 mt-1">
                             {t.loading}
                           </p>
@@ -462,7 +462,8 @@ export function Navbar() {
                             style={{ color: "#112B40" }}
                             onClick={() => setShowCategoriesDropdown(false)}
                             onMouseEnter={(e) =>
-                              (e.currentTarget.style.color = "#E60076")
+                              (e.currentTarget.style.color =
+                                "var(--main-color)")
                             }
                             onMouseLeave={(e) =>
                               (e.currentTarget.style.color = "#112B40")
@@ -485,9 +486,10 @@ export function Navbar() {
 
               <Link
                 href="/contact"
-                className="text-[16px] transition-colors hover:text-[#E60076]"
+                className="text-[16px] transition-colors hover:text-primary"
                 style={{
-                  color: pathname === "/contact" ? "#E60076" : "#112B40",
+                  color:
+                    pathname === "/contact" ? "var(--main-color)" : "#112B40",
                   fontWeight: pathname === "/contact" ? "700" : "400",
                 }}
               >
@@ -506,7 +508,7 @@ export function Navbar() {
                     aria-label="search"
                     onClick={() => setShowSearchInput(true)}
                     className="relative z-10 hover:bg-gray-100 rounded-[10px]"
-                    style={{ color: "#E60076" }}
+                    style={{ color: "var(--main-color)" }}
                   >
                     <Search className="h-5 w-5" />
                   </Button>
@@ -518,7 +520,7 @@ export function Navbar() {
                           ref={searchInputRef}
                           type="search"
                           placeholder={t.search}
-                          className="w-64 h-10 ps-9 pe-9 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-[#E60076] focus:border-transparent"
+                          className="w-64 h-10 ps-9 pe-9 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-[var(--main-color)] focus:border-transparent"
                           style={{ color: "#195073" }}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
@@ -553,11 +555,11 @@ export function Navbar() {
                 size="icon"
                 asChild
                 className="relative hover:bg-gray-100 rounded-[10px]"
-                style={{ color: "#E60076" }}
+                style={{ color: "var(--main-color)" }}
               >
                 <Link href="/account/wishlist">
                   {favoritesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-[#E60076] text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-main text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                       {favoritesCount > 99 ? "99+" : favoritesCount}
                     </span>
                   )}
@@ -571,11 +573,11 @@ export function Navbar() {
                 size="icon"
                 asChild
                 className="relative hover:bg-gray-100 rounded-[10px] group"
-                style={{ color: "#E60076" }}
+                style={{ color: "var(--main-color)" }}
               >
                 <Link href="/cart">
                   {itemsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-[#E60076] text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-main text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                       {itemsCount > 99 ? "99+" : itemsCount}
                     </span>
                   )}
@@ -588,58 +590,6 @@ export function Navbar() {
                 </Link>
               </Button>
 
-              {/* Language Selector - Desktop */}
-              {/* <div className="relative" ref={languageDropdownRef}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                  className="relative z-10 hover:bg-gray-100 rounded-[10px]"
-                  style={{ color: "#E60076" }}
-                  aria-label="تغيير اللغة"
-                >
-                  <Globe className="h-5 w-5" />
-                  <span className="absolute -bottom-1 text-[10px] font-bold">
-                    {language === "ar" ? "ع" : "EN"}
-                  </span>
-                </Button>
-
-                {showLanguageDropdown && (
-                  <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-lg border shadow-xl z-30">
-                    <div className="py-2">
-                      <button
-                        onClick={() => handleLanguageChange("ar")}
-                        className={`w-full text-right px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                          language === "ar"
-                            ? "text-[#E60076] font-bold"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-lg">🇸🇦</span>
-                        العربية
-                        {language === "ar" && (
-                          <span className="mr-auto text-[#E60076]">✓</span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleLanguageChange("en")}
-                        className={`w-full text-right px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                          language === "en"
-                            ? "text-[#E60076] font-bold"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-lg">🇬🇧</span>
-                        English
-                        {language === "en" && (
-                          <span className="mr-auto text-[#E60076]">✓</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div> */}
-
               {/* User / Login -  استخدام الترجمات */}
               {isAuthenticated && user ? (
                 <div className="relative" ref={userDropdownRef}>
@@ -647,7 +597,7 @@ export function Navbar() {
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
                     className="flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 hover:bg-gray-100"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E60076] via-[#ff3676] to-[#E60076] flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-8 h-8 rounded-full bg-main flex items-center justify-center text-white font-bold text-sm">
                       {getUserInitial()}
                     </div>
                     <ChevronDown
@@ -661,7 +611,7 @@ export function Navbar() {
                     <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg border shadow-xl z-30">
                       <div className="py-2">
                         <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm font-semibold text-[#E60076]">
+                          <p className="text-sm font-semibold text-primary">
                             {user.name || "مستخدم"}
                           </p>
                           {user.phone && (
@@ -673,13 +623,9 @@ export function Navbar() {
                               </span>
                             </div>
                           )}
-                           {user.email && (
+                          {user.email && (
                             <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
-                              <span dir="ltr">
-                                {" "}
-                              
-                                {user.email}
-                              </span>
+                              <span dir="ltr"> {user.email}</span>
                             </div>
                           )}
                         </div>
@@ -733,8 +679,8 @@ export function Navbar() {
                   className="hover:bg-gray-100 gap-2 rounded-[16px]"
                 >
                   <Link href="/auth/login">
-                    <PiUserBold className="h-5 w-5 text-[#E60076]" />
-                    <span className="text-[14px] font-bold text-[#E60076]">
+                    <PiUserBold className="h-5 w-5 text-primary" />
+                    <span className="text-[14px] font-bold text-primary">
                       {t.login}
                     </span>
                   </Link>
@@ -750,7 +696,10 @@ export function Navbar() {
       {/* الشريط العلوي للموبايل */}
       <div className="md:hidden sticky top-0 z-30 w-full bg-white shadow-md">
         <div className="px-2  flex items-center justify-between py-3">
-          <Link href="/" className="shrink-0 text-[#E60076] font-semibold text-lg">
+          <Link
+            href="/"
+            className="shrink-0 text-primary font-semibold text-lg"
+          >
             <Image
               src="/logo.png"
               alt="Logo"
@@ -770,75 +719,8 @@ export function Navbar() {
                 className="hover:bg-gray-100 rounded-full"
                 aria-label="بحث"
               >
-                <Search className="h-5 w-5 text-[#E60076]" />
+                <Search className="h-5 w-5 text-primary" />
               </Button>
-
-              {/* Language Selector - Mobile */}
-              {/* <div className="relative" ref={mobileLanguageDropdownRef}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setShowMobileLanguageDropdown(!showMobileLanguageDropdown)
-                  }
-                  className="hover:bg-gray-100 rounded-full relative"
-                  aria-label="تغيير اللغة"
-                >
-                  <Globe className="h-5 w-5 text-[#E60076]" />
-                  <span className="absolute -bottom-1 text-[8px] font-bold text-[#E60076]">
-                    {language === "ar" ? "ع" : "EN"}
-                  </span>
-                </Button>
-
-                {showMobileLanguageDropdown && (
-                  <div
-                    className={`absolute top-full mt-2 w-40 bg-white rounded-lg border shadow-xl z-30 ${
-                      language === "en" ? "right-0" : "left-0"
-                    }`}
-                  >
-                    <div className="py-2">
-                      <button
-                        onClick={() => handleLanguageChange("ar")}
-                        className={`w-full text-right px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                          language === "ar"
-                            ? "text-[#E60076] font-bold"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-lg">🇸🇦</span>
-                        العربية
-                        {language === "ar" && (
-                          <span className="mr-auto text-[#E60076]">✓</span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleLanguageChange("en")}
-                        className={`w-full text-right px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
-                          language === "en"
-                            ? "text-[#E60076] font-bold"
-                            : ""
-                        }`}
-                      >
-                        <span className="text-lg">🇬🇧</span>
-                        English
-                        {language === "en" && (
-                          <span className="mr-auto text-[#E60076]">✓</span>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div> */}
-
-              {/* <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="hover:bg-gray-100 rounded-full"
-                aria-label="القائمة"
-              >
-                <MenuIcon className="h-6 w-6 text-[#E60076]" />
-              </Button> */}
             </div>
           ) : (
             <div
@@ -850,7 +732,7 @@ export function Navbar() {
                   ref={mobileSearchInputRef}
                   type="search"
                   placeholder={t.search}
-                  className="w-full h-10 ps-9 pe-9 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-[#E60076]"
+                  className="w-full h-10 ps-9 pe-9 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-[var(--main-color)]"
                   style={{ color: "#195073" }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -874,206 +756,6 @@ export function Navbar() {
             </div>
           )}
         </div>
-
-        {/* Mobile Menu -  استخدام الترجمات */}
-        {/* {mobileMenuOpen && (
-          <div
-            className="border-t py-4 space-y-4 animate-in slide-in-from-top-2 duration-200 bg-white"
-            style={{ borderColor: "#e2e8f0" }}
-          >
-            <form onSubmit={handleSearch} className="relative px-3">
-              <Search
-                className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4"
-                style={{ color: "#94a3b8" }}
-              />
-              <Input
-                type="search"
-                placeholder={t.search}
-                className="w-full h-10 ps-9 bg-gray-50"
-                style={{
-                  color: "#112B40",
-                  borderColor: "#e2e8f0",
-                }}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-
-            <div className="flex items-center justify-around px-3 py-2 border-b border-gray-100">
-              <Link
-                href="/account/wishlist"
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-[#E60076] text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
-                    {favoritesCount > 99 ? "99+" : favoritesCount}
-                  </span>
-                )}
-                <Heart className="h-5 w-5" style={{ color: "#195073" }} />
-                <span className="text-xs" style={{ color: "#195073" }}>
-                  {t.favorites}
-                </span>
-              </Link>
-
-              <Link
-                href="/cart"
-                className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {itemsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-[#E60076] text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
-                    {itemsCount > 99 ? "99+" : itemsCount}
-                  </span>
-                )}
-                <ShoppingCart
-                  className="h-5 w-5"
-                  style={{ color: "#195073" }}
-                />
-                <span className="text-xs" style={{ color: "#195073" }}>
-                  {t.cart} {isGuest && itemsCount > 0 && "(Guest)"}
-                </span>
-              </Link>
-
-              {isAuthenticated && user ? (
-                <div className="flex flex-col items-center gap-1 p-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E60076] to-[#f0278f] flex items-center justify-center text-white font-bold text-sm">
-                    {getUserInitial()}
-                  </div>
-                  <span className="text-xs" style={{ color: "#195073" }}>
-                    {t.account}
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  href="/auth/login"
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <User className="h-5 w-5" style={{ color: "#195073" }} />
-                  <span className="text-xs" style={{ color: "#195073" }}>
-                    {t.login}
-                  </span>
-                </Link>
-              )}
-            </div>
-
-            {isAuthenticated && user && (
-              <div className="px-3 space-y-1 border-b border-gray-100 pb-3">
-                <Link
-                  href="/account/orders"
-                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
-                  style={{ color: "#112B40" }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Package className="h-4 w-4" />
-                  <span>{t.orders}</span>
-                </Link>
-                <Link
-                  href="/account/returns"
-                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
-                  style={{ color: "#112B40" }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>{t.returns}</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-50"
-                  style={{ color: "#E60076" }}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>{t.logout}</span>
-                </button>
-              </div>
-            )}
-
-            {isGuest && itemsCount > 0 && (
-              <div className="px-3 py-2 bg-[#E60076] border border-blue-200 rounded-lg mx-3">
-                <p className="text-xs text-blue-700 text-center">
-                  🛒 {t.guestCart} - {t.login} {t.account}
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1">
-              <Link
-                href="/"
-                className="px-3 py-3 text-[16px] font-medium rounded-md transition-colors hover:bg-gray-50"
-                style={{ color: "#112B40" }}
-                onClick={() => setMobileMenuOpen(false)}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#E60076")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#112B40")}
-              >
-                {t.home}
-              </Link>
-
-              <div className="space-y-2">
-                <button
-                  aria-label="categories"
-                  className="px-3 py-3 text-[16px] font-medium rounded-md transition-colors hover:bg-gray-50 flex items-center justify-between w-full"
-                  style={{ color: "#112B40" }}
-                  onClick={() =>
-                    setShowMobileCategoriesSheet(!showMobileCategoriesSheet)
-                  }
-                >
-                  {t.categories}
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      showMobileCategoriesSheet ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {showMobileCategoriesSheet && (
-                  <div className="mr-4 space-y-1">
-                    {loadingCategories ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">
-                        {t.loading}
-                      </div>
-                    ) : (
-                      categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={category.href}
-                          className="block px-3 py-2 text-[14px] rounded-md transition-colors hover:bg-gray-50"
-                          style={{ color: "#112B40" }}
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setShowMobileCategoriesSheet(false);
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.color = "#E60076")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "#112B40")
-                          }
-                        >
-                          {category.name}
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <Link
-                href="/contact"
-                className="px-3 py-3 text-[16px] font-medium rounded-md transition-colors hover:bg-gray-50"
-                style={{ color: "#112B40" }}
-                onClick={() => setMobileMenuOpen(false)}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#E60076")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#112B40")}
-              >
-                {t.contact}
-              </Link>
-            </div>
-          </div>
-        )} */}
       </div>
 
       {/* القائمة السفلية للموبايل (Bottom Navigation Bar) -  استخدام الترجمات */}
@@ -1093,11 +775,11 @@ export function Navbar() {
           >
             <Home
               className="h-5 w-5"
-              style={{ color: pathname === "/" ? "#E60076" : "#666" }}
+              style={{ color: pathname === "/" ? "var(--main-color)" : "#666" }}
             />
             <span
               className="text-[10px]"
-              style={{ color: pathname === "/" ? "#E60076" : "#666" }}
+              style={{ color: pathname === "/" ? "var(--main-color)" : "#666" }}
             >
               {t.home}
             </span>
@@ -1114,13 +796,17 @@ export function Navbar() {
             <MenuIcon
               className="h-5 w-5"
               style={{
-                color: pathname.startsWith("/categories") ? "#E60076" : "#666",
+                color: pathname.startsWith("/categories")
+                  ? "var(--main-color)"
+                  : "#666",
               }}
             />
             <span
               className="text-[10px]"
               style={{
-                color: pathname.startsWith("/categories") ? "#E60076" : "#666",
+                color: pathname.startsWith("/categories")
+                  ? "var(--main-color)"
+                  : "#666",
               }}
             >
               {t.categories}
@@ -1141,11 +827,13 @@ export function Navbar() {
                 className="h-5 w-5"
                 style={{
                   color:
-                    pathname === "/account/wishlist" ? "#E60076" : "#666",
+                    pathname === "/account/wishlist"
+                      ? "var(--main-color)"
+                      : "#666",
                 }}
               />
               {favoritesCount > 0 && (
-                <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-[#E60076] text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-main text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
                   {favoritesCount > 99 ? "99+" : favoritesCount}
                 </span>
               )}
@@ -1154,7 +842,9 @@ export function Navbar() {
               className="text-[10px]"
               style={{
                 color:
-                  pathname === "/account/wishlist" ? "#E60076" : "#666",
+                  pathname === "/account/wishlist"
+                    ? "var(--main-color)"
+                    : "#666",
               }}
             >
               {t.favorites}
@@ -1173,17 +863,21 @@ export function Navbar() {
             <div className="relative">
               <ShoppingCart
                 className="h-5 w-5"
-                style={{ color: pathname === "/cart" ? "#E60076" : "#666" }}
+                style={{
+                  color: pathname === "/cart" ? "var(--main-color)" : "#666",
+                }}
               />
               {itemsCount > 0 && (
-                <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-[#E60076] text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-main text-white rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
                   {itemsCount > 99 ? "99+" : itemsCount}
                 </span>
               )}
             </div>
             <span
               className="text-[10px]"
-              style={{ color: pathname === "/cart" ? "#E60076" : "#666" }}
+              style={{
+                color: pathname === "/cart" ? "var(--main-color)" : "#666",
+              }}
             >
               {t.cart}
             </span>
@@ -1199,12 +893,14 @@ export function Navbar() {
                 setShowMobileCategoriesSheet(false);
               }}
             >
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#E60076] to-[#f0278f] flex items-center justify-center text-white font-bold text-[10px]">
+              <div className="w-5 h-5 rounded-full bg-main flex items-center justify-center text-white font-bold text-[10px]">
                 {getUserInitial()}
               </div>
               <span
                 className="text-[10px]"
-                style={{ color: pathname === "/account" ? "#E60076" : "#666" }}
+                style={{
+                  color: pathname === "/account" ? "var(--main-color)" : "#666",
+                }}
               >
                 {t.account}
               </span>
@@ -1249,7 +945,7 @@ export function Navbar() {
             <div className="p-4">
               {loadingCategories ? (
                 <div className="text-center py-8">
-                  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-[#E60076] border-r-transparent"></div>
+                  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-primary border-r-transparent"></div>
                   <p className="text-sm text-gray-500 mt-2">{t.loading}</p>
                 </div>
               ) : categories.length > 0 ? (

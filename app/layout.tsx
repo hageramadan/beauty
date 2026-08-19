@@ -11,6 +11,8 @@ import { SubNavbar } from "@/components/layout/SubNavbar";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { getSettings } from "@/services/settingsApi";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { ThemeProvider } from "@/contexts/ThemeContext"; // ✅ إضافة
+import { ThemeStyles } from "@/components/ThemeStyles"; // ✅ إضافة
 
 const almarai = Almarai({
   subsets: ["arabic"],
@@ -65,9 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: description,
     },
     icons: {
-      icon: [
-        { url: "/logo.png", type: "image/png" }
-      ],
+      icon: [{ url: "/logo.png", type: "image/png" }],
     },
   };
 }
@@ -80,24 +80,27 @@ export default function RootLayout({
   return (
     <html>
       <body className={almarai.className}>
-        <LanguageProvider>
-          <CurrencyProvider>
-            <CartProvider>
-              <AuthProvider>
-                <FavoritesProvider>
-                  <SubNavbar />
-                  <Navbar />
-                  <main>{children}</main>
-                  <Toaster
-                    position="top-center" // مكان ظهور الإشعار
-                    reverseOrder={false}
-                  />
-                  <Footer />
-                </FavoritesProvider>
-              </AuthProvider>
-            </CartProvider>
-          </CurrencyProvider>
-        </LanguageProvider>
+        <ThemeProvider>
+          <ThemeStyles />
+          <LanguageProvider>
+            <CurrencyProvider>
+              <CartProvider>
+                <AuthProvider>
+                  <FavoritesProvider>
+                    <SubNavbar />
+                    <Navbar />
+                    <main>{children}</main>
+                    <Toaster
+                      position="top-center" // مكان ظهور الإشعار
+                      reverseOrder={false}
+                    />
+                    <Footer />
+                  </FavoritesProvider>
+                </AuthProvider>
+              </CartProvider>
+            </CurrencyProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

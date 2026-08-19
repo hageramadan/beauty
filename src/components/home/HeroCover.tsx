@@ -415,7 +415,7 @@ export function Hero({ onLoad }: LoadingProps) {
         <div className="flex items-center justify-center h-full min-h-[50vh]">
           <div className="relative">
             <div className="w-12 h-12 border-4 border-gray-200 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#E60076] border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute top-0 left-0 w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </section>
@@ -425,7 +425,7 @@ export function Hero({ onLoad }: LoadingProps) {
   // إذا لم توجد سلايدرات، عرض النص المركزي فقط بدون صور
   if (leftSlides.length === 0 && rightSlides.length === 0) {
     return (
-      <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gradient-to-r from-[#E60076]/20 to-[#E60076]/5">
+      <section className="relative w-full min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] overflow-hidden bg-gradient-to-r from-[var(--main-color)]/20 to-[var(--main-color)]/5">
         <div className="flex items-center justify-center h-full min-h-[50vh] px-4 sm:px-6">
           <div className="text-center max-w-[90%] sm:max-w-[80%] md:max-w-[70%] lg:max-w-[60%]">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[58px] font-bold mb-2 sm:mb-3 md:mb-4 text-white drop-shadow-lg">

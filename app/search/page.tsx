@@ -69,7 +69,7 @@ interface TransformedProduct {
 // دالة جلب التوكن
 const getToken = (): string | null => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("auth_token1");
   }
   return null;
 };
@@ -424,15 +424,15 @@ function SearchContent() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('search.placeholder')}
-              className="w-full px-6 py-3 ps-4 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-[#E60076] focus:border-[#E60076]"
+              className="w-full px-6 py-3 ps-4 border border-gray-200 rounded-[8px] focus:outline-none focus:ring-[var(--main-color)] focus:border-primary"
             />
             <button
               type="submit"
-              className={`absolute ${language === 'en' ? 'end-3' : 'end-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#E60076] transition`}
+              className={`absolute ${language === 'en' ? 'end-3' : 'end-3'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition`}
               disabled={isLoading}
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-[#E60076] rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div>
               ) : (
                 <Search className="w-5 h-5" />
               )}
@@ -454,7 +454,7 @@ function SearchContent() {
           
           {products.length > 0 && !isLoading && (
             <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[#E60076] focus:ring-offset-0 w-[180px]">
+              <SelectTrigger className="h-12 bg-[#F0F0F0] rounded-full focus:ring-[var(--main-color)] focus:ring-offset-0 w-[180px]">
                 <SelectValue placeholder={t('search.sortBy')} />
               </SelectTrigger>
               <SelectContent className="bg-white rounded-[8px] shadow-lg border-gray-100">
@@ -462,7 +462,7 @@ function SearchContent() {
                   <SelectItem
                     key={option.value}
                     value={option.value}
-                    className="cursor-pointer hover:bg-blue-50 hover:text-[#E60076] focus:bg-blue-50 focus:text-[#E60076]"
+                    className="cursor-pointer hover:bg-blue-50 hover:text-primary focus:bg-blue-50 focus:text-primary"
                   >
                     <div className="flex items-center gap-2">
                       <span>{option.label}</span>
@@ -478,7 +478,7 @@ function SearchContent() {
         {isLoading && products.length > 0 && (
           <div className="flex justify-center py-8">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-[#E60076] rounded-full animate-spin"></div>
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div>
               <span className="text-gray-500">{t('search.loadingMore')}</span>
             </div>
           </div>
@@ -547,7 +547,7 @@ function SearchContent() {
             </p>
             <button
               onClick={() => router.replace("/")}
-              className="inline-block bg-[#E60076] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#39abee] transition-all duration-300 shadow-md hover:shadow-lg"
+              className="inline-block bg-main text-white px-8 py-3 rounded-xl font-semibold hover:bg-main-dark transition-all duration-300 shadow-md hover:shadow-lg"
             >
               {t('search.backToHome')}
             </button>

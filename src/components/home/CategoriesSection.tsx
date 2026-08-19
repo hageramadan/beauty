@@ -120,7 +120,7 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
         {categories.length > 4 && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#f0278f] transition-all duration-300 hidden xl:block"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-main rounded-full shadow-lg p-2 md:p-3 hover:bg-main-dark transition-all duration-300 hidden xl:block"
             style={{ 
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               transform: 'translateX(50%) translateY(-50%)'
@@ -135,7 +135,7 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
         {categories.length > 4 && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#E60076] rounded-full shadow-lg p-2 md:p-3 hover:bg-[#f0278f] transition-all duration-300 hidden xl:block"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-main rounded-full shadow-lg p-2 md:p-3 hover:bg-main-dark transition-all duration-300 hidden xl:block"
             style={{ 
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               transform: 'translateX(-50%) translateY(-50%)'
@@ -187,7 +187,7 @@ export function CategoriesSection({ onLoad }: LoadingProps) {
                     {/* اسم الفئة في الأسفل */}
                     <div className="absolute bottom-0 left-0 right-0 ">
                       <h3 
-                        className="text-white text-xs lg:text-[16px] font-bold bg-[#E6007699] py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-1 lg:line-clamp-2 whitespace-normal"
+                        className="text-white text-xs lg:text-[16px] font-bold bg-main py-1 md:py-2 w-full md:text-base lg:text-lg text-center line-clamp-1 lg:line-clamp-2 whitespace-normal"
                       >
                         {category.name}
                       </h3>

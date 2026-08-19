@@ -137,7 +137,7 @@ export default function AddAddress({
     const fetchGovernorates = async () => {
       setIsLoadingGovernorates(true);
       try {
-        const token = localStorage.getItem("auth_token");
+        const token = localStorage.getItem("auth_token1");
 
         const response = await fetch(`${API_URL}/governates`, {
           headers: getHeaders(),
@@ -179,7 +179,7 @@ export default function AddAddress({
 
       setIsLoadingCities(true);
       try {
-        const token = localStorage.getItem("auth_token");
+        const token = localStorage.getItem("auth_token1");
 
         const response = await fetch(`${API_URL}/governates/${formData.governorateId}/cities`, {
           headers: getHeaders(),
@@ -413,7 +413,7 @@ export default function AddAddress({
         type: formData.addressType,
       };
 
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("auth_token1");
 
       let url = `${API_URL}/addresses`;
       let method = "POST";
@@ -762,7 +762,7 @@ export default function AddAddress({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-main text-white rounded-[8px] hover:bg-main-dark transition disabled:opacity-50"
                   >
                     {isSubmitting
                       ? t('address.saving')

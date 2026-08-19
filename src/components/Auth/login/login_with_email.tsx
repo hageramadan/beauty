@@ -137,7 +137,7 @@ export default function LoginWithEmail() {
               <button
                 type="button"
                 onClick={() => router.push("/auth/forgot-password")}
-                className="text-sm text-[#E60076] hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {t("auth.forgotPassword")}
               </button>
@@ -146,7 +146,7 @@ export default function LoginWithEmail() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#E60076] text-white rounded-[8px] hover:bg-[#f0278f] transition disabled:opacity-50"
+              className="w-full py-3 bg-main text-white rounded-[8px] hover:bg-main-dark transition disabled:opacity-50"
             >
               {isLoading ? t("auth.loggingIn") : t("auth.login")}
             </button>
@@ -157,7 +157,7 @@ export default function LoginWithEmail() {
                 <button
                   type="button"
                   onClick={() => router.push("/auth/register/email")}
-                  className="text-[#E60076] font-medium hover:underline"
+                  className="text-primary font-medium hover:underline"
                 >
                   {t("auth.register")}
                 </button>
