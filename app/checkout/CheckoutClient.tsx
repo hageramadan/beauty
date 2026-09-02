@@ -4,7 +4,20 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IoLockClosedOutline } from "react-icons/io5";
-import { ChevronRight, CheckCircle, User, Mail, Phone, MapPin, Building, Home, AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  ChevronRight,
+  CheckCircle,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Home,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Loader2,
+} from "lucide-react";
 import {
   CartItem,
   CheckoutFormData,
@@ -42,11 +55,10 @@ const fetchCartWithParams = async (
     }
 
     if (deliveryMethod === "delivery" && cityId) {
-      params.append("city_id",  String(cityId));
+      params.append("city_id", String(cityId));
     }
 
     const url = `${API_URL}/cart/preview?${params.toString()}`;
-  
 
     const response = await fetch(url, {
       headers: getHeaders(),
@@ -54,9 +66,7 @@ const fetchCartWithParams = async (
 
     const data = await response.json();
 
-
     if (data.result === true && data.data && data.data.cart) {
-     
       return data.data.cart;
     }
 
@@ -76,11 +86,11 @@ const validatePhoneNumberByCountry = (
   const cleanNumber = phoneNumber.replace(/[\s\-]/g, "");
 
   if (!cleanNumber) {
-    return { isValid: false, error: t('checkout.phoneRequired') };
+    return { isValid: false, error: t("checkout.phoneRequired") };
   }
 
   if (!/^\d+$/.test(cleanNumber)) {
-    return { isValid: false, error: t('checkout.phoneDigitsOnly') };
+    return { isValid: false, error: t("checkout.phoneDigitsOnly") };
   }
 
   const rules: Record<
@@ -94,28 +104,28 @@ const validatePhoneNumberByCountry = (
     }
   > = {
     "+20": {
-      name: t('checkout.egypt'),
+      name: t("checkout.egypt"),
       minLength: 11,
       maxLength: 11,
       startsWith: ["010", "011", "012", "015"],
       pattern: /^01[0125][0-9]{8}$/,
     },
     "+966": {
-      name: t('checkout.saudi'),
+      name: t("checkout.saudi"),
       minLength: 9,
       maxLength: 10,
       startsWith: ["05"],
       pattern: /^05[0-9]{8}$/,
     },
     "+964": {
-      name: t('checkout.iraq'),
+      name: t("checkout.iraq"),
       minLength: 11,
       maxLength: 11,
       startsWith: ["07"],
       pattern: /^07[0-9]{9}$/,
     },
     "+971": {
-      name: t('checkout.uae'),
+      name: t("checkout.uae"),
       minLength: 9,
       maxLength: 9,
       startsWith: ["05"],
@@ -125,7 +135,7 @@ const validatePhoneNumberByCountry = (
 
   const rule = rules[countryCode];
   if (!rule) {
-    return { isValid: false, error: t('checkout.invalidCountryCode') };
+    return { isValid: false, error: t("checkout.invalidCountryCode") };
   }
 
   const startsWithValid = rule.startsWith.some((prefix) =>
@@ -134,9 +144,9 @@ const validatePhoneNumberByCountry = (
   if (!startsWithValid) {
     return {
       isValid: false,
-      error: t('checkout.phoneStartsWithError', { 
-        country: rule.name, 
-        prefixes: rule.startsWith.join(" أو ") 
+      error: t("checkout.phoneStartsWithError", {
+        country: rule.name,
+        prefixes: rule.startsWith.join(" أو "),
       }),
     };
   }
@@ -144,7 +154,7 @@ const validatePhoneNumberByCountry = (
   if (!rule.pattern.test(cleanNumber)) {
     return {
       isValid: false,
-      error: t('checkout.phoneInvalidForCountry', { country: rule.name }),
+      error: t("checkout.phoneInvalidForCountry", { country: rule.name }),
     };
   }
 
@@ -171,21 +181,32 @@ const createOrder = async (orderData: any): Promise<any> => {
 // دالة الحصول على رسالة الخطأ حسب السبب (مترجمة)
 const getErrorMessage = (reason: string | null, t: any): string => {
   const messages: Record<string, string> = {
-    'payment_declined': t('checkout.paymentDeclined') || 'تم رفض الدفع من قبل البنك أو جهة الإصدار',
-    'insufficient_funds': t('checkout.insufficientFunds') || 'الرصيد غير كافٍ لإتمام العملية',
-    'card_expired': t('checkout.cardExpired') || 'البطاقة منتهية الصلاحية',
-    'invalid_card': t('checkout.invalidCard') || 'بيانات البطاقة غير صحيحة',
-    'technical_error': t('checkout.technicalError') || 'حدث خطأ تقني أثناء معالجة الدفع',
-    'timeout': t('checkout.timeout') || 'انتهت مهلة الدفع، يرجى المحاولة مرة أخرى',
-    'cancelled_by_user': t('checkout.cancelledByUser') || 'تم إلغاء الدفع من قبلك',
-    'fraud_suspected': t('checkout.fraudSuspected') || 'تم رفض العملية للاشتباه في احتيال',
-    'authentication_failed': t('checkout.authenticationFailed') || 'فشل التحقق من الهوية',
+    payment_declined:
+      t("checkout.paymentDeclined") ||
+      "تم رفض الدفع من قبل البنك أو جهة الإصدار",
+    insufficient_funds:
+      t("checkout.insufficientFunds") || "الرصيد غير كافٍ لإتمام العملية",
+    card_expired: t("checkout.cardExpired") || "البطاقة منتهية الصلاحية",
+    invalid_card: t("checkout.invalidCard") || "بيانات البطاقة غير صحيحة",
+    technical_error:
+      t("checkout.technicalError") || "حدث خطأ تقني أثناء معالجة الدفع",
+    timeout:
+      t("checkout.timeout") || "انتهت مهلة الدفع، يرجى المحاولة مرة أخرى",
+    cancelled_by_user:
+      t("checkout.cancelledByUser") || "تم إلغاء الدفع من قبلك",
+    fraud_suspected:
+      t("checkout.fraudSuspected") || "تم رفض العملية للاشتباه في احتيال",
+    authentication_failed:
+      t("checkout.authenticationFailed") || "فشل التحقق من الهوية",
   };
 
   if (reason && messages[reason]) {
     return messages[reason];
   }
-  return t('checkout.paymentError') || 'حدثت مشكلة أثناء معالجة الدفع. يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى.';
+  return (
+    t("checkout.paymentError") ||
+    "حدثت مشكلة أثناء معالجة الدفع. يرجى المحاولة مرة أخرى أو استخدام طريقة دفع أخرى."
+  );
 };
 
 // تحويل بيانات السلة (مترجم)
@@ -207,7 +228,7 @@ const transformCartItems = (cart: any, t: any): CartItem[] => {
       }
     }
 
-    let brandName = t('checkout.defaultBrand');
+    let brandName = t("checkout.defaultBrand");
     if (item.product.brand) {
       if (typeof item.product.brand === "string") {
         brandName = item.product.brand;
@@ -283,13 +304,13 @@ export default function CheckoutClient() {
     null,
   );
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
-  
+
   // ✅ إضافة state لحفظ قيمة paymentGateway (مثل الكود الأول)
   const [paymentGateway, setPaymentGateway] = useState<string | null>(null);
-  
+
   const [showRedirectPopup, setShowRedirectPopup] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
-  
+
   const [createAccount, setCreateAccount] = useState(false);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -301,7 +322,9 @@ export default function CheckoutClient() {
     password: "",
     password_confirmation: "",
   });
-  const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
+  const [accountErrors, setAccountErrors] = useState<Record<string, string>>(
+    {},
+  );
 
   const selectedCityIdRef = useRef<string | null>(null);
   const isFetchingRef = useRef<boolean>(false);
@@ -332,9 +355,9 @@ export default function CheckoutClient() {
   const cartSummary: CartSummary = useMemo(() => {
     const subtotal = cart?.subtotal || 0;
     const discount = cart?.discount_amount || 0;
-    
+
     let deliveryFee;
-    
+
     if (formData.deliveryMethod === "pickup") {
       deliveryFee = null;
     } else if (formData.deliveryMethod === "delivery") {
@@ -350,53 +373,56 @@ export default function CheckoutClient() {
     } else {
       deliveryFee = undefined;
     }
-    
+
     const total = cart?.total_amount || 0;
-  const couponDiscount = cart?.coupon_discount || 0;
-  const couponCode = cart?.applied_coupon_code || "";
+    const couponDiscount = cart?.coupon_discount || 0;
+    const couponCode = cart?.applied_coupon_code || "";
     return {
       subtotal,
       discount,
       deliveryFee,
       total,
-         couponDiscount,  // ✅ إضافة خصم الكوبون
+      couponDiscount, // ✅ إضافة خصم الكوبون
       couponCode,
     };
   }, [cart, formData.deliveryMethod, selectedCityId]);
 
   // التحقق من وجود order_number في URL (عند العودة من Paymob)
   useEffect(() => {
-    const orderNumber = searchParams.get('order_number');
-    const status = searchParams.get('status');
-    const reason = searchParams.get('reason');
-    
+    const orderNumber = searchParams.get("order_number");
+    const status = searchParams.get("status");
+    const reason = searchParams.get("reason");
+
     if (orderNumber) {
-      if (status === 'success' || status === 'paid' || status === null) {
+      if (status === "success" || status === "paid" || status === null) {
         toast.dismiss();
-        toast.success(t('checkout.paymentSuccess'), {
+        toast.success(t("checkout.paymentSuccess"), {
           duration: 3000,
-          position: 'top-center',
+          position: "top-center",
         });
-        
+
         setTimeout(() => {
           router.push(`/account/orders?order=${orderNumber}`);
         }, 2000);
-        
+
         setIsOrderCompleted(true);
         return;
       }
-      
-      if (status === 'failed') {
-        toast.error(`❌ ${t('checkout.paymentFailed')}: ${getErrorMessage(reason, t)}`, {
-          duration: 5000,
-          position: 'top-center',
-        });
-        
+
+      if (status === "failed") {
+        toast.error(
+          `❌ ${t("checkout.paymentFailed")}: ${getErrorMessage(reason, t)}`,
+          {
+            duration: 5000,
+            position: "top-center",
+          },
+        );
+
         setTimeout(() => {
           const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
+          window.history.replaceState({}, "", newUrl);
         }, 3000);
-        
+
         setIsOrderCompleted(true);
         return;
       }
@@ -405,7 +431,7 @@ export default function CheckoutClient() {
 
   // التعديل المهم: لا تقم بإعادة التوجيه إلى الرئيسية عند فراغ السلة إذا كان الطلب قد تم بنجاح
   useEffect(() => {
-    const orderNumber = searchParams.get('order_number');
+    const orderNumber = searchParams.get("order_number");
     if (orderNumber) {
       setIsOrderCompleted(true);
       return;
@@ -417,50 +443,43 @@ export default function CheckoutClient() {
       router.replace("/");
     }
   }, [cart, cartLoading, router, isOrderCompleted, searchParams]);
-  
+
   // استدعاء الـ API عند تغيير طريقة التوصيل أو المدينة (محسّن)
   useEffect(() => {
     if (isOrderCompleted) return;
     if (!cart || cart.items?.length === 0) return;
-    
+
     if (isFetchingRef.current) return;
 
     const currentDeliveryMethod = formData.deliveryMethod;
     const currentCityId = selectedCityIdRef.current;
 
-    const deliveryMethodChanged = lastDeliveryMethodRef.current !== currentDeliveryMethod;
+    const deliveryMethodChanged =
+      lastDeliveryMethodRef.current !== currentDeliveryMethod;
     const cityIdChanged = lastFetchedCityIdRef.current !== currentCityId;
 
     if (!deliveryMethodChanged && !cityIdChanged) {
-     
       return;
     }
 
     lastDeliveryMethodRef.current = currentDeliveryMethod;
     lastFetchedCityIdRef.current = currentCityId;
 
-
-
     const fetchCart = async () => {
       try {
         isFetchingRef.current = true;
-        
+
         if (currentDeliveryMethod === "delivery" && currentCityId) {
-       
           const cartData = await fetchCartWithParams("delivery", currentCityId);
           if (cartData) {
             updateCart(cartData);
           }
-        } 
-        else if (currentDeliveryMethod === "pickup") {
-         
+        } else if (currentDeliveryMethod === "pickup") {
           const cartData = await fetchCartWithParams("pickup");
           if (cartData) {
             updateCart(cartData);
           }
-        } 
-        else if (currentDeliveryMethod === "delivery" && !currentCityId) {
-        
+        } else if (currentDeliveryMethod === "delivery" && !currentCityId) {
           const cartData = await fetchCartWithParams("delivery");
           if (cartData) {
             updateCart(cartData);
@@ -474,12 +493,18 @@ export default function CheckoutClient() {
     };
 
     const timeoutId = setTimeout(fetchCart, 300);
-    
+
     return () => {
       clearTimeout(timeoutId);
       isFetchingRef.current = false;
     };
-  }, [formData.deliveryMethod, selectedCityId, isOrderCompleted, cart, updateCart]);
+  }, [
+    formData.deliveryMethod,
+    selectedCityId,
+    isOrderCompleted,
+    cart,
+    updateCart,
+  ]);
 
   const handleFormChange = useCallback((data: Partial<CheckoutFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
@@ -497,7 +522,7 @@ export default function CheckoutClient() {
 
       if (address && address.id) {
         setSelectedAddressId(address.id);
-        toast.success(t('checkout.addressSaved'));
+        toast.success(t("checkout.addressSaved"));
 
         try {
           let cityId = selectedCityIdRef.current;
@@ -534,7 +559,7 @@ export default function CheckoutClient() {
   const handleAddressSelected = useCallback(
     async (addressId: number) => {
       if (isFetchingRef.current) return;
-      
+
       setSelectedAddressId(addressId);
 
       try {
@@ -560,7 +585,6 @@ export default function CheckoutClient() {
   );
 
   const handleCitySelected = useCallback((cityId: string) => {
-   
     selectedCityIdRef.current = cityId;
     setSelectedCityId(cityId);
   }, []);
@@ -589,13 +613,13 @@ export default function CheckoutClient() {
     const errors: Record<string, string> = {};
 
     if (!accountData.email.trim()) {
-      errors.email = t('checkout.emailRequired');
+      errors.email = t("checkout.emailRequired");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountData.email)) {
-      errors.email = t('checkout.emailInvalid');
+      errors.email = t("checkout.emailInvalid");
     }
 
     if (!accountData.phone.trim()) {
-      errors.phone = t('checkout.phoneRequired');
+      errors.phone = t("checkout.phoneRequired");
     } else {
       const phoneValidation = validatePhoneNumberByCountry(
         accountData.phone.replace(/[\s\-]/g, ""),
@@ -608,21 +632,21 @@ export default function CheckoutClient() {
     }
 
     if (!accountData.name.trim()) {
-      errors.name = t('checkout.nameRequired');
+      errors.name = t("checkout.nameRequired");
     } else if (accountData.name.trim().length < 3) {
-      errors.name = t('checkout.nameMinLength');
+      errors.name = t("checkout.nameMinLength");
     }
 
     if (!accountData.password) {
-      errors.password = t('checkout.passwordRequired');
+      errors.password = t("checkout.passwordRequired");
     } else if (accountData.password.length < 8) {
-      errors.password = t('checkout.passwordMinLength');
+      errors.password = t("checkout.passwordMinLength");
     }
 
     if (!accountData.password_confirmation) {
-      errors.password_confirmation = t('checkout.passwordConfirmationRequired');
+      errors.password_confirmation = t("checkout.passwordConfirmationRequired");
     } else if (accountData.password !== accountData.password_confirmation) {
-      errors.password_confirmation = t('checkout.passwordMismatch');
+      errors.password_confirmation = t("checkout.passwordMismatch");
     }
 
     setAccountErrors(errors);
@@ -634,30 +658,31 @@ export default function CheckoutClient() {
     if (validateAccountData()) {
       setCreateAccount(true);
       setShowAccountPopup(false);
-      toast.success(t('checkout.accountCreated'));
+      toast.success(t("checkout.accountCreated"));
     }
   }, [accountData, t]);
 
   // دالة التحقق من صحة البيانات قبل الإرسال (مترجمة)
   const validateForm = useCallback(() => {
     if (!formData.fullName.trim()) {
-      toast.error(t('checkout.fullNameRequired'));
+      toast.error(t("checkout.fullNameRequired"));
       return false;
     }
 
     if (isGuest && formData.paymentMethod !== "cash") {
       if (!formData.email || !formData.email.trim()) {
-        toast.error(t('checkout.emailRequired'));
+        toast.error(t("checkout.emailRequired"));
         return false;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        toast.error(t('checkout.emailInvalid'));
+        toast.error(t("checkout.emailInvalid"));
         return false;
       }
     }
 
     const phoneValidation = validatePhoneNumberByCountry(
-      formData.phoneNumber || formData.phone.replace(formData.phoneCountryCode || "", ""),
+      formData.phoneNumber ||
+        formData.phone.replace(formData.phoneCountryCode || "", ""),
       formData.phoneCountryCode || "+20",
       t,
     );
@@ -667,16 +692,24 @@ export default function CheckoutClient() {
       return false;
     }
 
-    if (formData.deliveryMethod === "delivery" && !selectedAddressId && isGuest) {
+    if (
+      formData.deliveryMethod === "delivery" &&
+      !selectedAddressId &&
+      isGuest
+    ) {
       const address = formData.deliveryAddress;
       if (!address.street || !address.city) {
-        toast.error(t('checkout.addressRequired'));
+        toast.error(t("checkout.addressRequired"));
         return false;
       }
     }
 
-    if (formData.deliveryMethod === "delivery" && !selectedAddressId && !isGuest) {
-      toast.error(t('checkout.saveAddressFirst'));
+    if (
+      formData.deliveryMethod === "delivery" &&
+      !selectedAddressId &&
+      !isGuest
+    ) {
+      toast.error(t("checkout.saveAddressFirst"));
       return false;
     }
 
@@ -729,7 +762,7 @@ export default function CheckoutClient() {
 
     if (isGuest) {
       const guestEmail = formData.email || accountData.email || "";
-      
+
       const additionalData: any = {
         name: formData.fullName,
         phone: formData.phone,
@@ -754,9 +787,15 @@ export default function CheckoutClient() {
       }
     }
 
-   
     return orderData;
-  }, [formData, selectedAddressId, createAccount, isGuest, accountData, paymentGateway]); // ✅ إضافة paymentGateway للـ dependencies
+  }, [
+    formData,
+    selectedAddressId,
+    createAccount,
+    isGuest,
+    accountData,
+    paymentGateway,
+  ]); // ✅ إضافة paymentGateway للـ dependencies
 
   // دالة إغلاق Popup التوجيه
   const closeRedirectPopup = useCallback(() => {
@@ -813,7 +852,7 @@ export default function CheckoutClient() {
         }
 
         const completedOrder: CompletedOrderResult = {
-          orderNumber: orderNumber || 'N/A',
+          orderNumber: orderNumber || "N/A",
           itemsCount: cartItems.length,
           total: response.data.order.total_amount,
         };
@@ -826,11 +865,11 @@ export default function CheckoutClient() {
           console.error("❌ Error clearing cart after order success:", err);
         });
       } else {
-        toast.error(response.message || t('checkout.orderCreationError'));
+        toast.error(response.message || t("checkout.orderCreationError"));
       }
     } catch (error) {
       console.error("❌ Error creating order:", error);
-      toast.error(t('checkout.orderCreationError'));
+      toast.error(t("checkout.orderCreationError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -851,28 +890,38 @@ export default function CheckoutClient() {
     router.push("/");
   }, [router]);
 
-  const handlePhoneChange = useCallback((phoneNumber: string, countryCode: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      phone: phoneNumber,
-      phoneNumber: phoneNumber,
-      phoneCountryCode: countryCode,
-    }));
-  }, []);
+  const handlePhoneChange = useCallback(
+    (phoneNumber: string, countryCode: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        phone: phoneNumber,
+        phoneNumber: phoneNumber,
+        phoneCountryCode: countryCode,
+      }));
+    },
+    [],
+  );
 
   // عرض حالة الطلب المكتمل مع order_number في URL (مترجم)
-  if (isOrderCompleted && searchParams.get('order_number')) {
+  if (isOrderCompleted && searchParams.get("order_number")) {
     return (
       <div className="min-h-screen bg-gradient-to-l from-[#bdcbf12a] to-[#feecea3b] flex items-center justify-center px-4">
         <div className="text-center max-w-md bg-white rounded-2xl shadow-xl p-8">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('checkout.paymentSuccess')}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            {t("checkout.paymentSuccess")}
+          </h2>
           <p className="text-gray-500 mb-4">
-            {t('checkout.orderNumber')}: <span className="font-bold text-primary">{searchParams.get('order_number')}</span>
+            {t("checkout.orderNumber")}:{" "}
+            <span className="font-bold text-primary">
+              {searchParams.get("order_number")}
+            </span>
           </p>
-          <p className="text-gray-400 text-sm mb-6">{t('checkout.redirecting')}</p>
+          <p className="text-gray-400 text-sm mb-6">
+            {t("checkout.redirecting")}
+          </p>
           <div className="flex justify-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -892,12 +941,12 @@ export default function CheckoutClient() {
   if (!isOrderCompleted && (!cart || cart.items?.length === 0)) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <p className="text-gray-500 mb-4">{t('checkout.emptyCart')}</p>
+        <p className="text-gray-500 mb-4">{t("checkout.emptyCart")}</p>
         <Link
           href="/products"
           className="bg-main hover:bg-main-dark text-white px-6 py-2 rounded-[8px]"
         >
-          {t('checkout.shopNow')}
+          {t("checkout.shopNow")}
         </Link>
       </div>
     );
@@ -909,14 +958,16 @@ export default function CheckoutClient() {
         {/* Page Header - مترجم */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-            {t('checkout.checkoutTitle')}
+            {t("checkout.checkoutTitle")}
           </h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
             <Link href="/cart" className="hover:text-primary transition">
-              {t('checkout.cart')}
+              {t("checkout.cart")}
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-primary font-medium">{t('checkout.checkoutTitle')}</span>
+            <span className="text-primary font-medium">
+              {t("checkout.checkoutTitle")}
+            </span>
           </div>
         </div>
 
@@ -925,26 +976,30 @@ export default function CheckoutClient() {
             {/* Contact Info - مترجم */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                {t('checkout.contactInfo')}
+                {t("checkout.contactInfo")}
               </h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('checkout.fullName')} <span className="text-red-500">*</span>
+                    {t("checkout.fullName")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.fullName}
-                    onChange={(e) => handleFormChange({ fullName: e.target.value })}
-                    placeholder={t('checkout.fullNamePlaceholder')}
+                    onChange={(e) =>
+                      handleFormChange({ fullName: e.target.value })
+                    }
+                    placeholder={t("checkout.fullNamePlaceholder")}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] transition"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('checkout.phone')} <span className="text-red-500">*</span>
+                    {t("checkout.phone")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <PhoneInput
                     value={`${formData.phoneCountryCode}${formData.phone}`}
@@ -956,13 +1011,16 @@ export default function CheckoutClient() {
                 {isGuest && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('checkout.email')} <span className="text-red-500">*</span>
+                      {t("checkout.email")}{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       value={formData.email || ""}
-                      onChange={(e) => handleFormChange({ email: e.target.value })}
-                      placeholder={t('checkout.emailPlaceholder')}
+                      onChange={(e) =>
+                        handleFormChange({ email: e.target.value })
+                      }
+                      placeholder={t("checkout.emailPlaceholder")}
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] transition"
                     />
                   </div>
@@ -1010,11 +1068,11 @@ export default function CheckoutClient() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                      <User className="w-5 h-5 text-pink-600" />
+                      <User className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p className="font-semibold text-pink-800 text-sm">
-                        {t('checkout.createAccount')}
+                        {t("checkout.createAccount")}
                       </p>
                     </div>
                   </div>
@@ -1026,7 +1084,9 @@ export default function CheckoutClient() {
                         : "bg-main text-white hover:bg-main-dark"
                     }`}
                   >
-                    {createAccount ? " " + t('checkout.selected') : t('checkout.createAccount')}
+                    {createAccount
+                      ? " " + t("checkout.selected")
+                      : t("checkout.createAccount")}
                   </button>
                 </div>
               </div>
@@ -1037,7 +1097,9 @@ export default function CheckoutClient() {
               disabled={isSubmitting || isOrderCompleted}
               className="hidden md:block w-full bg-main text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? t('checkout.processing') : t('checkout.confirmOrder')}
+              {isSubmitting
+                ? t("checkout.processing")
+                : t("checkout.confirmOrder")}
             </button>
           </div>
 
@@ -1052,7 +1114,9 @@ export default function CheckoutClient() {
               disabled={isSubmitting || isOrderCompleted}
               className="md:hidden block w-full bg-main text-white py-3 rounded-xl font-semibold text-lg transition disabled:opacity-50"
             >
-              {isSubmitting ? t('checkout.processing') : t('checkout.confirmOrder')}
+              {isSubmitting
+                ? t("checkout.processing")
+                : t("checkout.confirmOrder")}
             </button>
           </div>
         </div>
@@ -1068,10 +1132,10 @@ export default function CheckoutClient() {
               </div>
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">
-              {t('checkout.redirectingToPayment')}
+              {t("checkout.redirectingToPayment")}
             </h3>
             <p className="text-gray-500 text-sm mb-4">
-              {t('checkout.redirectingToPaymentDesc')}
+              {t("checkout.redirectingToPaymentDesc")}
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse"></div>
@@ -1079,7 +1143,7 @@ export default function CheckoutClient() {
               <div className="w-2 h-2 bg-gray-300 rounded-full animate-pulse delay-300"></div>
             </div>
             <p className="text-xs text-gray-400 mt-4">
-              {t('checkout.redirectingAuto')}
+              {t("checkout.redirectingAuto")}
             </p>
           </div>
         </div>
@@ -1129,7 +1193,9 @@ interface AccountPopupProps {
   onClose: () => void;
   onConfirm: () => void;
   accountData: AccountData;
-  setAccountData: (data: AccountData | ((prev: AccountData) => AccountData)) => void;
+  setAccountData: (
+    data: AccountData | ((prev: AccountData) => AccountData),
+  ) => void;
   errors: Record<string, string>;
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
@@ -1162,17 +1228,17 @@ function AccountPopup({
       <div className="bg-white rounded-2xl max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 text-center">
-            {t('checkout.createAccount')}
+            {t("checkout.createAccount")}
           </h3>
           <p className="text-sm text-gray-500 text-center mt-1">
-            {t('checkout.createAccountDescription')}
+            {t("checkout.createAccountDescription")}
           </p>
         </div>
 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('checkout.fullName')} <span className="text-red-500">*</span>
+              {t("checkout.fullName")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1180,7 +1246,7 @@ function AccountPopup({
                 type="text"
                 value={accountData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                placeholder={t('checkout.fullNamePlaceholder')}
+                placeholder={t("checkout.fullNamePlaceholder")}
                 className={`w-full ps-10 pe-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] transition ${
                   errors.name ? "border-red-500" : "border-gray-300"
                 }`}
@@ -1193,7 +1259,7 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('checkout.email')} <span className="text-red-500">*</span>
+              {t("checkout.email")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1201,7 +1267,7 @@ function AccountPopup({
                 type="email"
                 value={accountData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                placeholder={t('checkout.emailPlaceholder')}
+                placeholder={t("checkout.emailPlaceholder")}
                 className={`w-full ps-10 pe-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] transition ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
@@ -1214,7 +1280,7 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('checkout.phone')} <span className="text-red-500">*</span>
+              {t("checkout.phone")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1235,10 +1301,10 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('checkout.password')} <span className="text-red-500">*</span>
+              {t("checkout.password")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <IoLockClosedOutline  className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <IoLockClosedOutline className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 
               <input
                 type={showPassword ? "text" : "password"}
@@ -1254,7 +1320,11 @@ function AccountPopup({
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
             {errors.password && (
@@ -1264,18 +1334,23 @@ function AccountPopup({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('checkout.confirmPassword')} <span className="text-red-500">*</span>
+              {t("checkout.confirmPassword")}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <IoLockClosedOutline  className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <IoLockClosedOutline className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
 
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 value={accountData.password_confirmation}
-                onChange={(e) => handleChange("password_confirmation", e.target.value)}
+                onChange={(e) =>
+                  handleChange("password_confirmation", e.target.value)
+                }
                 placeholder="••••••••"
                 className={`w-full ps-10 pe-10 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] transition ${
-                  errors.password_confirmation ? "border-red-500" : "border-gray-300"
+                  errors.password_confirmation
+                    ? "border-red-500"
+                    : "border-gray-300"
                 }`}
               />
               <button
@@ -1283,11 +1358,17 @@ function AccountPopup({
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
             {errors.password_confirmation && (
-              <p className="text-xs text-red-500 mt-1">{errors.password_confirmation}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {errors.password_confirmation}
+              </p>
             )}
           </div>
         </div>
@@ -1297,13 +1378,13 @@ function AccountPopup({
             onClick={onClose}
             className="flex-1 py-2.5 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition"
           >
-            {t('checkout.cancel')}
+            {t("checkout.cancel")}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 bg-main text-white py-2.5 rounded-xl font-medium hover:bg-main-dark transition"
           >
-            {t('checkout.createAccount')}
+            {t("checkout.createAccount")}
           </button>
         </div>
       </div>
@@ -1354,35 +1435,37 @@ function SuccessPopup({
             </div>
           </div>
           <h3 className="text-xl font-bold text-gray-800">
-            {t('checkout.orderSuccess')}
+            {t("checkout.orderSuccess")}
           </h3>
           <p className="text-gray-500 text-sm mt-2">
-            {t('checkout.thankYouMessage')}
+            {t("checkout.thankYouMessage")}
           </p>
         </div>
 
         <div className="p-4">
           <div className="bg-gray-50 rounded-xl p-3 text-center mb-3">
-            <p className="text-xs text-gray-500 mb-1">{t('checkout.orderNumber')}</p>
+            <p className="text-xs text-gray-500 mb-1">
+              {t("checkout.orderNumber")}
+            </p>
             <p className="text-xl font-bold text-gray-800">#{orderNumber}</p>
           </div>
-
-         
         </div>
 
-        <div className={`grid ${isGuest ? 'grid-cols-1' : 'grid-cols-2'} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}>
+        <div
+          className={`grid ${isGuest ? "grid-cols-1" : "grid-cols-2"} gap-2 md:gap-5 mx-auto px-4 md:px-5 mb-5`}
+        >
           <button
             onClick={onGoToHome}
             className="w-full bg-black text-white py-2 md:py-3 rounded-xl font-medium hover:bg-gray-800 transition"
           >
-            {t('checkout.backToHome')}
+            {t("checkout.backToHome")}
           </button>
           {!isGuest && (
             <button
               onClick={onGoToOrders}
               className="w-full bg-main text-white py-2 rounded-xl font-medium hover:bg-main-dark transition"
             >
-              {t('checkout.myOrders')}
+              {t("checkout.myOrders")}
             </button>
           )}
         </div>

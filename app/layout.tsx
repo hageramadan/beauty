@@ -11,8 +11,9 @@ import { SubNavbar } from "@/components/layout/SubNavbar";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { getSettings } from "@/services/settingsApi";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
-import { ThemeProvider } from "@/contexts/ThemeContext"; // ✅ إضافة
-import { ThemeStyles } from "@/components/ThemeStyles"; // ✅ إضافة
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeStyles } from "@/components/ThemeStyles";
+import Script from "next/script";
 
 const almarai = Almarai({
   subsets: ["arabic"],
@@ -20,35 +21,24 @@ const almarai = Almarai({
   variable: "--font-almarai",
 });
 
-// export const metadata: Metadata = {
-//   title: "متجري - منتجات مميزة",
-//   description: "أفضل المنتجات في مكان واحد",
-// };
-const defaultTitle = "متجر فاشون | أحدث صيحات الموضة والأزياء العصرية أونلاين";
-const defaultDescription =
-  "تسوقي وتسوّق أحدث تشكيلات الملابس والأزياء العصرية بجودة عالية وأفضل الأسعار. شحن سريع، عروض متجددة، وتجربة تسوق مرنة تناسب إطلالتك اليومية.";
-
-// دالة لجلب البيانات ديناميكياً
 async function getMetadata(): Promise<{ title: string; description: string }> {
   try {
     const settings = await getSettings();
 
-    // استخدام القيم من الـ API إذا كانت موجودة، وإلا استخدام القيم الافتراضية
     const title = settings.setting.meta?.meta_title || "";
     const description = settings.setting.meta?.meta_description || "";
 
     return { title, description };
   } catch (error) {
     console.error("Failed to fetch settings for metadata:", error);
-    // في حالة الخطأ، استخدام القيم الافتراضية
+
     return {
-      title: defaultTitle,
-      description: defaultDescription,
+      title: "",
+      description: "",
     };
   }
 }
 
-// استيراد البيانات في metadata
 export async function generateMetadata(): Promise<Metadata> {
   const { title, description } = await getMetadata();
 
@@ -79,6 +69,22 @@ export default function RootLayout({
 }) {
   return (
     <html>
+       <head>
+        {/* Google Analytics */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-V0EBZWJ9B6"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-V0EBZWJ9B6');
+          `}
+        </Script>
+      </head>
       <body className={almarai.className}>
         <ThemeProvider>
           <ThemeStyles />
@@ -90,10 +96,7 @@ export default function RootLayout({
                     <SubNavbar />
                     <Navbar />
                     <main>{children}</main>
-                    <Toaster
-                      position="top-center" // مكان ظهور الإشعار
-                      reverseOrder={false}
-                    />
+                    <Toaster position="top-center" reverseOrder={false} />
                     <Footer />
                   </FavoritesProvider>
                 </AuthProvider>

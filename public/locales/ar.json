@@ -736,6 +736,7 @@
     }
 },
   "orders": {
+    "size":"المقاس",
      "rateProduct": "تقييم المنتج",
     "productRated": "تم تقييم هذا المنتج",
     "ratingSaved": "تم حفظ تقييمك للمنتج!",

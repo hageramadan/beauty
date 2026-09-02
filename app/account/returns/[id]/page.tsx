@@ -230,7 +230,7 @@ const getUserName = (order: ReturnOrder): string => {
   if (order.additional_data?.name) {
     return order.additional_data.name;
   }
-  return " نفذ من المخزون";
+  return " ";
 };
 
 // ========== دوال استخراج الخصائص ==========
