@@ -31,7 +31,8 @@ interface ProductVariant {
   discount_value: number | null;
   price_after_discount: number;
   quantity: number | null;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   variant_image: string | null;
   attributes: VariantAttribute[];
 }
@@ -181,7 +182,7 @@ if (product.has_variants && product.variants && product.variants.length > 0) {
     colors: colors,
     rating: product.avg_rating || 0,
     reviewsCount: product.total_reviews || 0,
-    isBestSeller: product.is_active,
+    isBestSeller: product.is_most_selling,
     hasVariants: hasVariants,
     variants: variants,
     variantId: variantId,

@@ -244,7 +244,8 @@ interface ProductResponse {
 export interface ProductData {
   id: number;
   type: string;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   name: string;
   avg_rating: number;
   total_reviews: number;  
@@ -277,7 +278,8 @@ export interface ProductData {
 export interface SectionWithProducts {
   id: number;
   name: string;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   products: ProductData[];
 }
 
@@ -294,7 +296,8 @@ interface SectionResponse {
 interface SectionData {
   id: number;
   name: string;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   products: ProductData[];
 }
 
@@ -373,6 +376,7 @@ export async function getOffersSection(): Promise<SectionWithProducts | null> {
           id: targetSection.id,
           name: targetSection.name,
           is_active: targetSection.is_active,
+          is_most_selling: targetSection.is_most_selling,
           products: targetSection.products || []
         };
       }

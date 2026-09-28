@@ -52,7 +52,8 @@ interface ProductVariant {
   discount_value: number | null;
   price_after_discount: number;
   quantity: number | null;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   variant_image: string | null;
   attributes: VariantAttribute[];
 }

@@ -51,7 +51,9 @@ interface OrderItem {
     discount_value: string | null;
     price_after_discount: number;
     quantity: number;
-    is_active: boolean;
+    is_active: boolean; 
+is_most_selling:boolean;
+    
     variant_image: string;
     attributes: Array<{
       id: number;

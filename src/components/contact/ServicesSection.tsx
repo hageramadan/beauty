@@ -26,7 +26,8 @@ interface ServiceItem {
   value: string;
   icon: string;
   sort_order: number;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
 }
 
 export default function ServicesSection() {

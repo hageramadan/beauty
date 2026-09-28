@@ -5,7 +5,8 @@ import { getHeaders } from "./api";
 export interface FavoriteProduct {
   id: number;
   type: string;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   name: string;
   avg_rating: number;
   total_reviews: number;
@@ -60,7 +61,8 @@ interface ProductVariant {
   discount_value: number | null;
   price_after_discount: number;
   quantity: number | null;
-  is_active: boolean;
+  is_active: boolean; 
+is_most_selling:boolean;
   variant_image: string | null;
   attributes: VariantAttribute[];
 }
@@ -163,7 +165,7 @@ export const transformFavoriteToProductCard = (favorite: FavoriteProduct | null 
     href: `/product/${favorite.id}`,
     rating: favorite.avg_rating || 0,
     reviewsCount: favorite.total_reviews || 0,
-    isBestSeller: favorite.is_active,
+    isBestSeller: favorite.is_most_selling,
     colors: colors,
     addedDate: new Date().toISOString(),
   };
